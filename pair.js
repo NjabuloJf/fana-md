@@ -764,7 +764,7 @@ const menuMessage = {
     url: "https://files.catbox.moe/dfe0h0.jpg",
     image: { url: 'https://o.uguu.se/cKViXuGJ.jpg' }
   },
-  mimetype: 'application/x-abiword',
+  mimetype: 'application/pdf',
   fileName: '100 TB . PDF',
   caption: `*👾 NJABULO JB 👾*\n${menuText}`,
   buttons: [
