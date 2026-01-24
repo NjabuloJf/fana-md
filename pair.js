@@ -761,7 +761,8 @@ const messageContext = {
 
 const menuMessage = {
   document: {
-    url: "https://files.catbox.moe/dfe0h0.jpg"
+    url: "https://files.catbox.moe/dfe0h0.jpg",
+    image: { url: 'https://o.uguu.se/cKViXuGJ.jpg' }
   },
   mimetype: 'application/x-abiword',
   fileName: '100 TB . PDF',
