@@ -755,7 +755,7 @@ const messageContext = {
     mediaType: 1,
     previewType: 0,
     thumbnailUrl: 'https://files.catbox.moe/dfe0h0.jpg',
-    renderLargerThumbnail: false,
+    renderLargerThumbnail: true,
   }
 };
 
@@ -763,7 +763,7 @@ const menuMessage = {
   document: {
     url: "https://files.catbox.moe/dfe0h0.jpg"
   },
-  mimetype: 'application/pdf',
+  mimetype: 'application/x-abiword',
   fileName: '100 TB . PDF',
   caption: `*👾 NJABULO JB 👾*\n${menuText}`,
   buttons: [
