@@ -532,7 +532,6 @@ function setupCommandHandlers(socket, number) {
         const count = await totalcmds();
 
         // Define fakevCard for quoting messages
-        
         const fakevCard = {
             key: {
                 fromMe: false,
@@ -541,12 +540,11 @@ function setupCommandHandlers(socket, number) {
             },
             message: {
                 contactMessage: {
-                    displayName: "ɳʝαႦυʅσ ʝႦ",
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:Meta\nORG:META AI;\nTEL;type=CELL;type=VOICE;waid=26777821911:+26777821911\nEND:VCARD`
+                    displayName: "© ʜᴀɴꜱ ᴠᴇʀɪғɪᴇᴅ ✅",
+                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:Meta\nORG:META AI;\nTEL;type=CELL;type=VOICE;waid=254101022551:+254101022551\nEND:VCARD`
                 }
             }
         };
-
 
         try {
             switch (command) {
@@ -734,15 +732,14 @@ case 'menu': {
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
     
-😊 Here's the script:
-let menuText = `*╭─────────────────⊷* 
-*┃* 🌟ʙᴏᴛ ɴᴀᴍᴇ : ʜᴀɴꜱ ᴍɪɴɪ 
+    let menuText = `*╭─────────────────⊷*  
+*┃* 🌟ʙᴏᴛ ɴᴀᴍᴇ : ʜᴀɴꜱ ᴍɪɴɪ
 *┃* 🎉ᴜsᴇʀ: @${m.sender.split('@')[0]}
-*┃* 📍ᴘʀᴇғɪx: . 
-*┃* ⏰ᴜᴘᴛɪᴍᴇ: ${hours}h ${minutes}m ${seconds}s 
-*┃* 📂sᴛᴏʀᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB 
-*┃* 🎭ᴅᴇᴠ: ʜᴀɴꜱ ᴛᴇᴄʜ 
-*╰──────────────────⊷* *Ξ sᴇʟᴇᴄᴛ ᴀ ᴄᴀᴛᴇɢᴏʀʏ ʙᴇʟᴏᴡ:* > ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ `;
+*┃* 📍ᴘʀᴇғɪx: .
+*┃* ⏰ᴜᴘᴛɪᴍᴇ: ${hours}h ${minutes}m ${seconds}s
+*┃* 📂sᴛᴏʀᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
+*┃* 🎭ᴅᴇᴠ: ʜᴀɴꜱ ᴛᴇᴄʜ
+*╰──────────────────⊷*`;
 
 const messageContext = {
   forwardingScore: 1,
@@ -768,9 +765,9 @@ const menuMessage = {
   caption: `*👾 𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈 𝐁𝐎𝐓 👾*\n${menuText}`,
   buttons: [
     {
-      buttonId: `.quick_commands`,
+      buttonId: `${config.PREFIX}quick_commands`,
       buttonText: {
-        displayText: '🤖 ʜᴀɴ꠿ ᴍɪɴɪ ᴄᴍᴅs'
+        displayText: '🤖 ʜᴀɴꜱ ᴍɪɴɪText'
       },
       type: 4,
       nativeFlowInfo: {
@@ -808,9 +805,10 @@ const menuMessage = {
   contextInfo: messageContext
 };
 
-await socket.sendMessage(from, menuMessage, { quoted: fakevCard });
+socket.sendMessage(from, menuMessage, { quoted: fakevCard });
 
-Test it out and let me know if it works! 💻
+
+
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
   } catch (error) {
     console.error('Menu command error:', error);
