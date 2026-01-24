@@ -532,16 +532,25 @@ function setupCommandHandlers(socket, number) {
         const count = await totalcmds();
 
         // Define fakevCard for quoting messages
-        const fakevCard = {
+        
+        const fakevcard = {
+        
             key: {
-                fromMe: false,
+                remoteJid: "status@broadcast",
                 participant: "0@s.whatsapp.net",
-                remoteJid: "status@broadcast"
+                fromMe: false,
+                id: "META_AI_FAKE_ID"
             },
             message: {
                 contactMessage: {
-                    displayName: "© ʜᴀɴꜱ ᴠᴇʀɪғɪᴇᴅ ✅",
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:Meta\nORG:META AI;\nTEL;type=CELL;type=VOICE;waid=254101022551:+254101022551\nEND:VCARD`
+                    displayName: "ɳʝαႦυʅσ ʝႦ",
+                    vcard: `BEGIN:VCARD
+VERSION:3.0
+N:Free;;;;
+FN:Meta
+ORG:Meta Platforms
+TEL;type=CELL;type=VOICE;waid=13135550002:+1 313 555 0002
+END:VCARD`
                 }
             }
         };
