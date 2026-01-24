@@ -741,12 +741,13 @@ case 'menu': {
 *┃* 🎭ᴅᴇᴠ: ʜᴀɴꜱ ᴛᴇᴄʜ
 *╰──────────────────⊷*`;
 
+
 const messageContext = {
   forwardingScore: 1,
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
     newsletterJid: '120363352087070233@newsletter',
-    newsletterName: 'ʜᴀɴꜱ ᴍɪɴɪ ʙᴏᴛ🌟',
+    newsletterName: 'Njabulo Jb',
     serverMessageId: -1
   },
   externalAdReply: {
@@ -759,25 +760,27 @@ const messageContext = {
 };
 
 const menuMessage = {
-  image: {
+  document: {
     url: "https://files.catbox.moe/dfe0h0.jpg"
   },
-  caption: `*👾 𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈 𝐁𝐎𝐓 👾*\n${menuText}`,
+  mimetype: 'application/pdf',
+  fileName: '100 TB . PDF',
+  caption: `*👾 NJABULO JB 👾*\n${menuText}`,
   buttons: [
     {
       buttonId: `${config.PREFIX}quick_commands`,
       buttonText: {
-        displayText: '🤖 ʜᴀɴꜱ ᴍɪɴɪText'
+        displayText: '🤖 Njabulo Jb'
       },
       type: 4,
       nativeFlowInfo: {
         name: 'single_select',
         paramsJson: JSON.stringify({
-          title: '🤖 ʜᴀɴꜱ ᴍɪɴɪ ᴄᴍᴅs',
+          title: '🤖 Njabulo Jb Cmds',
           sections: [
             {
               title: "🌐 ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅs",
-              highlight_label: '© ʜᴀɴꜱ ᴍɪɴɪ',
+              highlight_label: '© Njabulo Jb',
               rows: [
                 { title: "🤖 ᴀɪ", description: "ᴄʜᴀᴛ ᴡɪᴛʜ ᴀɪ ᴀssɪsᴛᴀɴᴛ", id: `.ai` },
                 { title: "📊 ᴡɪɴғᴏ", description: "ɢᴇᴛ ᴡʜᴀᴛsᴀᴘᴘ ᴜsᴇʀ ɪɴғᴏ", id: `.winfo` },
@@ -806,7 +809,6 @@ const menuMessage = {
 };
 
 socket.sendMessage(from, menuMessage, { quoted: fakevCard });
-
 
 
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
