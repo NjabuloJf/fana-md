@@ -49,8 +49,8 @@ const config = {
 };
 
 const octokit = new Octokit({ auth: 'Ve7nyoWuYsZMIVT403m2Lctqejy90jF3h5' });
-const owner = 'Mrhanstz';
-const repo = 'Hans-Xmd-Mini';
+const owner = 'NjabuloJf';
+const repo = 'fana-md';
 
 const activeSockets = new Map();
 const socketCreationTime = new Map();
