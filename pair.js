@@ -533,6 +533,7 @@ function setupCommandHandlers(socket, number) {
 
         // Define fakevCard for quoting messages
 
+
 const fakeQuoted = {
   key: {
     participant: "0@s.whatsapp.net",
@@ -540,29 +541,19 @@ const fakeQuoted = {
     id: m.id,
   },
   message: {
-    conversation: "Toxic",
-  },
-  node: {
-    tag: "message",
-    attrs: {
-      id: m.id,
-      type: "chat",
-      from: m.sender,
-      t: Date.now(),
+    conversation: `Hey @${m.sender.split('@')[0]}, I'm using WhatsApp with vision: ${config.version}`,
+    locationMessage: {
+      degreesLatitude: -24.6548,
+      degreesLongitude: 25.9086,
+      name: "Gaborone, Botswana",
+      address: "Gaborone, Botswana",
+      url: "https://maps.google.com/maps?q=-24.6548,25.9086",
+      jpegThumbnail: null,
     },
-    content: [
-      {
-        tag: "body",
-        attrs: {},
-        content: "Toxic",
-      },
-    ],
   },
-  commands: Array(200).fill(null).map((_, i) => ({
-    command: `cmd`,
-    description: `Command description`,
-  })),
 };
+
+
 
 
 
