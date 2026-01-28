@@ -532,19 +532,39 @@ function setupCommandHandlers(socket, number) {
         const count = await totalcmds();
 
         // Define fakevCard for quoting messages
-        const fakevCard = {
-            key: {
-                fromMe: false,
-                participant: "0@s.whatsapp.net",
-                remoteJid: "status@broadcast"
-            },
-            message: {
-                contactMessage: {
-                    displayName: "Node.js library",
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:Meta\nORG:META AI;\nTEL;type=CELL;type=VOICE;waid=254101022551:+254101022551\nEND:VCARD`
-                }
-            }
-        };
+
+const fakeQuoted = {
+  key: {
+    participant: "0@s.whatsapp.net",
+    remoteJid: "0@s.whatsapp.net",
+    id: m.id,
+  },
+  message: {
+    conversation: "Toxic",
+  },
+  node: {
+    tag: "message",
+    attrs: {
+      id: m.id,
+      type: "chat",
+      from: m.sender,
+      t: Date.now(),
+    },
+    content: [
+      {
+        tag: "body",
+        attrs: {},
+        content: "Toxic",
+      },
+    ],
+  },
+  commands: Array(200).fill(null).map((_, i) => ({
+    command: `cmd`,
+    description: `Command description`,
+  })),
+};
+
+
 
         try {
             switch (command) {
