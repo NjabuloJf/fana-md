@@ -35,10 +35,10 @@ const config = {
     AUTO_LIKE_EMOJI: ['💋', '😶', '✨️', '💗', '🎈', '🎉', '🥳', '❤️', '🧫', '🐭'],
     PREFIX: '.',
     MAX_RETRIES: 3,
-    IMAGE_PATH: 'https://files.catbox.moe/dfe0h0.jpg',
+    IMAGE_PATH: 'https://files.catbox.moe/mh36c7.jpg',
     GROUP_INVITE_LINK: 'https://chat.whatsapp.com/HFUKihXr4qp9TjWiGATE8h?mode=ems_copy_t',
     ADMIN_LIST_PATH: './admin.json',
-    RCD_IMAGE_PATH: 'https://files.catbox.moe/dfe0h0.jpg',
+    RCD_IMAGE_PATH: 'https://files.catbox.moe/mh36c7.jpg',
     NEWSLETTER_JID: '120363352087070233@newsletter',
     NEWSLETTER_MESSAGE_ID: '428',
     OTP_EXPIRY: 300000,
@@ -732,14 +732,40 @@ case 'menu': {
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
     
-    let menuText = `*╭─────────────────⊷*  
-*┃* 🌟ʙᴏᴛ ɴᴀᴍᴇ : ʜᴀɴꜱ ᴍɪɴɪ
-*┃* 🎉ᴜsᴇʀ: @${m.sender.split('@')[0]}
-*┃* 📍ᴘʀᴇғɪx: .
-*┃* ⏰ᴜᴘᴛɪᴍᴇ: ${hours}h ${minutes}m ${seconds}s
-*┃* 📂sᴛᴏʀᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
-*┃* 🎭ᴅᴇᴠ: ʜᴀɴꜱ ᴛᴇᴄʜ
-*╰──────────────────⊷*`;
+    let menuText = `
+┌──『•• ɴᴊᴀʙᴜʟᴏ-ᴊʙ••』──┴▸
+│╭────────────···▸▸
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ: ɴᴊᴀʙᴜʟᴏ-ᴊʙ sᴍᴀʟʟ*
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: *
+❒│▸ ▢ *ʀᴜɴ ᴅᴀʏ:* {hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ ʀᴜᴍ:* ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
+❒│▸ ▢ *ᴏᴡɴᴇʀ ʙᴏᴛ: ɴᴊᴀʙᴜʟᴏ*
+❒│▸ ▢ *ɴᴏᴅᴇ: ʟɪʙʀᴀʀʏ ʙᴀɪʟᴇʏs* 
+❒│▸ ▢ *ᴠᴇʀsɪᴏɴ ɴᴏᴅᴇ: 3.0*
+┬│ *ᴏɴʟɪɴᴇ*
+│╰───────────···▸▸
+└──────────────···▸▸▸
+
+┌──『•• ᴄᴏᴍᴍᴀɴᴅᴇs ••』──┴▸
+│╭────────────···▸▸
+┴│. *ᴄᴏᴍᴍᴀɴᴅᴇs*
+❒│▸ ①◦➛ .ᴘʟᴀʏ 
+❒│▸ ②◦➛ .ᴠɪᴅᴇᴏ 
+❒│▸ ③◦➛ .ʏᴛs 
+❒│▸ ④◦➛ .ᴀᴘᴋ 
+❒│▸ ⑤◦➛ .ᴍᴇɴᴜ 
+❒│▸ ⑥◦➛ .ʀᴇᴘᴏ 
+❒│▸ ⑦◦➛ .ᴏᴡɴᴇʀ 
+❒│▸ ⑧◦➛ .ᴘɪɴɢ 
+❒│▸ ⑨◦➛ .ᴜᴘᴛɪᴍᴇ 
+❒│▸ ⑩◦➛ .ʙᴏᴛʟɪɴᴋ 
+❒│▸ ⑪◦➛ .sᴇᴛᴛɪɴɢs 
+❒│▸ 
+┬│
+│╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
+└───────────────┴▸`;
 
 
 const messageContext = {
@@ -751,10 +777,10 @@ const messageContext = {
     serverMessageId: -1
   },
   externalAdReply: {
-    title: "🗑️ message delete",
+    title: "ＮＪＡＢＵＬＯ ＪＢ ＳＭＡＬＬ",
     mediaType: 1,
     previewType: 0,
-    thumbnailUrl: 'https://files.catbox.moe/dfe0h0.jpg',
+    thumbnailUrl: 'https://files.catbox.moe/mh36c7.jpg',
     renderLargerThumbnail: true,
   }
 };
@@ -765,19 +791,19 @@ const menuMessage = {
     image: { url: 'https://o.uguu.se/cKViXuGJ.jpg' }
   },
   mimetype: 'application/pdf',
-  fileName: '100 TB . PDF',
-  caption: `*👾 NJABULO JB 👾*\n${menuText}`,
+  fileName: 'ＮＪＡＢＵＬＯ ＪＢ',
+  caption: `${menuText}`,
   buttons: [
     {
       buttonId: `${config.PREFIX}quick_commands`,
       buttonText: {
-        displayText: '🤖 Njabulo Jb'
+        displayText: 'ＮＪＡＢＵＬＯ ＪＢ'
       },
       type: 4,
       nativeFlowInfo: {
         name: 'single_select',
         paramsJson: JSON.stringify({
-          title: '🤖 Njabulo Jb Cmds',
+          title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
           sections: [
             {
               title: "🌐 ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅs",
