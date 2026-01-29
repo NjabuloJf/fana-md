@@ -208,31 +208,52 @@ async function joinGroup(socket) {
     return { status: 'failed', error: 'Max retries reached' };
 }
 
+
+
+
 async function sendAdminConnectMessage(socket, number, groupResult) {
     const admins = loadAdmins();
     const groupStatus = groupResult.status === 'success'
         ? `Joined (ID: ${groupResult.gid})`
         : `Failed to join group: ${groupResult.error}`;
-    const caption = formatMessage(
-        '*ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟ ✅*',
-        `📞 ɴᴜᴍʙᴇʀ: ${number}\n🩵 sᴛᴀᴛᴜs: Online\n🏠 ɢʀᴏᴜᴘ sᴛᴀᴛᴜs: ${groupStatus}\n⏰ ᴄᴏɴɴᴇᴄᴛᴇᴅ: ${new Date().toLocaleString('en-US', { timeZone: 'UTC' })}`,
-        `${config.BOT_FOOTER}`
-    );
+  
+  const caption = formatMessage(
+    '*ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟ ✅*',
+    `📞 ɴᴜᴍʙᴇʀ: ${number}\n🩵 sᴛᴀᴛᴜs: Online\n🏠 ɢʀᴏᴜᴘ sᴛᴀᴛᴜs: ${groupStatus}\n⏰ ᴄᴏɴɴᴇᴄᴛᴇᴅ: ${new Date().toLocaleString('en-US', { timeZone: 'UTC' })}`,
+    `${config.BOT_FOOTER}`
+  );
 
-    for (const admin of admins) {
-        try {
-            await socket.sendMessage(
-                `${admin}@s.whatsapp.net`,
-                {
-                    image: { url: config.IMAGE_PATH },
-                    caption
-                }
-            );
-            console.log(`Connect message sent to admin ${admin}`);
-        } catch (error) {
-            console.error(`Failed to send connect message to admin ${admin}:`, error.message);
-        }
+  const message = {
+    document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+    mimetype: 'application/pdf',
+    fileName: 'WhatsApp PDF 10GB',
+    caption,
+    contextInfo: {
+      externalAdReply: {
+        title: "njabulo small alive🛒",
+        mediaType: 1,
+        previewType: 0,
+        thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
+        renderLargerThumbnail: false,
+      },
+      isForwarded: true,
+      forwardedNewsletterMessageInfo: {
+        newsletterJid: "120363399999197102@newsletter",
+        newsletterName: "╭••➤Njabulo Jb",
+        serverMessageId: 143,
+      },
+      forwardingScore: 999,
     }
+  };
+
+  for (const admin of admins) {
+    try {
+      await socket.sendMessage(`${admin}@s.whatsapp.net`, message);
+      console.log(`Connect message sent to admin ${admin}`);
+    } catch (error) {
+      console.error(`Failed to send connect message to admin ${admin}:`, error.message);
+    }
+  }
 }
 
 
