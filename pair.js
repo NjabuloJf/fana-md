@@ -1023,138 +1023,92 @@ ${config.PREFIX}ᴀʟʟᴍᴇɴᴜ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ᴄᴍᴅs
                     }
                     break;
                 }
+                    
 
                 // Case: ping
-                case 'ping': {
-                await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
-                    try {
-                        const startTime = new Date().getTime();
-                        let ping = await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
+case 'ping': {
+  await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
+  try {
+    const startTime = new Date().getTime();
+    let ping = await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
+    const progressSteps = [
+      { bar: '《 █▒▒▒▒▒▒▒▒▒▒▒》', percent: '10%', delay: 100 },
+      { bar: '《 ███▒▒▒▒▒▒▒▒▒》', percent: '25%', delay: 150 },
+      { bar: '《 █████▒▒▒▒▒▒▒》', percent: '40%', delay: 100 },
+      { bar: '《 ███████▒▒▒▒▒》', percent: '55%', delay: 120 },
+      { bar: '《 █████████▒▒▒》', percent: '70%', delay: 100 },
+      { bar: '《 ███████████▒》', percent: '85%', delay: 100 },
+      { bar: '《 ████████████》', percent: '100%', delay: 200 }
+    ];
+    for (let step of progressSteps) {
+      await new Promise(resolve => setTimeout(resolve, step.delay));
+      try {
+        await socket.sendMessage(sender, { text: `${step.bar} ${step.percent}`, edit: ping.key });
+      } catch (editError) {
+        console.warn('Failed to edit message:', editError);
+        ping = await socket.sendMessage(sender, { text: `${step.bar} ${step.percent}` }, { quoted: msg });
+      }
+    }
+    const endTime = new Date().getTime();
+    const latency = endTime - startTime;
+    let quality = '';
+    let emoji = '';
+    if (latency < 100) {
+      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
+      emoji = '🟢';
+    } else if (latency < 300) {
+      quality = 'ɢᴏᴏᴅ';
+      emoji = '🟡';
+    } else if (latency < 600) {
+      quality = 'ғᴀɪʀ';
+      emoji = '🟠';
+    } else {
+      quality = 'ᴘᴏᴏʀ';
+      emoji = '🔴';
+    }
+    const finalMessage = `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ ` +
+                        `┬│ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
+                        `┬│ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
+                        `❒│▸ ▢ ${emoji} *ϙᴜᴀʟɪᴛʏ:* ${quality}\n` +
+                        `❒│▸ ▢ *ᴛɪᴍᴇsᴛᴀᴍᴘ:* ${new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: true })}\n` +
+                        `┬│ ᴄᴏɴɴᴇᴄᴛɪᴏɴ sᴛᴀᴛᴜs \n` +
+                        `┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+    await socket.sendMessage(sender, {
+    document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+    mimetype: 'application/pdf',
+    fileName: 'WhatsApp PDF 10GB',
+      caption: finalMessage,
+      contextInfo: {
+        externalAdReply: {
+          title: "ɳʝαႦυʅσ ʝႦ",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: "https://files.catbox.moe/dfe0h0.jpg",
+          renderLargerThumbnail: false,
+        },
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363399999197102@newsletter",
+          newsletterName: "╭••➤Njabulo Jb",
+          serverMessageId: 143,
+        },
+        forwardingScore: 999,
+      }
+    }, { quoted: fakevCard });
+  } catch (error) {
+    console.error('Ping command error:', error);
+    const startTime = new Date().getTime();
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ᴘɪɴɢ...' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: `📌 *ᴘᴏɴɢ!*\n⚡ ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+  }
+  break;
+}
 
-                        const progressSteps = [
-                            { bar: '《 █▒▒▒▒▒▒▒▒▒▒▒》', percent: '10%', delay: 100 },
-                            { bar: '《 ███▒▒▒▒▒▒▒▒▒》', percent: '25%', delay: 150 },
-                            { bar: '《 █████▒▒▒▒▒▒▒》', percent: '40%', delay: 100 },
-                            { bar: '《 ███████▒▒▒▒▒》', percent: '55%', delay: 120 },
-                            { bar: '《 █████████▒▒▒》', percent: '70%', delay: 100 },
-                            { bar: '《 ███████████▒》', percent: '85%', delay: 100 },
-                            { bar: '《 ████████████》', percent: '100%', delay: 200 }
-                        ];
 
-                        for (let step of progressSteps) {
-                            await new Promise(resolve => setTimeout(resolve, step.delay));
-                            try {
-                                await socket.sendMessage(sender, { text: `${step.bar} ${step.percent}`, edit: ping.key });
-                            } catch (editError) {
-                                console.warn('Failed to edit message:', editError);
-                                ping = await socket.sendMessage(sender, { text: `${step.bar} ${step.percent}` }, { quoted: msg });
-                            }
-                        }
-
-                        const endTime = new Date().getTime();
-                        const latency = endTime - startTime;
-
-                        let quality = '';
-                        let emoji = '';
-                        if (latency < 100) {
-                            quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
-                            emoji = '🟢';
-                        } else if (latency < 300) {
-                            quality = 'ɢᴏᴏᴅ';
-                            emoji = '🟡';
-                        } else if (latency < 600) {
-                            quality = 'ғᴀɪʀ';
-                            emoji = '🟠';
-                        } else {
-                            quality = 'ᴘᴏᴏʀ';
-                            emoji = '🔴';
-                        }
-
-                        const finalMessage = {
-                            text: `🏓 *ᴘɪɴɢ!*\n\n` +
-                                `⚡ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
-                                `${emoji} *ϙᴜᴀʟɪᴛʏ:* ${quality}\n` +
-                                `🕒 *ᴛɪᴍᴇsᴛᴀᴍᴘ:* ${new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: true })}\n\n` +
-                                `*┏────〘 ʜᴀɴꜱ-xᴍᴅ 〙───⊷*\n` +
-                                `*┃*    ᴄᴏɴɴᴇᴄᴛɪᴏɴ sᴛᴀᴛᴜs  \n` +
-                                `*┗──────────────⊷*.`,
-                            buttons: [
-                                { buttonId: `${prefix}bot_info`, buttonText: { displayText: '🔮 ʙᴏᴛ ɪɴғᴏ 🔮' }, type: 1 },
-                                { buttonId: `${prefix}bot_stats`, buttonText: { displayText: '📊 ʙᴏᴛ sᴛᴀᴛs 📊' }, type: 1 }
-                            ],
-                            headerType: 1
-                        };
-
-                        await socket.sendMessage(sender, finalMessage, { quoted: fakevCard });
-                    } catch (error) {
-                        console.error('Ping command error:', error);
-                        const startTime = new Date().getTime();
-                        const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ᴘɪɴɢ...' }, { quoted: msg });
-                        const endTime = new Date().getTime();
-                        await socket.sendMessage(sender, { text: `📌 *ᴘᴏɴɢ!*\n⚡ ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
-                    }
-                    break;
-                }
-                     // Case: pair
-                case 'pair': {
-                await socket.sendMessage(sender, { react: { text: '📲', key: msg.key } });
-                    const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-                    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-                    const q = msg.message?.conversation ||
-                            msg.message?.extendedTextMessage?.text ||
-                            msg.message?.imageMessage?.caption ||
-                            msg.message?.videoMessage?.caption || '';
-
-                    const number = q.replace(/^[.\/!]pair\s*/i, '').trim();
-
-                    if (!number) {
-                        return await socket.sendMessage(sender, {
-                            text: '*📌 ᴜsᴀɢᴇ:* .pair +254xxxxx'
-                        }, { quoted: msg });
-                    }
-
-                    try {
-                        const url = `https://shadow-test-4f50f51dc6ab.herokuapp.com/code?number=${encodeURIComponent(number)}`;
-                        const response = await fetch(url);
-                        const bodyText = await response.text();
-
-                        console.log("🌐 API Response:", bodyText);
-
-                        let result;
-                        try {
-                            result = JSON.parse(bodyText);
-                        } catch (e) {
-                            console.error("❌ JSON Parse Error:", e);
-                            return await socket.sendMessage(sender, {
-                                text: '❌ Invalid response from server. Please contact support.'
-                            }, { quoted: msg });
-                        }
-
-                        if (!result || !result.code) {
-                            return await socket.sendMessage(sender, {
-                                text: '❌ Failed to retrieve pairing code. Please check the number.'
-                            }, { quoted: msg });
-                        }
-
-                        await socket.sendMessage(sender, {
-                            text: `> *ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪᴘᴀɪʀ ᴄᴏᴍᴘʟᴇᴛᴇᴅ* ✅\n\n*🔑 ʏᴏᴜʀ ᴘᴀɪʀɪɴɢ ᴄᴏᴅᴇ ɪs:* ${result.code}`
-                        }, { quoted: msg });
-
-                        await sleep(2000);
-
-                        await socket.sendMessage(sender, {
-                            text: `${result.code}`
-                        }, { quoted: fakevCard });
-
-                    } catch (err) {
-                        console.error("❌ Pair Command Error:", err);
-                        await socket.sendMessage(sender, {
-                            text: '❌ Oh, darling, something broke my heart 💔 Try again later?'
-                        }, { quoted: fakevCard });
-                    }
-                    break;
-                }
             // Case: viewonce
 case 'viewonce':
 case 'rvo':
