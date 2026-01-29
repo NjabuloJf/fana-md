@@ -797,10 +797,7 @@ const messageContext = {
 };
 
 const menuMessage = {
-  document: {
-    url: "https://files.catbox.moe/dfe0h0.jpg",
-    image: { url: 'https://o.uguu.se/cKViXuGJ.jpg' }
-  },
+  document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
   mimetype: 'application/pdf',
   fileName: 'WhatsApp PDF 10GB',
   caption: `${menuText}`,
@@ -1352,13 +1349,24 @@ case 'song': {
     console.log('API URL:', apiURL);
 
     await socket.sendMessage(sender, {
-      image: { url: video.thumbnail },
-      caption: `🎧title: *${video.title}*
-      🎼views: *${video.views.toLocaleString()}* 
-      🎻 uploaded: *${video.ago}*
-       *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
-       0:00 ──〇─────── : *${video.timestamp}*`,
-            contextInfo: {
+    document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+    mimetype: 'application/pdf',
+    fileName: 'WhatsApp PDF 10GB',
+      
+      caption: ` *┌──『•• ɴᴊᴀʙᴜʟᴏ-ᴊʙ••』─┴⊷*
+│╭────────────···▸▸
+┴│
+❒│▸ ▢ ᴛɪᴛʟᴇ: ${video.title}
+❒│▸ ▢ *ᴠɪᴇᴡ: ${video.views.toLocaleString()}* 
+❒│▸ ▢ *ᴜᴘʟᴏᴀᴅᴇᴅ:* ${video.ago}
+❒│▸ ▢ *ʜᴅ: ʜᴀʀᴅ*
+❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: {video.timestamp}*
+❒│▸ ▢ *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
+❒│▸ ▢ *0:00 ──〇───── : {video.timestamp}*
+┬│ 
+│╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
+*└──────────────⊷*`,
+        contextInfo: {
         externalAdReply: {
           title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
           mediaType: 1,
@@ -1377,7 +1385,7 @@ case 'song': {
     }
 
     await socket.sendMessage(sender, {
-      document: { url: data.downloadLink },
+      audio: { url: data.downloadLink },
       mimetype: 'audio/mpeg',
       fileName,
       contextInfo: {
@@ -1399,7 +1407,7 @@ case 'song': {
 }
 //===============================   
 // Case: song
-case 'play':
+case 'video':
 case 'playvid': {
    // Import dependencies
     const yts = require('yt-search');
@@ -1429,12 +1437,22 @@ case 'playvid': {
     console.log('API URL:', apiURL);
 
     await socket.sendMessage(sender, {
-      image: { url: video.thumbnail },
-      caption: `🎥title: *${video.title}*
-       🎼views: *${video.views.toLocaleString()}* 
-       🎻 uploaded: *${video.ago}*
-        *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
-        0:00 ──〇─────── : *${video.timestamp}*`,
+     document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+     mimetype: 'application/pdf',
+     fileName: 'WhatsApp PDF 10GB',      
+      caption: `*┌──『•• ɴᴊᴀʙᴜʟᴏ-ᴊʙ••』─┴⊷*
+│╭────────────···▸▸
+┴│
+❒│▸ ▢ ᴛɪᴛʟᴇ: ${video.title}
+❒│▸ ▢ *ᴠɪᴇᴡ: ${video.views.toLocaleString()}* 
+❒│▸ ▢ *ᴜᴘʟᴏᴀᴅᴇᴅ:* ${video.ago}
+❒│▸ ▢ *ʜᴅ: ʜᴀʀᴅ*
+❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: {video.timestamp}*
+❒│▸ ▢ *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
+❒│▸ ▢ *0:00 ──〇───── : {video.timestamp}*
+┬│ 
+│╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
+*└──────────────⊷*`,
         contextInfo: {
         externalAdReply: {
           title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
@@ -1456,16 +1474,7 @@ case 'playvid': {
     await socket.sendMessage(sender, {
       video: { url: data.downloadLink },
       mimetype: 'video/mp4',
-      fileName,
-      contextInfo: {
-        externalAdReply: {
-          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
-          mediaType: 1,
-          previewType: 0,
-          thumbnailUrl: video.thumbnail,
-          renderLargerThumbnail: true,
-        },
-      },
+      fileName,      
     }, { quoted: fakevCard });
 
   } catch (err) {
