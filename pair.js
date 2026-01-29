@@ -536,23 +536,20 @@ function setupCommandHandlers(socket, number) {
 
 const fakeQuoted = {
   key: {
+    fromMe: false,
     participant: "0@s.whatsapp.net",
-    remoteJid: "0@s.whatsapp.net",
-    id: m.id,
+    remoteJid: "status@broadcast",
   },
   message: {
-    conversation: `Hey @${m.sender.split('@')[0]}, I'm using WhatsApp with vision: ${config.version}`,
-    locationMessage: {
-      degreesLatitude: -24.6548,
-      degreesLongitude: 25.9086,
-      name: "Gaborone, Botswana",
-      address: "Gaborone, Botswana",
-      url: "https://maps.google.com/maps?q=-24.6548,25.9086",
-      jpegThumbnail: null,
+    contactMessage: {
+      displayName: "Njabulo Jb",
+      displayVersion: 'v2.1.3',
+      displayMessage: 'Hello, this is a message!',
+      displayCopy: 'Copy this text!',
+      displayCart: '🛒 Cart is full!',
     },
   },
 };
-
 
 
 
