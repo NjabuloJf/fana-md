@@ -1327,6 +1327,7 @@ case 'play':
 case 'song': {
     // Import dependencies
     const yts = require('yt-search');
+    const axios = require('axios');
     const ddownr = require('denethdev-ytmp3');
     const fs = require('fs').promises;
     const path = require('path');
@@ -1335,174 +1336,62 @@ case 'song': {
     const execPromise = util.promisify(exec);
     const { existsSync, mkdirSync } = require('fs');
 
-    // Constants
-    const TEMP_DIR = './temp';
-    const MAX_FILE_SIZE_MB = 4;
-    const TARGET_SIZE_MB = 3.8;
+  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || '';
+  if (!q || q.trim() === '') {
+    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard });
+  }
 
-    // Ensure temp directory exists
-    if (!existsSync(TEMP_DIR)) {
-        mkdirSync(TEMP_DIR, { recursive: true });
-    }
+  try {
+    const search = await yts(q.trim());
+    const video = search.videos[0];
+    console.log('Video found:', video);
 
-    // Utility functions
-    function extractYouTubeId(url) {
-        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
-    }
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, '');
+    const fileName = `${safeTitle}.mp3`;
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`;
+    console.log('API URL:', apiURL);
 
-    function convertYouTubeLink(input) {
-        const videoId = extractYouTubeId(input);
-        return videoId ? `https://www.youtube.com/watch?v=${videoId}` : input;
-    }
-
-    function formatDuration(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = Math.floor(seconds % 60);
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-
-    async function compressAudio(inputPath, outputPath, targetSizeMB = TARGET_SIZE_MB) {
-        try {
-            const { stdout: durationOutput } = await execPromise(
-                `ffprobe -i "${inputPath}" -show_entries format=duration -v quiet -of csv="p=0"`
-            );
-            const duration = parseFloat(durationOutput) || 180;
-            const targetBitrate = Math.floor((targetSizeMB * 8192) / duration);
-            const constrainedBitrate = Math.min(Math.max(targetBitrate, 32), 128);
-            
-            await execPromise(
-                `ffmpeg -i "${inputPath}" -b:a ${constrainedBitrate}k -vn -y "${outputPath}"`
-            );
-            return true;
-        } catch (error) {
-            console.error('Audio compression failed:', error);
-            return false;
+    await socket.sendMessage(sender, {
+      image: { url: video.thumbnail },
+      caption: `🎧title: *${video.title}* 🎼views: *${video.views.toLocaleString()}* 🎻 uploaded: *${video.ago}* *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 0:00 ──〇─────── : *${video.timestamp}*`,
+      contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: '120363352087070233@newsletter',
+          newsletterName: '𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈',
+          serverMessageId: -1
         }
+      }
+    }, { quoted: fakevCard });
+
+    const response = await axios.get(apiURL,);
+    const data = response.data;
+
+    if (!data.downloadLink) {
+      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP3 download link.' }, { quoted: fakevCard });
     }
 
-    async function cleanupFiles(...filePaths) {
-        for (const filePath of filePaths) {
-            if (filePath) {
-                try {
-                    await fs.unlink(filePath);
-                } catch (err) {
-                    // Silent cleanup - no error reporting needed
-                }
-            }
-        }
-    }
+    await socket.sendMessage(sender, {
+      document: { url: data.downloadLink },
+      mimetype: 'audio/mpeg',
+      fileName,
+      contextInfo: {
+        externalAdReply: {
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: video.thumbnail,
+          renderLargerThumbnail: true,
+        },
+      },
+    }, { quoted: fakevCard });
 
-    // Extract query from message
-    const q = msg.message?.conversation || 
-              msg.message?.extendedTextMessage?.text || 
-              msg.message?.imageMessage?.caption || 
-              msg.message?.videoMessage?.caption || '';
-
-    if (!q || q.trim() === '') {
-        return await socket.sendMessage(sender, 
-            { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, 
-            { quoted: fakevCard }
-        );
-    }
-
-    const fixedQuery = convertYouTubeLink(q.trim());
-    let tempFilePath = '';
-    let compressedFilePath = '';
-
-    try {
-        // Search for the video
-        const search = await yts(fixedQuery);
-        const videoInfo = search.videos[0];
-        
-        if (!videoInfo) {
-            return await socket.sendMessage(sender, 
-                { text: '*`ɴᴏ sᴏɴɢs ғᴏᴜɴᴅ! Try ᴀɴᴏᴛʜᴇʀ`*' }, 
-                { quoted: fakevCard }
-            );
-        }
-
-        // Format duration
-        const formattedDuration = formatDuration(videoInfo.seconds);
-        
-        // Create description
-        const desc = `
-*🗿 𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈 𝐌𝐔𝐒𝐈𝐂 🗿
-╭───────────────┈  ⊷
-├📝 *ᴛɪᴛʟᴇ:* ${videoInfo.title}
-├👤 *ᴀʀᴛɪsᴛ:* ${videoInfo.author.name}
-├⏱️ *ᴅᴜʀᴀᴛɪᴏɴ:* ${formattedDuration}
-├📅 *ᴜᴘʟᴏᴀᴅᴇᴅ:* ${videoInfo.ago}
-├👁️ *ᴠɪᴇᴡs:* ${videoInfo.views.toLocaleString()}
-├🎵 *Format:* ʜɪɢʜ ǫᴜᴀʟɪᴛʏ ᴍᴘ3
-╰───────────────┈ ⊷
-> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ
-`;
-
-        // Send video info
-        await socket.sendMessage(sender, {
-            image: { url: videoInfo.thumbnail },
-            caption: desc,
-            contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363352087070233@newsletter',
-                    newsletterName: '𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈',
-                    serverMessageId: -1
-                }
-            }
-        }, { quoted: fakevCard });
-
-        // Download the audio
-        const result = await ddownr.download(videoInfo.url, 'mp3');
-        const downloadLink = result.downloadUrl;
-
-        // Clean title for filename
-        const cleanTitle = videoInfo.title.replace(/[^\w\s]/gi, '').substring(0, 30);
-        tempFilePath = path.join(TEMP_DIR, `${cleanTitle}_${Date.now()}_original.mp3`);
-        compressedFilePath = path.join(TEMP_DIR, `${cleanTitle}_${Date.now()}_compressed.mp3`);
-
-        // Download the file
-        const response = await fetch(downloadLink);
-        const arrayBuffer = await response.arrayBuffer();
-        await fs.writeFile(tempFilePath, Buffer.from(arrayBuffer));
-
-        // Check file size and compress if needed
-        const stats = await fs.stat(tempFilePath);
-        const fileSizeMB = stats.size / (1024 * 1024);
-        
-        if (fileSizeMB > MAX_FILE_SIZE_MB) {
-            const compressionSuccess = await compressAudio(tempFilePath, compressedFilePath);
-            if (compressionSuccess) {
-                await cleanupFiles(tempFilePath);
-                tempFilePath = compressedFilePath;
-                compressedFilePath = '';
-            }
-        }
-
-        // Send the audio file
-        const audioBuffer = await fs.readFile(tempFilePath);
-        await socket.sendMessage(sender, {
-            audio: audioBuffer,
-            mimetype: "audio/mpeg",
-            fileName: `${cleanTitle}.mp3`,
-            ptt: false
-        }, { quoted: fakevCard });
-
-        // Cleanup
-        await cleanupFiles(tempFilePath, compressedFilePath);
-        
-    } catch (err) {
-        console.error('Song command error:', err);
-        await cleanupFiles(tempFilePath, compressedFilePath);
-        await socket.sendMessage(sender, 
-            { text: "*❌ ᴛʜᴇ ᴍᴜsɪᴄ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, 
-            { quoted: fakevCard }
-        );
-    }
-    break;
+  } catch (err) {
+    console.error('Song command error:', err);
+    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴍᴜsɪᴄ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard });
+  }
+  break;
 }
 //===============================   
   case 'logo': { 
