@@ -753,16 +753,16 @@ case 'menu': {
 ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
 ❒│▸ ▢ *ʀᴜɴ ᴅᴀʏ:* ${hours}h ${minutes}m ${seconds}s
 ❒│▸ ▢ *sᴛᴏʀᴀɢᴇ ʀᴜᴍ:* ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
-❒│▸ ▢ *ᴏᴡɴᴇʀ ʙᴏᴛ: (ɴᴊᴀʙᴜʟᴏ)*
-❒│▸ ▢ *ɴᴏᴅᴇ: ʟɪʙʀᴀʀʏ {ʙᴀɪʟᴇʏs}* 
-❒│▸ ▢ *ᴠᴇʀsɪᴏɴ ɴᴏᴅᴇ: ^3.0¬*
-┬│              *ᴏɴʟɪɴᴇ*
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* ʙᴏᴛ (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ɴᴏᴅᴇ:*: ʟɪʙʀᴀʀʏ*+ {ʙᴀɪʟᴇʏs}
+❒│▸ ▢ *ᴠᴇʀsɪᴏɴ:* ɴᴏᴅᴇ ^3.0¬
+┬│   
 │╰───────────···▸▸
 *└──────────────···▸▸▸*
 
 *┌─『•• ᴄᴏᴍᴍᴀɴᴅᴇs ••』──┴•••▸*
 │╭────────────···▸▸
-┴│             *ᴄᴏᴍᴍᴀɴᴅᴇs*
+┴│       
 ❒│▸ ①◦➛ *.ᴘʟᴀʏ* 
 ❒│▸ ②◦➛ *.ᴠɪᴅᴇᴏ* 
 ❒│▸ ③◦➛ *.ʏᴛs*
@@ -1353,14 +1353,18 @@ case 'song': {
 
     await socket.sendMessage(sender, {
       image: { url: video.thumbnail },
-      caption: `🎧title: *${video.title}* 🎼views: *${video.views.toLocaleString()}* 🎻 uploaded: *${video.ago}* *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 0:00 ──〇─────── : *${video.timestamp}*`,
-      contextInfo: {
-        forwardingScore: 1,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363352087070233@newsletter',
-          newsletterName: '𝐇𝐀𝐍𝐒 𝐌𝐈𝐍𝐈',
-          serverMessageId: -1
+      caption: `🎧title: *${video.title}*
+      🎼views: *${video.views.toLocaleString()}* 
+      🎻 uploaded: *${video.ago}*
+       *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
+       0:00 ──〇─────── : *${video.timestamp}*`,
+            contextInfo: {
+        externalAdReply: {
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: video.thumbnail,
+          renderLargerThumbnail: true,
         }
       }
     }, { quoted: fakevCard });
@@ -1393,6 +1397,84 @@ case 'song': {
   }
   break;
 }
+//===============================   
+// Case: song
+case 'play':
+case 'playvid': {
+   // Import dependencies
+    const yts = require('yt-search');
+    const axios = require('axios');
+    const ddownr = require('denethdev-ytmp3');
+    const fs = require('fs').promises;
+    const path = require('path');
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+    const { existsSync, mkdirSync } = require('fs');
+  
+
+  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || '';
+  if (!q || q.trim() === '') {
+    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ ᴠɪᴅᴇᴏ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard });
+  }
+
+  try {
+    const search = await yts(q.trim());
+    const video = search.videos[0];
+    console.log('Video found:', video);
+
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, '');
+    const fileName = `${safeTitle}.mp4`;
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`;
+    console.log('API URL:', apiURL);
+
+    await socket.sendMessage(sender, {
+      image: { url: video.thumbnail },
+      caption: `🎥title: *${video.title}*
+       🎼views: *${video.views.toLocaleString()}* 
+       🎻 uploaded: *${video.ago}*
+        *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
+        0:00 ──〇─────── : *${video.timestamp}*`,
+        contextInfo: {
+        externalAdReply: {
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: video.thumbnail,
+          renderLargerThumbnail: true,
+        }
+      }
+    }, { quoted: fakevCard });
+
+    const response = await axios.get(apiURL);
+    const data = response.data;
+
+    if (!data.downloadLink) {
+      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP4 download link.' }, { quoted: fakevCard });
+    }
+
+    await socket.sendMessage(sender, {
+      video: { url: data.downloadLink },
+      mimetype: 'video/mp4',
+      fileName,
+      contextInfo: {
+        externalAdReply: {
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: video.thumbnail,
+          renderLargerThumbnail: true,
+        },
+      },
+    }, { quoted: fakevCard });
+
+  } catch (err) {
+    console.error('Video command error:', err);
+    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴠɪᴅᴇᴏ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard });
+  }
+  break;
+}
+
 //===============================   
   case 'logo': { 
                     const q = args.join(" ");
