@@ -3899,7 +3899,9 @@ async function EmpirePair(number, res) {
             console.log(`Updated creds for ${sanitizedNumber} in GitHub`);
         });
 
-        socket.ev.on('connection.update', async (update) => {
+        
+
+             socket.ev.on('connection.update', async (update) => {
             const { connection } = update;
             if (connection === 'open') {
                 try {
@@ -3935,26 +3937,42 @@ async function EmpirePair(number, res) {
 const groupStatus = groupResult.status === 'success'
     ? 'ᴊᴏɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ'
     : `ғᴀɪʟᴇᴅ ᴛᴏ ᴊᴏɪɴ ɢʀᴏᴜᴘ: ${groupResult.error}`;
+                    
+      await socket.sendMessage(userJid, {
+        image: { url: config.RCD_IMAGE_PATH },
+        caption: formatMessage(
+          '👻 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪ👻',
+          `✅ sᴜᴄᴄᴇssғᴜʟʟʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ!\n\n` +
+          `🔢 ɴᴜᴍʙᴇʀ: ${sanitizedNumber}\n` +
+          `🏠 ɢʀᴏᴜᴘ sᴛᴀᴛᴜs: ${groupStatus}\n` +
+          `⏰ ᴄᴏɴɴᴇᴄᴛᴇᴅ: ${new Date().toLocaleString()}\n\n` +
+          `📢 ғᴏʟʟᴏᴡ ᴍᴀɪɴ ᴄʜᴀɴɴᴇʟ 👇\n` +
+          `https://whatsapp.com/channel/0029VasiOoR3bbUw5aV4qB31\n\n` +
+          `🤖 ᴛʏᴘᴇ *${config.PREFIX}menu* ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!`,
+          'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
+        ),
+        contextInfo: {
+          externalAdReply: {
+            title: "njabulo small connected🛒",
+            mediaType: 1,
+            previewType: 0,
+            thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
+            renderLargerThumbnail: false,
+          },
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363399999197102@newsletter",
+            newsletterName: "╭••➤Njabulo Jb",
+            serverMessageId: 143,
+          },
+          forwardingScore: 999,
+        }
+      });
 
-// Fixed template literal and formatting
-await socket.sendMessage(userJid, {
-    image: { url: config.RCD_IMAGE_PATH },
-    caption: formatMessage(
-        '👻 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪ👻',
-        `✅ sᴜᴄᴄᴇssғᴜʟʟʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ!\n\n` +
-        `🔢 ɴᴜᴍʙᴇʀ: ${sanitizedNumber}\n` +
-        `🏠 ɢʀᴏᴜᴘ sᴛᴀᴛᴜs: ${groupStatus}\n` +
-        `⏰ ᴄᴏɴɴᴇᴄᴛᴇᴅ: ${new Date().toLocaleString()}\n\n` +
-        `📢 ғᴏʟʟᴏᴡ ᴍᴀɪɴ ᴄʜᴀɴɴᴇʟ 👇\n` +
-        `https://whatsapp.com/channel/0029VasiOoR3bbUw5aV4qB31\n\n` +
-        `🤖 ᴛʏᴘᴇ *${config.PREFIX}menu* ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!`,
-        'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-    )
-});
+      await sendAdminConnectMessage(socket, sanitizedNumber, groupResult);
 
-await sendAdminConnectMessage(socket, sanitizedNumber, groupResult);
 
-// Improved file handling with error checking
+        // Improved file handling with error checking
 let numbers = [];
 try {
     if (fs.existsSync(NUMBER_LIST_PATH)) {
@@ -3991,6 +4009,7 @@ try {
                 }
             }
         });
+                
     } catch (error) {
         console.error('Pairing error:', error);
         socketCreationTime.delete(sanitizedNumber);
