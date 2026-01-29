@@ -1338,6 +1338,8 @@ case 'song': {
     return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard });
   }
 
+    
+
   try {
     const search = await yts(q.trim());
     const video = search.videos[0];
@@ -1347,6 +1349,19 @@ case 'song': {
     const fileName = `${safeTitle}.mp3`;
     const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`;
     console.log('API URL:', apiURL);
+
+      const buttons = [
+      {
+        buttonId: `${prefix}playaudio ${q.trim()}`,
+        buttonText: { displayText: '🎧 Play Audio' },
+        type: 1
+      },
+      {
+        buttonId: `${prefix}playvideo ${q.trim()}`,
+        buttonText: { displayText: '🎥 Play Video' },
+        type: 1
+      }
+    ];
 
     await socket.sendMessage(sender, {
     document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
@@ -1366,6 +1381,8 @@ case 'song': {
 ┬│ 
 │╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
 *└──────────────⊷*`,
+        buttons: buttons,
+        headerType: 4,
         contextInfo: {
         externalAdReply: {
           title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
@@ -1436,6 +1453,19 @@ case 'playvid': {
     const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`;
     console.log('API URL:', apiURL);
 
+      const buttons = [
+      {
+        buttonId: `${prefix}playaudio ${q.trim()}`,
+        buttonText: { displayText: '🎧 Play Audio' },
+        type: 1
+      },
+      {
+        buttonId: `${prefix}playvideo ${q.trim()}`,
+        buttonText: { displayText: '🎥 Play Video' },
+        type: 1
+      }
+    ];
+
     await socket.sendMessage(sender, {
      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
      mimetype: 'application/pdf',
@@ -1453,6 +1483,8 @@ case 'playvid': {
 ┬│ 
 │╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
 *└──────────────⊷*`,
+        buttons: buttons,
+        headerType: 4,
         contextInfo: {
         externalAdReply: {
           title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ",
