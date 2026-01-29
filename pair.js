@@ -582,25 +582,24 @@ function setupCommandHandlers(socket, number) {
         try {
             switch (command) {
                 // Case: alive
-
+             
 case 'alive': {
   try {
     await socket.sendMessage(sender, { react: { text: '🔮', key: msg.key } });
-      const startTime = socketCreationTime.get(number) || Date.now();
+            const startTime = socketCreationTime.get(number) || Date.now();
                         const uptime = Math.floor((Date.now() - startTime) / 1000);
                         const hours = Math.floor(uptime / 3600);
                         const minutes = Math.floor((uptime % 3600) / 60);
                         const seconds = Math.floor(uptime % 60);
-    const captionText = ` 
-    *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+      
+    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
 │╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
-    ┬│
-    ┃* ᴀᴄᴛɪᴠᴇ ʙᴏᴛs: ${activeSockets.size} *
-    ┃* ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number} *
-    ┃* ᴠᴇʀsɪᴏɴ: ${config.version} *
-    ┃* ᴍᴇᴍᴏʀʏ ᴜsᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}ᴍʙ *
-    ┬│
-    ┬│
+┴│
+❒│▸ ▢ ᴀᴄᴛɪᴠᴇ ʙᴏᴛs: ${activeSockets.size} 
+❒│▸ ▢ ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number} 
+❒│▸ ▢ ᴠᴇʀsɪᴏɴ: ${config.version} 
+❒│▸ ▢ ᴍᴇᴍᴏʀʏ ᴜsᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}ᴍʙ 
+┬│
 │╰─ׂ┄─ׅ─ׂ┄╯
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
     const aliveMessage = {
@@ -616,10 +615,10 @@ case 'alive': {
           nativeFlowInfo: {
             name: 'single_select',
             paramsJson: JSON.stringify({
-              title: 'ᴄʟɪᴄᴋ ʜᴇʀᴇ ❏',
+              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
               sections: [
                 {
-                  title: `Njabulo Jb`,
+                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
                   highlight_label: 'Quick Actions',
                   rows: [
                     {
@@ -663,16 +662,6 @@ case 'alive': {
               ]
             })
           }
-        },
-        {
-          buttonId: `${config.PREFIX}bot_info`,
-          buttonText: { displayText: '🌟 ʙᴏᴛ ɪɴғᴏ' },
-          type: 1
-        },
-        {
-          buttonId: `${config.PREFIX}bot_stats`,
-          buttonText: { displayText: '📈 ʙᴏᴛ sᴛᴀᴛs' },
-          type: 1
         }
       ],
       headerType: 1,
@@ -683,7 +672,7 @@ case 'alive': {
           mediaType: 1,
           previewType: 0,
           thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
-          renderLargerThumbnail: false,
+          renderLargerThumbnail: true,
         },
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
@@ -699,14 +688,9 @@ case 'alive': {
     console.error('Alive command error:', error);
   }
   break;
-}
+          }
 
 
-
-
-
-                    
-                
 
 
                 // Case: menu
