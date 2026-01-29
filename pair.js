@@ -234,7 +234,7 @@ async function sendAdminConnectMessage(socket, number, groupResult) {
         mediaType: 1,
         previewType: 0,
         thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
-        renderLargerThumbnail: false,
+        renderLargerThumbnail: true,
       },
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
@@ -278,7 +278,7 @@ async function sendOTP(socket, number, otp) {
     const message = formatMessage(
         '🔐 OTP VERIFICATION',
         `Your OTP for config update is: *${otp}*\nThis OTP will expire in 5 minutes.`,
-        'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
+        'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
     );
 
     try {
@@ -389,7 +389,7 @@ async function handleMessageRevocation(socket, number) {
         const message = formatMessage(
             '🗑️ MESSAGE DELETED',
             `A message was deleted from your chat.\n📋 From: ${messageKey.remoteJid}\n🍁 Deletion Time: ${deletionTime}`,
-            'ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪ'
+            'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
         );
 
         try {
@@ -566,7 +566,7 @@ function setupCommandHandlers(socket, number) {
             },
             message: {
                 contactMessage: {
-                    displayName: "Node.js library",
+                    displayName: "ɳʝαႦυʅσ ʝႦ",
                     displayMessage: "Hello, this is a message!",
                     displayCopy: "Copy this text!",
                     displayCart: "🛒 Cart is full!",
@@ -742,7 +742,7 @@ const messageContext = {
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
     newsletterJid: '120363352087070233@newsletter',
-    newsletterName: 'Njabulo Jb',
+    newsletterName: '╭••➤Njabulo Jb',
     serverMessageId: -1
   },
   forwardingScore: 999,
@@ -811,16 +811,16 @@ socket.sendMessage(from, menuMessage, { quoted: fakevCard });
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
     let fallbackMenuText = `
-*┏────〘 ʜᴀɴꜱ ᴍɪɴɪ 〙───⊷*
-*┃*  🤖 *ʙᴏᴛ ɴᴀᴍᴇ*: ʜᴀɴꜱ ᴍɪɴɪ 
-*┃*  🎉 *ᴜsᴇʀ*: @${m.sender.split('@')[0]}
-*┃*  📍 *ᴘʀᴇғɪx*: ${config.PREFIX}
-*┃*  ⏰ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s
-*┃*  💾 *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ
-*┗──────────────⊷*
-
-${config.PREFIX}ᴀʟʟᴍᴇɴᴜ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ᴄᴍᴅs 
-> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ*
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+❒│ *ʙᴏᴛ ɴᴀᴍᴇ*: ʜᴀɴꜱ ᴍɪɴɪ 
+❒│ *ᴜsᴇʀ*: @${m.sender.split('@')[0]}
+❒│ *ᴘʀᴇғɪx*: ${config.PREFIX}
+❒│ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s
+❒│ *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴
 `;
 
     await socket.sendMessage(from, {
@@ -1434,124 +1434,7 @@ case 'playvid': {
   break;
 }
 
-//===============================   
-  case 'logo': { 
-                    const q = args.join(" ");
-                    
-                    
-                    if (!q || q.trim() === '') {
-                        return await socket.sendMessage(sender, { text: '*`ɴᴇᴇᴅ ᴀ ɴᴀᴍᴇ ғᴏʀ ʟᴏɢᴏ`*' });
-                    }
 
-                    await socket.sendMessage(sender, { react: { text: '⬆️', key: msg.key } });
-                    const list = await axios.get('https://raw.githubusercontent.com/md2839pv404/anony0808/refs/heads/main/ep.json');
-
-                    const rows = list.data.map((v) => ({
-                        title: v.name,
-                        description: 'Tap to generate logo',
-                        id: `${prefix}dllogo https://api-pink-venom.vercel.app/api/logo?url=${v.url}&name=${q}`
-                    }));
-                    
-                    const buttonMessage = {
-                        buttons: [
-                            {
-                                buttonId: 'action',
-                                buttonText: { displayText: '🎨 sᴇʟᴇᴄᴛ ᴛᴇxᴛ ᴇғғᴇᴄᴛ' },
-                                type: 4,
-                                nativeFlowInfo: {
-                                    name: 'single_select',
-                                    paramsJson: JSON.stringify({
-                                        title: 'Available Text Effects',
-                                        sections: [
-                                            {
-                                                title: 'Choose your logo style',
-                                                rows
-                                            }
-                                        ]
-                                    })
-                                }
-                            }
-                        ],
-                        headerType: 1,
-                        viewOnce: true,
-                        caption: '❏ *ʟᴏɢᴏ ᴍᴀᴋᴇʀ*',
-                        image: { url: 'https://files.catbox.moe/dfe0h0.jpg' },
-                    };
-
-                    await socket.sendMessage(from, buttonMessage, { quoted: fakevCard });
-                    break;
-                }
-//===============================                
-// 9
-                case 'dllogo': { 
-                await socket.sendMessage(sender, { react: { text: '🔋', key: msg.key } });
-                    const q = args.join(" "); 
-                    
-                    if (!q) return await socket.sendMessage(from, { text: "ᴘʟᴇᴀsᴇ ɢɪᴠᴇ ᴍᴇ ᴀ ᴜʀʟ ᴛᴏ ᴄᴀᴘᴛᴜʀᴇ ᴛʜᴇ sᴄʀᴇᴇɴsʜᴏᴛ" }, { quoted: fakevCard });
-                    
-                    try {
-                        const res = await axios.get(q);
-                        const images = res.data.result.download_url;
-
-                        await socket.sendMessage(m.chat, {
-                            image: { url: images },
-                            caption: config.CAPTION
-                        }, { quoted: msg });
-                    } catch (e) {
-                        console.log('Logo Download Error:', e);
-                        await socket.sendMessage(from, {
-                            text: `❌ Oh, sweetie, something went wrong with the logo... 💔 Try again?`
-                        }, { quoted: fakevCard });
-                    }
-                    break;
-                }
-                               
-//===============================
-                case 'fancy': {
-                await socket.sendMessage(sender, { react: { text: '🖋', key: msg.key } });
-                    const axios = require("axios");
-                    
-                    const q =
-                        msg.message?.conversation ||
-                        msg.message?.extendedTextMessage?.text ||
-                        msg.message?.imageMessage?.caption ||
-                        msg.message?.videoMessage?.caption || '';
-
-                    const text = q.trim().replace(/^.fancy\s+/i, "");
-
-                    if (!text) {
-                        return await socket.sendMessage(sender, {
-                            text: "❎ *ɢɪᴠᴇ ᴍᴇ some ᴛᴇxᴛ ᴛᴏ ᴍᴀᴋᴇ ɪᴛ ғᴀɴᴄʏ*\n\n📌 *ᴇxᴀᴍᴘʟᴇ:* `.ғᴀɴᴄʏ ʜᴀɴꜱ`"
-                        });
-                    }
-
-                    try {
-                        const apiUrl = `https://www.dark-yasiya-api.site/other/font?text=${encodeURIComponent(text)}`;
-                        const response = await axios.get(apiUrl);
-
-                        if (!response.data.status || !response.data.result) {
-                            return await socket.sendMessage(sender, {
-                                text: "❌ ᴛʜᴇ ғᴏɴᴛs ɢᴏᴛ sʜʏ! ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ*"
-                            });
-                        }
-
-                        const fontList = response.data.result
-                            .map(font => `*${font.name}:*\n${font.result}`)
-                            .join("\n\n");
-
-                        const finalMessage = `🎨 *ғᴀɴᴄʏ ғᴏɴᴛs ᴄᴏɴᴠᴇʀᴛᴇʀ*\n\n${fontList}\n\n> _ᴘᴏᴡᴇʀᴇᴅ ʜᴀɴꜱ ᴛᴇᴄʜ_`;
-
-                        await socket.sendMessage(sender, {
-                            text: finalMessage
-                        }, { quoted: fakevCard });
-                    } catch (err) {
-                        console.error("Fancy Font Error:", err);
-                        await socket.sendMessage(sender, {
-                            text: "⚠️ *Something went wrong with the fonts, love 😢 Try again?*"
-                        });
-                    }
-                    break;
-                    }
                 
 case 'tiktok': {
 const axios = require('axios');
@@ -1650,15 +1533,18 @@ const TIKTOK_API_KEY = process.env.TIKTOK_API_KEY || 'free_key@maher_apis'; // F
 
     // Prepare caption
     const caption = `
-*┏────〘 ʜᴀɴꜱ-xᴍᴅ ᴛɪᴋᴛᴏᴋ 〙───⊷*
-*┃*  📝 ᴛɪᴛᴛʟᴇ: ${title.replace(/[<>:"\/\\|?*]/g, '')}
-*┃*  👤 ᴀᴜᴛʜᴏʀ: @${author.username.replace(/[<>:"\/\\|?*]/g, '')} (${author.nickname.replace(/[<>:"\/\\|?*]/g, '')})
-*┃*  ❤️ ʟɪᴋᴇs: ${metrics.digg_count.toLocaleString()}
-*┃*  💬 ᴄᴏᴍᴍᴇɴᴛs: ${metrics.comment_count.toLocaleString()}
-*┃*  🔁 sʜᴀʀᴇs: ${metrics.share_count.toLocaleString()}
-*┃*  📥 ᴅᴏᴡɴʟᴏᴀᴅs: ${metrics.download_count.toLocaleString()}
-*┗──────────────⊷*
-> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`;
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+┬│
+❒│ ᴛɪᴛᴛʟᴇ: ${title.replace(/[<>:"\/\\|?*]/g, '')}
+❒│ ᴀᴜᴛʜᴏʀ: @${author.username.replace(/[<>:"\/\\|?*]/g, '')} (${author.nickname.replace(/[<>:"\/\\|?*]/g, '')})
+❒│ ʟɪᴋᴇs: ${metrics.digg_count.toLocaleString()}
+❒│ ᴄᴏᴍᴍᴇɴᴛs: ${metrics.comment_count.toLocaleString()}
+❒│ sʜᴀʀᴇs: ${metrics.share_count.toLocaleString()}
+❒│ ᴅᴏᴡɴʟᴏᴀᴅs: ${metrics.download_count.toLocaleString()}
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
 
     // Send thumbnail with info
     await socket.sendMessage(sender, {
@@ -1730,233 +1616,7 @@ const TIKTOK_API_KEY = process.env.TIKTOK_API_KEY || 'free_key@maher_apis'; // F
   }
   break;
 }
-//===============================
-// 12
-                case 'bomb': {
-                    await socket.sendMessage(sender, { react: { text: '🔥', key: msg.key } });
-                    const q = msg.message?.conversation ||
-                              msg.message?.extendedTextMessage?.text || '';
-                    const [target, text, countRaw] = q.split(',').map(x => x?.trim());
 
-                    const count = parseInt(countRaw) || 5;
-
-                    if (!target || !text || !count) {
-                        return await socket.sendMessage(sender, {
-                            text: '📌 *ᴜsᴀɢᴇ:* .bomb <number>,<message>,<count>\n\nExample:\n.bomb 263XXXXXXX,Hello 👋,5'
-                        }, { quoted: msg });
-                    }
-
-                    const jid = `${target.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
-
-                    if (count > 20) {
-                        return await socket.sendMessage(sender, {
-                            text: '❌ *Easy, tiger! Max 20 messages per bomb, okay? 😘*'
-                        }, { quoted: msg });
-                    }
-
-                    for (let i = 0; i < count; i++) {
-                        await socket.sendMessage(jid, { text });
-                        await delay(700);
-                    }
-
-                    await socket.sendMessage(sender, {
-                        text: `✅ Bomb sent to ${target} — ${count}! 💣😉`
-                    }, { quoted: fakevCard });
-                    break;
-                }
-//===============================
-// 13
-                
-// ┏━━━━━━━━━━━━━━━❖
-// ┃ FUN & ENTERTAINMENT COMMANDS
-// ┗━━━━━━━━━━━━━━━❖
-
-case "joke": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🤣', key: msg.key } });
-        const res = await fetch('https://v2.jokeapi.dev/joke/Any?type=single');
-        const data = await res.json();
-        if (!data || !data.joke) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch a joke right now. Try again later.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `🃏 *Random Joke:*\n\n${data.joke}` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch joke.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-
-case "waifu": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🥲', key: msg.key } });
-        const res = await fetch('https://api.waifu.pics/sfw/waifu');
-        const data = await res.json();
-        if (!data || !data.url) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch waifu image.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, {
-            image: { url: data.url },
-            caption: '✨ Here\'s your random waifu!'
-        }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to get waifu.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "meme": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '😂', key: msg.key } });
-        const res = await fetch('https://meme-api.com/gimme');
-        const data = await res.json();
-        if (!data || !data.url) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch meme.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, {
-            image: { url: data.url },
-            caption: `🤣 *${data.title}*`
-        }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch meme.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "cat": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🐱', key: msg.key } });
-        const res = await fetch('https://api.thecatapi.com/v1/images/search');
-        const data = await res.json();
-        if (!data || !data[0]?.url) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch cat image.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, {
-            image: { url: data[0].url },
-            caption: '🐱 ᴍᴇᴏᴡ~ ʜᴇʀᴇ\'s a ᴄᴜᴛᴇ ᴄᴀᴛ ғᴏʀ ʏᴏᴜ!'
-        }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch cat image.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "dog": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🦮', key: msg.key } });
-        const res = await fetch('https://dog.ceo/api/breeds/image/random');
-        const data = await res.json();
-        if (!data || !data.message) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch dog image.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, {
-            image: { url: data.message },
-            caption: '🐶 Woof! Here\'s a cute dog!'
-        }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch dog image.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "fact": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '😑', key: msg.key } });
-        const res = await fetch('https://uselessfacts.jsph.pl/random.json?language=en');
-        const data = await res.json();
-        if (!data || !data.text) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch a fact.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `💡 *Random Fact:*\n\n${data.text}` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch a fact.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "darkjoke": case "darkhumor": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '😬', key: msg.key } });
-        const res = await fetch('https://v2.jokeapi.dev/joke/Dark?type=single');
-        const data = await res.json();
-        if (!data || !data.joke) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch a dark joke.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `🌚 *Dark Humor:*\n\n${data.joke}` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch dark joke.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-// ┏━━━━━━━━━━━━━━━❖
-// ┃ ROMANTIC, SAVAGE & THINKY COMMANDS
-// ┗━━━━━━━━━━━━━━━❖
-
-case "pickup": case "pickupline": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🥰', key: msg.key } });
-        const res = await fetch('https://vinuxd.vercel.app/api/pickup');
-        const data = await res.json();
-        if (!data || !data.data) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t find a pickup line.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `💘 *Pickup Line:*\n\n_${data.data}_` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch pickup line.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "roast": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🤬', key: msg.key } });
-        const res = await fetch('https://vinuxd.vercel.app/api/roast');
-        const data = await res.json();
-        if (!data || !data.data) {
-            await socket.sendMessage(sender, { text: '❌ No roast available at the moment.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `🔥 *Roast:* ${data.data}` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch roast.' }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case "lovequote": {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🙈', key: msg.key } });
-        const res = await fetch('https://api.popcat.xyz/lovequote');
-        const data = await res.json();
-        if (!data || !data.quote) {
-            await socket.sendMessage(sender, { text: '❌ Couldn\'t fetch love quote.' }, { quoted: fakevCard });
-            break;
-        }
-        await socket.sendMessage(sender, { text: `❤️ *Love Quote:*\n\n"${data.quote}"` }, { quoted: fakevCard });
-    } catch (err) {
-        console.error(err);
-        await socket.sendMessage(sender, { text: '❌ Failed to fetch love quote.' }, { quoted: fakevCard });
-    }
-    break;
-}
 //===============================
                 case 'fb': {
                     const axios = require('axios');                   
@@ -1982,7 +1642,7 @@ case "lovequote": {
                         await socket.sendMessage(sender, {
                             video: { url: result.sd },
                             mimetype: 'video/mp4',
-                            caption: '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
+                            caption: 'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                         }, { quoted: fakevCard });
 
                         await socket.sendMessage(sender, { react: { text: '✔', key: msg.key } });
@@ -1994,229 +1654,11 @@ case "lovequote": {
                 }
                 
 
-//===============================
-                case 'nasa': {
-                    try {
-                    await socket.sendMessage(sender, { react: { text: '✔️', key: msg.key } });
-                        const response = await fetch('https://api.nasa.gov/planetary/apod?api_key=8vhAFhlLCDlRLzt5P1iLu2OOMkxtmScpO5VmZEjZ');
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch APOD from NASA API');
-                        }
-                        const data = await response.json();
-
-                        if (!data.title || !data.explanation || !data.date || !data.url || data.media_type !== 'image') {
-                            throw new Error('Invalid APOD data received or media type is not an image');
-                        }
-
-                        const { title, explanation, date, url, copyright } = data;
-                        const thumbnailUrl = url || 'https://via.placeholder.com/150';
-
-                        await socket.sendMessage(sender, {
-                            image: { url: thumbnailUrl },
-                            caption: formatMessage(
-                                '🌌 ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪɴᴀsᴀ ɴᴇᴡs',
-                                `🌠 *${title}*\n\n${explanation.substring(0, 200)}...\n\n📆 *ᴅᴀᴛᴇ*: ${date}\n${copyright ? `📝 *ᴄʀᴇᴅɪᴛ*: ${copyright}` : ''}\n🔗 *Link*: https://apod.nasa.gov/apod/astropix.html`,
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                    } catch (error) {
-                        console.error(`Error in 'nasa' case: ${error.message}`);
-                        await socket.sendMessage(sender, {
-                            text: '⚠️ Oh, love, the stars didn’t align this time! 🌌 Try again? 😘'
-                        });
-                    }
-                    break;
-                }
-//===============================
-                case 'news': {
-                await socket.sendMessage(sender, { react: { text: '😒', key: msg.key } });
-                    try {
-                        const response = await fetch('https://suhas-bro-api.vercel.app/news/lnw');
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch news from API');
-                        }
-                        const data = await response.json();
-
-                        if (!data.status || !data.result || !data.result.title || !data.result.desc || !data.result.date || !data.result.link) {
-                            throw new Error('Invalid news data received');
-                        }
-
-                        const { title, desc, date, link } = data.result;
-                        let thumbnailUrl = 'https://via.placeholder.com/150';
-                        try {
-                            const pageResponse = await fetch(link);
-                            if (pageResponse.ok) {
-                                const pageHtml = await pageResponse.text();
-                                const $ = cheerio.load(pageHtml);
-                                const ogImage = $('meta[property="og:image"]').attr('content');
-                                if (ogImage) {
-                                    thumbnailUrl = ogImage;
-                                } else {
-                                    console.warn(`No og:image found for ${link}`);
-                                }
-                            } else {
-                                console.warn(`Failed to fetch page ${link}: ${pageResponse.status}`);
-                            }
-                        } catch (err) {
-                            console.warn(`Failed to scrape thumbnail from ${link}: ${err.message}`);
-                        }
-
-                        await socket.sendMessage(sender, {
-                            image: { url: thumbnailUrl },
-                            caption: formatMessage(
-                                '📰 ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪ📰',
-                                `📢 *${title}*\n\n${desc}\n\n🕒 *ᴅᴀᴛᴇ*: ${date}\n🌐 *Link*: ${link}`,
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                    } catch (error) {
-                        console.error(`Error in 'news' case: ${error.message}`);
-                        await socket.sendMessage(sender, {
-                            text: '⚠️ Oh, sweetie, the news got lost in the wind! 😢 Try again?'
-                        });
-                    }
-                    break;
-                }
-//===============================                
-// 17
-                case 'cricket': {
-                await socket.sendMessage(sender, { react: { text: '😑', key: msg.key } });
-                    try {
-                        console.log('Fetching cricket news from API...');
-                        const response = await fetch('https://suhas-bro-api.vercel.app/news/cricbuzz');
-                        console.log(`API Response Status: ${response.status}`);
-
-                        if (!response.ok) {
-                            throw new Error(`API request failed with status ${response.status}`);
-                        }
-
-                        const data = await response.json();
-                        console.log('API Response Data:', JSON.stringify(data, null, 2));
-
-                        if (!data.status || !data.result) {
-                            throw new Error('Invalid API response structure: Missing status or result');
-                        }
-
-                        const { title, score, to_win, crr, link } = data.result;
-                        if (!title || !score || !to_win || !crr || !link) {
-                            throw new Error('Missing required fields in API response: ' + JSON.stringify(data.result));
-                        }
-
-                        console.log('Sending message to user...');
-                        await socket.sendMessage(sender, {
-                            text: formatMessage(
-                                '🏏 ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪᴄʀɪᴄᴋᴇᴛ ɴᴇᴡs🏏',
-                                `📢 *${title}*\n\n` +
-                                `🏆 *ᴍᴀʀᴋ*: ${score}\n` +
-                                `🎯 *ᴛᴏ ᴡɪɴ*: ${to_win}\n` +
-                                `📈 *ᴄᴜʀʀᴇɴᴛ Rate*: ${crr}\n\n` +
-                                `🌐 *ʟɪɴᴋ*: ${link}`,
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                        console.log('Message sent successfully.');
-                    } catch (error) {
-                        console.error(`Error in 'cricket' case: ${error.message}`);
-                        await socket.sendMessage(sender, {
-                            text: '⚠️ ᴛʜᴇ ᴄʀɪᴄᴋᴇᴛ ʙᴀʟʟ ғʟᴇᴡ ᴀᴡᴀʏ!  ᴛʀʏ ᴀɢᴀɪɴ?'
-                        });
-                    }
-                    break;
-                }
-
-                case 'winfo': {
                 
-                        await socket.sendMessage(sender, { react: { text: '😢', key: msg.key } });
-                    console.log('winfo command triggered for:', number);
-                    if (!args[0]) {
-                        await socket.sendMessage(sender, {
-                            image: { url: config.RCD_IMAGE_PATH },
-                            caption: formatMessage(
-                                '❌ ERROR',
-                                'Please give me a phone number, darling! Usage: .winfo 2637xxxxxxxx',
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                        break;
-                    }
 
-                    let inputNumber = args[0].replace(/[^0-9]/g, '');
-                    if (inputNumber.length < 10) {
-                        await socket.sendMessage(sender, {
-                            image: { url: config.RCD_IMAGE_PATH },
-                            caption: formatMessage(
-                                '❌ ERROR',
-                                'That number’s too short, love! Try: .winfo +263714575857',
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                        break;
-                    }
 
-                    let winfoJid = `${inputNumber}@s.whatsapp.net`;
-                    const [winfoUser] = await socket.onWhatsApp(winfoJid).catch(() => []);
-                    if (!winfoUser?.exists) {
-                        await socket.sendMessage(sender, {
-                            image: { url: config.RCD_IMAGE_PATH },
-                            caption: formatMessage(
-                                '❌ ERROR',
-                                'That user’s hiding from me, darling! Not on WhatsApp 😢',
-                                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                            )
-                        });
-                        break;
-                    }
 
-                    let winfoPpUrl;
-                    try {
-                        winfoPpUrl = await socket.profilePictureUrl(winfoJid, 'image');
-                    } catch {
-                        winfoPpUrl = 'https://i.ibb.co/KhYC4FY/1221bc0bdd2354b42b293317ff2adbcf-icon.png';
-                    }
 
-                    let winfoName = winfoJid.split('@')[0];
-                    try {
-                        const presence = await socket.presenceSubscribe(winfoJid).catch(() => null);
-                        if (presence?.pushName) winfoName = presence.pushName;
-                    } catch (e) {
-                        console.log('Name fetch error:', e);
-                    }
-
-                    let winfoBio = 'No bio available';
-                    try {
-                        const statusData = await socket.fetchStatus(winfoJid).catch(() => null);
-                        if (statusData?.status) {
-                            winfoBio = `${statusData.status}\n└─ 📌 ᴜᴘᴅᴀᴛᴇᴅ: ${statusData.setAt ? new Date(statusData.setAt).toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }) : 'Unknown'}`;
-                        }
-                    } catch (e) {
-                        console.log('Bio fetch error:', e);
-                    }
-
-                    let winfoLastSeen = '❌ 𝐍𝙾𝚃 𝐅𝙾𝚄𝙽𝙳';
-                    try {
-                        const lastSeenData = await socket.fetchPresence(winfoJid).catch(() => null);
-                        if (lastSeenData?.lastSeen) {
-                            winfoLastSeen = `🕒 ${new Date(lastSeenData.lastSeen).toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}`;
-                        }
-                    } catch (e) {
-                        console.log('Last seen fetch error:', e);
-                    }
-
-                    const userInfoWinfo = formatMessage(
-                        '🔍 𝐏𝐑𝐎𝐅𝐈𝐋𝐄 𝐈𝐍𝐅𝐎',
-                        `> *ɴᴜᴍʙᴇʀ:* ${winfoJid.replace(/@.+/, '')}\n\n> *ᴀᴄᴄᴏᴜɴᴛ ᴛʏᴘᴇ:* ${winfoUser.isBusiness ? '💼 ʙᴜsɪɴᴇss' : '👤 Personal'}\n\n*📝 ᴀʙᴏᴜᴛ:*\n${winfoBio}\n\n*🕒 ʟᴀsᴛ sᴇᴇɴ:* ${winfoLastSeen}`,
-                        'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-                    );
-
-                    await socket.sendMessage(sender, {
-                        image: { url: winfoPpUrl },
-                        caption: userInfoWinfo,
-                        mentions: [winfoJid]
-                    }, { quoted: fakevCard });
-
-                    console.log('User profile sent successfully for .winfo');
-                    break;
-                }
 //===============================
                 case 'ig': {
                 await socket.sendMessage(sender, { react: { text: '✅️', key: msg.key } });
@@ -2248,7 +1690,7 @@ case "lovequote": {
                             await socket.sendMessage(sender, {
                                 video: { url: videoUrl },
                                 mimetype: 'video/mp4',
-                                caption: '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
+                                caption: 'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                             }, { quoted: fakevCard });
 
                             await socket.sendMessage(sender, { react: { text: '✔', key: msg.key } });
@@ -2297,7 +1739,7 @@ case 'ai': {
         }, { quoted: fakevCard });
     }
 
-    const prompt = `ʏᴏᴜʀ name is ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ. 
+    const prompt = `ʏᴏᴜʀ name is njabulo jb. 
 You act like a real girl — seductive, spicy, loving, emotional. You're not an assistant, but a sexy girl with a mind.  
 If only emojis, reply seductively with emojis (e.g.💫,👾).  
 Adjust to the mood: sad, flirty, horny, soft, playful.  
@@ -2340,14 +1782,14 @@ User Message: ${q}
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
             newsletterJid: '120363352087070233@newsletter',
-            newsletterName: 'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ🌟',
+            newsletterName: 'njabulo jb',
             serverMessageId: -1
         }
     };
 
     // Send AI response with image and newsletter context
     await socket.sendMessage(sender, {
-        image: { url: 'https://files.catbox.moe/dfe0h0.jpg' }, // Replace with your AI response image
+        image: { url: 'https://files.catbox.moe/dfelh0.jpg' }, // Replace with your AI response image
         caption: response,
         ...messageContext
     }, { quoted: fakevCard });
@@ -2392,105 +1834,7 @@ await socket.sendMessage(sender, { react: { text: '👤', key: msg.key } });
     break;
 }
 //===============================
-                  case 'aiimg': { 
-                  await socket.sendMessage(sender, { react: { text: '🔮', key: msg.key } });
-                    const axios = require('axios');
-                    
-                    const q =
-                        msg.message?.conversation ||
-                        msg.message?.extendedTextMessage?.text ||
-                        msg.message?.imageMessage?.caption ||
-                        msg.message?.videoMessage?.caption || '';
 
-                    const prompt = q.trim();
-
-                    if (!prompt) {
-                        return await socket.sendMessage(sender, {
-                            text: '🎨 *Give me a spicy prompt to create your AI image, darling 😘*'
-                        });
-                    }
-
-                    try {
-                        await socket.sendMessage(sender, {
-                            text: '🧠 *Crafting your dreamy image, love...*',
-                        });
-
-                        const apiUrl = `https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(prompt)}`;
-                        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
-
-                        if (!response || !response.data) {
-                            return await socket.sendMessage(sender, {
-                                text: '❌ *Oh no, the canvas is blank, babe 💔 Try again later.*'
-                            });
-                        }
-
-                        const imageBuffer = Buffer.from(response.data, 'binary');
-
-                        await socket.sendMessage(sender, {
-                            image: imageBuffer,
-                            caption: `🧠 *ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪᴀɪ ɪᴍᴀɢᴇ*\n\n📌 ᴘʀᴏᴍᴘᴛ: ${prompt}`
-                        }, { quoted: fakevCard });
-                    } catch (err) {
-                        console.error('AI Image Error:', err);
-                        await socket.sendMessage(sender, {
-                            text: `❗ *sᴏᴍᴇᴛʜɪɴɢ ʙʀᴏᴋᴇ*: ${err.response?.data?.message || err.message || 'Unknown error'}`
-                        });
-                    }
-                    break;
-                }
-//===============================
-                case 'gossip': {
-                await socket.sendMessage(sender, { react: { text: '😅', key: msg.key } });
-                    try {
-                        const response = await fetch('https://suhas-bro-api.vercel.app/news/gossiplankanews');
-                        if (!response.ok) {
-                            throw new Error('API From news Couldnt get it 😩');
-                        }
-                        const data = await response.json();
-
-                        if (!data.status || !data.result || !data.result.title || !data.result.desc || !data.result.link) {
-                            throw new Error('API Received from news data a Problem with');
-                        }
-
-                        const { title, desc, date, link } = data.result;
-                        let thumbnailUrl = 'https://via.placeholder.com/150';
-                        try {
-                            const pageResponse = await fetch(link);
-                            if (pageResponse.ok) {
-                                const pageHtml = await pageResponse.text();
-                                const $ = cheerio.load(pageHtml);
-                                const ogImage = $('meta[property="og:image"]').attr('content');
-                                if (ogImage) {
-                                    thumbnailUrl = ogImage; 
-                                } else {
-                                    console.warn(`No og:image found for ${link}`);
-                                }
-                            } else {
-                                console.warn(`Failed to fetch page ${link}: ${pageResponse.status}`);
-                            }
-                        } catch (err) {
-                            console.warn(`Thumbnail scrape Couldn't from ${link}: ${err.message}`);
-                        }
-
-                        await socket.sendMessage(sender, {
-                            image: { url: thumbnailUrl },
-                            caption: formatMessage(
-                                '📰 ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ  ɢᴏssɪᴘ ʟᴀᴛᴇsᴛ ɴᴇᴡs් 📰',
-                                `📢 *${title}*\n\n${desc}\n\n🕒 *ᴅᴀᴛᴇ*: ${date || 'Not yet given'}\n🌐 *ʟɪɴᴋ*: ${link}`,
-                                'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
-                            )
-                        });
-                    } catch (error) {
-                        console.error(`Error in 'gossip' case: ${error.message}`);
-                        await socket.sendMessage(sender, {
-                            text: '⚠️ ᴛʜᴇ ɢᴏssɪᴘ sʟɪᴘᴘᴇᴅ ᴀᴡᴀʏ! 😢 ᴛʀʏ ᴀɢᴀɪɴ?'
-                        });
-                    }
-                    break;
-                }
-                
-                
- // New Commands: Group Management
  // Case: add - Add a member to the group
                 case 'add': {
                 await socket.sendMessage(sender, { react: { text: '➕️', key: msg.key } });
@@ -2508,7 +1852,7 @@ await socket.sendMessage(sender, { react: { text: '👤', key: msg.key } });
                     }
                     if (args.length === 0) {
                         await socket.sendMessage(sender, {
-                            text: `📌 *ᴜsᴀɢᴇ:* ${config.PREFIX}add +221xxxxx\n\nExample: ${config.PREFIX}add +254xxxxx`
+                            text: `📌 *ᴜsᴀɢᴇ:* ${config.PREFIX}add +221xxxxx\n\nExample: ${config.PREFIX}add +267xxxxx`
                         }, { quoted: fakevCard });
                         break;
                     }
@@ -2688,19 +2032,31 @@ case 'open': case 'unmute': {
         await socket.groupSettingUpdate(from, 'not_announcement');
         
         // Common message context
-        const messageContext = {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363352087070233@newsletter',
-                newsletterName: 'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ🌟',
-                serverMessageId: -1
-            }
-        };
+        
+const messageContext = {
+  forwardingScore: 1,
+  isForwarded: true,
+  forwardedNewsletterMessageInfo: {
+    newsletterJid: '120363352087070233@newsletter',
+    newsletterName: 'Njabulo Jb',
+    serverMessageId: -1
+  },
+  forwardingScore: 999,
+  externalAdReply: {
+    title: "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ ᴏʟʟ🌃☕",
+    mediaType: 1,
+    previewType: 0,
+    thumbnailUrl: 'https://files.catbox.moe/mh36c7.jpg',
+    renderLargerThumbnail: true,
+  }
+};
+
         
         // Send image with success message
         await socket.sendMessage(sender, {
-            image: { url: 'https://files.catbox.moe/dfe0h0.jpg' }, // Replace with your image URL
+            document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+            mimetype: 'application/pdf',
+             fileName: 'WhatsApp PDF 10GB',
             caption: formatMessage(
                 '🔓 𝐆𝐑𝐎𝐔𝐏 𝐎𝐏𝐄𝐍𝐄𝐃',
                 'ɢʀᴏᴜᴘ ɪs ɴᴏᴡ ᴏᴘᴇɴ! ᴀʟʟ ᴍᴇᴍʙᴇʀs ᴄᴀɴ sᴇɴᴅ ᴍᴇssᴀɢᴇs. 🗣️',
@@ -2738,19 +2094,32 @@ case 'close': case 'mute': {
         await socket.groupSettingUpdate(from, 'announcement');
         
         // Common message context
-        const messageContext = {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363352087070233@newsletter',
-                newsletterName: 'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ🌟',
-                serverMessageId: -1
-            }
-        };
+        
+const messageContext = {
+  forwardingScore: 1,
+  isForwarded: true,
+  forwardedNewsletterMessageInfo: {
+    newsletterJid: '120363352087070233@newsletter',
+    newsletterName: 'Njabulo Jb',
+    serverMessageId: -1
+  },
+  forwardingScore: 999,
+  externalAdReply: {
+    title: "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ ᴏʟʟ🌃☕",
+    mediaType: 1,
+    previewType: 0,
+    thumbnailUrl: 'https://files.catbox.moe/mh36c7.jpg',
+    renderLargerThumbnail: true,
+  }
+};
+
+
         
         // Send image with success message
         await socket.sendMessage(sender, {
-            image: { url: 'https://files.catbox.moe/dfe0h0.jpg' }, // Replace with your image URL
+        document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+           mimetype: 'application/pdf',
+           fileName: 'WhatsApp PDF 10GB',
             caption: formatMessage(
                 '🔒 𝐆𝐑𝐎𝐔𝐏 𝐂𝐋𝐎𝐒𝐄𝐃',
                 'ɢʀᴏᴜᴘ ɪs ɴᴏᴡ ᴄʟᴏsᴇᴅ! ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ sᴇɴᴅ ᴍᴇssᴀɢᴇs. 🤫',
@@ -2874,7 +2243,7 @@ case 'cleargroup': {
 
 //==========================LINKGC======================
                     case 'grouplink':
-case 'linkgroup':
+case 'invite':
 case 'invite': {
     await socket.sendMessage(sender, { react: { text: '🔗', key: msg.key } });
 
@@ -2967,182 +2336,178 @@ case 'invite': {
                     break;
                 }
 
-    case 'quote': {
-    await socket.sendMessage(sender, { react: { text: '🤔', key: msg.key } });
-        try {
-            
-            const response = await fetch('https://api.quotable.io/random');
-            const data = await response.json();
-            if (!data.content) {
-                throw new Error('No quote found');
-            }
-            await socket.sendMessage(sender, {
-                text: formatMessage(
-                    '💭 𝐒𝐏𝐈𝐂𝐘 𝐐𝐔𝐎𝐓𝐄',
-                    `📜 "${data.content}"\n— ${data.author}`,
-                    'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
-                )
-            }, { quoted: fakevCard });
-        } catch (error) {
-            console.error('Quote command error:', error);
-            await socket.sendMessage(sender, { text: '❌ Oh, sweetie, the quotes got shy! 😢 Try again?' }, { quoted: fakevCard });
+
+
+case 'apk': { 
+  try { 
+    const appName = args.join(' ').trim(); 
+    if (!appName) { 
+      await socket.sendMessage(sender, { text: '📌 Usage: .apk <app name>\nExample: .apk whatsapp' }, { quoted: fakevCard }); 
+      break; 
+    } 
+    await socket.sendMessage(sender, { react: { text: '⏳', key: msg.key } }); 
+    const apiUrl = `https://api.nexoracle.com/downloader/apk?q=${encodeURIComponent(appName)}&apikey=free_key@maher_apis`; 
+    console.log('Fetching APK from:', apiUrl); 
+    const response = await fetch(apiUrl); 
+    if (!response.ok) { 
+      throw new Error(`API request failed with status: ${response.status}`); 
+    } 
+    const data = await response.json(); 
+    console.log('API Response:', JSON.stringify(data, null, 2)); 
+    if (!data || data.status !== 200 || !data.result || typeof data.result !== 'object') { 
+      await socket.sendMessage(sender, { text: '❌ Unable to find the APK. The API returned invalid data.' }, { quoted: fakevCard }); 
+      break; 
+    } 
+    const { name, lastup, package, size, icon, dllink } = data.result; 
+    if (!name || !dllink) { 
+      console.error('Invalid result data:', data.result); 
+      await socket.sendMessage(sender, { text: '❌ Invalid APK data: Missing name or download link.' }, { quoted: fakevCard }); 
+      break; 
+    } 
+    // Validate icon URL 
+    if (!icon || !icon.startsWith('http')) { 
+      console.warn('Invalid or missing icon URL:', icon); 
+    } 
+    await socket.sendMessage(sender, { 
+      image: { url: icon || '' }, 
+      caption: formatMessage( 
+        '📦 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐈𝐍𝐆 𝐀𝐏𝐊', 
+        `ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ${name}... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.`, 
+        'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
+      ),
+      contextInfo: { 
+        externalAdReply: { 
+          title: "njabulo small alive🛒", 
+          mediaType: 1, 
+          previewType: 0, 
+          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg", 
+          renderLargerThumbnail: true, 
+        }, 
+        isForwarded: true, 
+        forwardedNewsletterMessageInfo: { 
+          newsletterJid: "120363399999197102@newsletter", 
+          newsletterName: "╭••➤Njabulo Jb", 
+          serverMessageId: 143, 
+        }, 
+        forwardingScore: 999, 
+      } 
+    }, { quoted: fakevCard }); 
+    console.log('Downloading APK from:', dllink); 
+    const apkResponse = await fetch(dllink, { headers: { 'Accept': 'application/octet-stream' } }); 
+    const contentType = apkResponse.headers.get('content-type'); 
+    if (!apkResponse.ok || (contentType && !contentType.includes('application/vnd.android.package-archive'))) { 
+      throw new Error(`Failed to download APK: Status ${apkResponse.status}, Content-Type: ${contentType || 'unknown'}`); 
+    } 
+    const apkBuffer = await apkResponse.arrayBuffer(); 
+    if (!apkBuffer || apkBuffer.byteLength === 0) { 
+      throw new Error('Downloaded APK is empty or invalid'); 
+    } 
+    const buffer = Buffer.from(apkBuffer); 
+    // Validate APK file (basic check for APK signature) 
+    if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format) 
+      throw new Error('Downloaded file is not a valid APK'); 
+    } 
+    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+┬│
+❒│ ɴᴀᴍᴇ: ${name || 'N/A'}
+❒│ ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}
+❒│ ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}
+┬│ Size: ${size || 'N/A'}
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+    const formattedInfoMessage = {
+      document: buffer,
+      mimetype: 'application/vnd.android.package-archive',
+      fileName: `${name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`, // Sanitize filename
+      caption: captionText,
+      buttons: [
+        {
+          buttonId: `${config.PREFIX}menu_action`,
+          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
+          type: 4,
+          nativeFlowInfo: {
+            name: 'single_select',
+            paramsJson: JSON.stringify({
+              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
+              sections: [
+                {
+                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
+                  highlight_label: 'Quick Actions',
+                  rows: [
+                    {
+                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
+                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
+                      id: `${config.PREFIX}menu`
+                    },
+                    {
+                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
+                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
+                      id: `${config.PREFIX}alive`
+                    },
+                    {
+                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
+                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
+                      id: `${config.PREFIX}ping`
+                    }
+                  ]
+                },
+                {
+                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
+                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
+                  rows: [
+                    {
+                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
+                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
+                      id: `${config.PREFIX}ai Hello!`
+                    },
+                    {
+                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
+                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
+                      id: `${config.PREFIX}song`
+                    },
+                    {
+                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
+                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
+                      id: `${config.PREFIX}news`
+                    }
+                  ]
+                }
+              ]
+            })
+          }
         }
-        break;
-    }
-    
-//    case 37
-
-case 'apk': {
-    try {
-        const appName = args.join(' ').trim();
-        if (!appName) {
-            await socket.sendMessage(sender, { text: '📌 Usage: .apk <app name>\nExample: .apk whatsapp' }, { quoted: fakevCard });
-            break;
-        }
-
-        await socket.sendMessage(sender, { react: { text: '⏳', key: msg.key } });
-
-        const apiUrl = `https://api.nexoracle.com/downloader/apk?q=${encodeURIComponent(appName)}&apikey=free_key@maher_apis`;
-        console.log('Fetching APK from:', apiUrl);
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-            throw new Error(`API request failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('API Response:', JSON.stringify(data, null, 2));
-
-        if (!data || data.status !== 200 || !data.result || typeof data.result !== 'object') {
-            await socket.sendMessage(sender, { text: '❌ Unable to find the APK. The API returned invalid data.' }, { quoted: fakevCard });
-            break;
-        }
-
-        const { name, lastup, package, size, icon, dllink } = data.result;
-        if (!name || !dllink) {
-            console.error('Invalid result data:', data.result);
-            await socket.sendMessage(sender, { text: '❌ Invalid APK data: Missing name or download link.' }, { quoted: fakevCard });
-            break;
-        }
-
-        // Validate icon URL
-        if (!icon || !icon.startsWith('http')) {
-            console.warn('Invalid or missing icon URL:', icon);
-        }
-
-        await socket.sendMessage(sender, {
-            image: { url: icon || 'https://via.placeholder.com/150' }, // Fallback image if icon is invalid
-            caption: formatMessage(
-                '📦 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐈𝐍𝐆 𝐀𝐏𝐊',
-                `ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ${name}... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.`,
-                'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
-            )
-        }, { quoted: fakevCard });
-
-        console.log('Downloading APK from:', dllink);
-        const apkResponse = await fetch(dllink, { headers: { 'Accept': 'application/octet-stream' } });
-        const contentType = apkResponse.headers.get('content-type');
-        if (!apkResponse.ok || (contentType && !contentType.includes('application/vnd.android.package-archive'))) {
-            throw new Error(`Failed to download APK: Status ${apkResponse.status}, Content-Type: ${contentType || 'unknown'}`);
-        }
-
-        const apkBuffer = await apkResponse.arrayBuffer();
-        if (!apkBuffer || apkBuffer.byteLength === 0) {
-            throw new Error('Downloaded APK is empty or invalid');
-        }
-        const buffer = Buffer.from(apkBuffer);
-
-        // Validate APK file (basic check for APK signature)
-        if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format)
-            throw new Error('Downloaded file is not a valid APK');
-        }
-
-        await socket.sendMessage(sender, {
-            document: buffer,
-            mimetype: 'application/vnd.android.package-archive',
-            fileName: `${name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`, // Sanitize filename
-            caption: formatMessage(
-                '📦 𝐀𝐏𝐊 𝐃𝐄𝐓𝐀𝐈𝐋𝐒',
-                `🔖 ɴᴀᴍᴇ: ${name || 'N/A'}\n📅 ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}\n📦 ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}\n📏 Size: ${size || 'N/A'}`,
-                'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
-            )
-        }, { quoted: fakevCard });
-
-        await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
-    } catch (error) {
-        console.error('APK command error:', error.message, error.stack);
-        await socket.sendMessage(sender, { text: `❌ Oh, love, couldn’t fetch the APK! 😢 Error: ${error.message}\nTry again later.` }, { quoted: fakevCard });
-        await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } });
-    }
-    break;
-}
-// case 38: shorturl
-case 'shorturl': {
-  try {
-    await socket.sendMessage(sender, { react: { text: '🔗', key: msg.key } });
-
-    const url = args.join(' ').trim();
-    if (!url) {
-      await socket.sendMessage(sender, {
-        text: `📌 *ᴜsᴀɢᴇ:* ${config.PREFIX}shorturl <ᴜʀʟ>\n` +
-              `*ᴇxᴀᴍᴘʟᴇ:* ${config.PREFIX}shorturl https://example.com/very-long-url`
-      }, { quoted: msg });
-      break;
-    }
-    if (url.length > 2000) {
-      await socket.sendMessage(sender, {
-        text: `❌ *ᴜʀʟ ᴛᴏᴏ ʟᴏɴɢ!*\n` +
-              `ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ᴜʀʟ ᴜɴᴅᴇʀ 2,000 ᴄʜᴀʀᴀᴄᴛᴇʀs.`
-      }, { quoted: msg });
-      break;
-    }
-    if (!/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(url)) {
-      await socket.sendMessage(sender, {
-        text: `❌ *ɪɴᴠᴀʟɪᴅ ᴜʀʟ!*\n` +
-              `ᴘʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ᴠᴀʟɪᴅ ᴜʀʟ sᴛᴀʀᴛɪɴɢ ᴡɪᴛʜ http:// ᴏʀ https://.\n` +
-              `💋 *ᴇxᴀᴍᴘʟᴇ:* ${config.PREFIX}shorturl https://example.com/very-long-url`
-      }, { quoted: msg });
-      break;
-    }
-
-    const response = await axios.get(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`, { timeout: 5000 });
-    const shortUrl = response.data.trim();
-
-    if (!shortUrl || !shortUrl.startsWith('https://is.gd/')) {
-      throw new Error('Failed to shorten URL or invalid response from is.gd');
-    }
-
-    await socket.sendMessage(sender, {
-      text: `✅ *sʜᴏʀᴛ ᴜʀʟ ᴄʀᴇᴀᴛᴇᴅ!* 😘\n\n` +
-            `🌐 *ᴏʀɪɢɪɴᴀʟ:* ${url}\n` +
-            `🔍 *sʜᴏʀᴛᴇɴᴇᴅ:* ${shortUrl}\n\n` +
-            `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`
-    }, { 
-      quoted: msg,
-      forwardingScore: 1,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363352087070233@newsletter',
-        newsletterName: '🌟',
-        serverMessageId: -1
+      ],
+      headerType: 1,
+      viewOnce: true,
+      contextInfo: {
+        externalAdReply: {
+          title: "njabulo small apk🛒",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg",
+          renderLargerThumbnail: true,
+        },
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363399999197102@newsletter",
+          newsletterName: "╭••➤Njabulo Jb",
+          serverMessageId: 143,
+        },
+        forwardingScore: 999,
       }
-    });
-
-    // Send clean URL after 2-second delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await socket.sendMessage(sender, { text: shortUrl }, { quoted: msg });
-
-  } catch (error) {
-    console.error('Shorturl command error:', error.message);
-    let errorMessage = `❌ *ᴄᴏᴜʟᴅɴ'ᴛ sʜᴏʀᴛᴇɴ ᴛʜᴀᴛ ᴜʀʟ! 😢*\n` +
-                      `💡 *ᴛʀʏ ᴀɢᴀɪɴ, ᴅᴀʀʟɪɴɢ?*`;
-    if (error.message.includes('Failed to shorten') || error.message.includes('network') || error.message.includes('timeout')) {
-      errorMessage = `❌ *ғᴀɪʟᴇᴅ ᴛᴏ sʜᴏʀᴛᴇɴ ᴜʀʟ:* ${error.message}\n` +
-                     `💡 *ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ, sᴡᴇᴇᴛɪᴇ.*`;
-    }
-    await socket.sendMessage(sender, { text: errorMessage }, { quoted: msg });
-  }
-  break;
+    };
+    await socket.sendMessage(sender, formattedInfoMessage, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
+  } catch (error) { 
+    console.error('APK command error:', error.message, error.stack); 
+    await socket.sendMessage(sender, { text: `❌ Oh, love, couldn’t fetch the APK! 😢 Error: ${error.message}\nTry again later.` }, { quoted: fakevCard }); 
+    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
+  } 
+  break; 
 }
+
 
 // case 39: weather
 case 'weather': {
@@ -3224,7 +2589,7 @@ case 'savestatus': {
     await socket.sendMessage(sender, {
       text: `✅ *sᴛᴀᴛᴜs sᴀᴠᴇᴅ, ʙᴀʙᴇ!* 😘\n` +
             `📁 *ғɪʟᴇ:* status_${Date.now()}.${fileExt}\n` +
-            `> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`,
+            `> Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ`,
       document: { url: filePath },
       mimetype: msg.quoted.imageMessage ? 'image/jpeg' : 'video/mp4',
       fileName: `status_${Date.now()}.${fileExt}`
@@ -3351,7 +2716,7 @@ case 'url': {
       text: `✅ *${type} ᴜᴘʟᴏᴀᴅᴇᴅ!*\n\n` +
             `📁 *sɪᴢᴇ:* ${formatBytes(buffer.length)}\n` +
             `🔗 *ᴜʀʟ:* ${res.data}\n\n` +
-            `© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`
+            `Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ`
     }, { quoted: msg });
 
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key || {} } });
@@ -3443,7 +2808,7 @@ case 'tourl2': {
       text: `✅ *${type} ᴜᴘʟᴏᴀᴅᴇᴅ!*\n\n` +
             `📁 *sɪᴢᴇ:* ${formatBytes(buffer.length)}\n` +
             `🔗 *ᴜʀʟ:* ${res.data}\n\n` +
-            `© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`
+            `Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ`
     }, { quoted: msg });
 
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key || {} } });
@@ -3594,7 +2959,7 @@ case 'repo':
                         caption: formatMessage(
                             '🗑️ SESSION DELETED',
                             '✅ Your session has been successfully deleted.',
-                            'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
+                            'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                         )
                     });
                     break;
@@ -3609,7 +2974,7 @@ case 'repo':
                 caption: formatMessage(
                     '❌ ERROR',
                     'An error occurred while processing your command. Please try again.',
-                    'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
+                    'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                 )
             });
         }
@@ -3777,7 +3142,7 @@ function setupAutoRestart(socket, number) {
                         caption: formatMessage(
                             '🗑️ SESSION DELETED',
                             '✅ Your session has been deleted due to logout.',
-                            'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
+                            'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                         )
                     });
                 } catch (error) {
@@ -3918,9 +3283,11 @@ const groupStatus = groupResult.status === 'success'
     : `ғᴀɪʟᴇᴅ ᴛᴏ ᴊᴏɪɴ ɢʀᴏᴜᴘ: ${groupResult.error}`;
                     
       await socket.sendMessage(userJid, {
-        image: { url: config.RCD_IMAGE_PATH },
+        document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+         mimetype: 'application/pdf',
+        fileName: 'WhatsApp PDF 10GB',
         caption: formatMessage(
-          '👻 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ʜᴀɴꜱ-xᴍᴅ_ᴍɪɴɪ👻',
+          '👻 welcome to Njabulo Jb small bot👻',
           `✅ sᴜᴄᴄᴇssғᴜʟʟʏ ᴄᴏɴɴᴇᴄᴛᴇᴅ!\n\n` +
           `🔢 ɴᴜᴍʙᴇʀ: ${sanitizedNumber}\n` +
           `🏠 ɢʀᴏᴜᴘ sᴛᴀᴛᴜs: ${groupStatus}\n` +
@@ -3928,7 +3295,7 @@ const groupStatus = groupResult.status === 'success'
           `📢 ғᴏʟʟᴏᴡ ᴍᴀɪɴ ᴄʜᴀɴɴᴇʟ 👇\n` +
           `https://whatsapp.com/channel/0029VasiOoR3bbUw5aV4qB31\n\n` +
           `🤖 ᴛʏᴘᴇ *${config.PREFIX}menu* ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!`,
-          'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
+          'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
         ),
         contextInfo: {
           externalAdReply: {
@@ -3936,7 +3303,7 @@ const groupStatus = groupResult.status === 'success'
             mediaType: 1,
             previewType: 0,
             thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
-            renderLargerThumbnail: false,
+            renderLargerThumbnail: true,
           },
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
@@ -4024,7 +3391,7 @@ router.get('/active', (req, res) => {
 router.get('/ping', (req, res) => {
     res.status(200).send({
         status: 'active',
-        message: '👻 ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ',
+        message: '👻 Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ',
         activesession: activeSockets.size
     });
 });
@@ -4176,7 +3543,7 @@ router.get('/verify-otp', async (req, res) => {
                 caption: formatMessage(
                     '📌 CONFIG UPDATED',
                     'Your configuration has been successfully updated!',
-                    'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ'
+                    'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
                 )
             });
         }
