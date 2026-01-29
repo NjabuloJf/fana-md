@@ -561,92 +561,131 @@ function setupCommandHandlers(socket, number) {
         try {
             switch (command) {
                 // Case: alive
-                case 'alive': {
-                    try {
-                        await socket.sendMessage(sender, { react: { text: '🔮', key: msg.key } });
-                        const startTime = socketCreationTime.get(number) || Date.now();
+
+case 'alive': {
+  try {
+    await socket.sendMessage(sender, { react: { text: '🔮', key: msg.key } });
+      const startTime = socketCreationTime.get(number) || Date.now();
                         const uptime = Math.floor((Date.now() - startTime) / 1000);
                         const hours = Math.floor(uptime / 3600);
                         const minutes = Math.floor((uptime % 3600) / 60);
                         const seconds = Math.floor(uptime % 60);
-
-                        const captionText = `
-*╭───〘 ʜᴀɴꜱ ᴀʟɪᴠᴇ 〙───⊷*
-*┃* ʙᴏᴛ ᴜᴘᴛɪᴍᴇ: ${hours}ʜ ${minutes}ᴍ ${seconds}s
-*┃* ᴀᴄᴛɪᴠᴇ ʙᴏᴛs: ${activeSockets.size}
-*┃* ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number}
-*┃* ᴠᴇʀsɪᴏɴ: ${config.version}
-*┃* ᴍᴇᴍᴏʀʏ ᴜsᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}ᴍʙ
-*╰───────────────┈⊷*
-
-> *▫️sʜᴀᴅᴏᴇ ᴍɪɴɪ ᴍᴀɪɴ*
-> ʀᴇsᴘᴏɴᴅ ᴛɪᴍᴇ: ${Date.now() - msg.messageTimestamp * 1000}ms`;
-
-                        const aliveMessage = {
-                            image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
-                            caption: `> ᴀᴍ ᴀʟɪᴠᴇ ɴn ᴋɪᴄᴋɪɴɢ 👾\n\n${captionText}`,
-                            buttons: [
-                                {
-                                    buttonId: `${config.PREFIX}menu_action`,
-                                    buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
-                                    type: 4,
-                                    nativeFlowInfo: {
-                                        name: 'single_select',
-                                        paramsJson: JSON.stringify({
-                                            title: 'ᴄʟɪᴄᴋ ʜᴇʀᴇ ❏',
-                                            sections: [
-                                                {
-                                                    title: `© ʜᴀɴꜱ ᴍɪɴɪ ʙᴏᴛ`,
-                                                    highlight_label: 'Quick Actions',
-                                                    rows: [
-                                                        { title: '📋 ғᴜʟʟ ᴍᴇɴᴜ', description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs', id: `${config.PREFIX}menu` },
-                                                        { title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ', description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs', id: `${config.PREFIX}alive` },
-                                                        { title: '💫 ᴘɪɴɢ ᴛᴇsᴛ', description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ', id: `${config.PREFIX}ping` }
-                                                    ]
-                                                },
-                                                {
-                                                    title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
-                                                    highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
-                                                    rows: [
-                                                        { title: '🤖 ᴀɪ ᴄʜᴀᴛ', description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ', id: `${config.PREFIX}ai Hello!` },
-                                                        { title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ', description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs', id: `${config.PREFIX}song` },
-                                                        { title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs', description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs', id: `${config.PREFIX}news` }
-                                                    ]
-                                                }
-                                            ]
-                                        })
-                                    }
-                                },
-                                { buttonId: `${config.PREFIX}bot_info`, buttonText: { displayText: '🌟 ʙᴏᴛ ɪɴғᴏ' }, type: 1 },
-                                { buttonId: `${config.PREFIX}bot_stats`, buttonText: { displayText: '📈 ʙᴏᴛ sᴛᴀᴛs' }, type: 1 }
-                            ],
-                            headerType: 1,
-                            viewOnce: true
-                        };
-
-                        await socket.sendMessage(m.chat, aliveMessage, { quoted: fakevCard });
-                    } catch (error) {
-                        console.error('Alive command error:', error);
-                        const startTime = socketCreationTime.get(number) || Date.now();
-                        const uptime = Math.floor((Date.now() - startTime) / 1000);
-                        const hours = Math.floor(uptime / 3600);
-                        const minutes = Math.floor((uptime % 3600) / 60);
-                        const seconds = Math.floor(uptime % 60);
-
-                        await socket.sendMessage(m.chat, {
-                            image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
-                            caption: `*🤖 ʜᴀɴꜱ ᴍɪɴɪ ᴀʟɪᴠᴇ*\n\n` +
-                                    `*┏────〘 sʜᴀsᴏᴡ 〙───⊷*\n` +
-                                    `*┃* ᴜᴘᴛɪᴍᴇ: ${hours}h ${minutes}m ${seconds}s\n` +
-                                    `*┃* sᴛᴀᴛᴜs: ᴏɴʟɪɴᴇ\n` +
-                                    `*┃* ɴᴜᴍʙᴇʀ: ${number}\n` +
-                                    `*┗──────────────⊷*\n\n` +
-                                    `ᴛʏᴘᴇ *${config.PREFIX}ᴍᴇɴᴜ* ғᴏʀ ᴄᴏᴍᴍᴀɴᴅs`
-                        }, { quoted: fakevCard });
+    const captionText = ` 
+    *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+    ┬│
+    ┃* ᴀᴄᴛɪᴠᴇ ʙᴏᴛs: ${activeSockets.size} *
+    ┃* ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number} *
+    ┃* ᴠᴇʀsɪᴏɴ: ${config.version} *
+    ┃* ᴍᴇᴍᴏʀʏ ᴜsᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}ᴍʙ *
+    ┬│
+    ┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+    const aliveMessage = {
+      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+      mimetype: 'application/pdf',
+      fileName: 'WhatsApp PDF 10GB',
+      caption: `${captionText}`,
+      buttons: [
+        {
+          buttonId: `${config.PREFIX}menu_action`,
+          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
+          type: 4,
+          nativeFlowInfo: {
+            name: 'single_select',
+            paramsJson: JSON.stringify({
+              title: 'ᴄʟɪᴄᴋ ʜᴇʀᴇ ❏',
+              sections: [
+                {
+                  title: `Njabulo Jb`,
+                  highlight_label: 'Quick Actions',
+                  rows: [
+                    {
+                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
+                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
+                      id: `${config.PREFIX}menu`
+                    },
+                    {
+                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
+                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
+                      id: `${config.PREFIX}alive`
+                    },
+                    {
+                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
+                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
+                      id: `${config.PREFIX}ping`
                     }
-                    break;
+                  ]
+                },
+                {
+                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
+                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
+                  rows: [
+                    {
+                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
+                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
+                      id: `${config.PREFIX}ai Hello!`
+                    },
+                    {
+                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
+                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
+                      id: `${config.PREFIX}song`
+                    },
+                    {
+                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
+                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
+                      id: `${config.PREFIX}news`
+                    }
+                  ]
                 }
+              ]
+            })
+          }
+        },
+        {
+          buttonId: `${config.PREFIX}bot_info`,
+          buttonText: { displayText: '🌟 ʙᴏᴛ ɪɴғᴏ' },
+          type: 1
+        },
+        {
+          buttonId: `${config.PREFIX}bot_stats`,
+          buttonText: { displayText: '📈 ʙᴏᴛ sᴛᴀᴛs' },
+          type: 1
+        }
+      ],
+      headerType: 1,
+      viewOnce: true,
+      contextInfo: {
+        externalAdReply: {
+          title: "njabulo small alive🛒",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
+          renderLargerThumbnail: false,
+        },
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363399999197102@newsletter",
+          newsletterName: "╭••➤Njabulo Jb",
+          serverMessageId: 143,
+        },
+        forwardingScore: 999,
+      }
+    };
+    await socket.sendMessage(sender, aliveMessage, { quoted: fakevCard });
+  } catch (error) {
+    console.error('Alive command error:', error);
+  }
+  break;
+}
 
+
+
+
+
+                    
+                
 
 
                 // Case: menu
