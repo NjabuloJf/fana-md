@@ -647,90 +647,8 @@ function setupCommandHandlers(socket, number) {
                     break;
                 }
 
-// Case: bot_stats
-case 'bot_stats': {
-    try {
-        const from = m.key.remoteJid;
-        const startTime = socketCreationTime.get(number) || Date.now();
-        const uptime = Math.floor((Date.now() - startTime) / 1000);
-        const hours = Math.floor(uptime / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-        const seconds = Math.floor(uptime % 60);
-        const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-        const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
-        const activeCount = activeSockets.size;
 
-        const captionText = `
-*┏────〘 sʜᴀᴅᴏᴡᴡ 〙───⊷*
-*┃* ᴜᴘᴛɪᴍᴇ: ${hours}ʜ ${minutes}ᴍ ${seconds}s
-*┃* ᴍᴇᴍᴏʀʏ: ${usedMemory}ᴍʙ / ${totalMemory}ᴍʙ
-*┃* ᴀᴄᴛɪᴠᴇ ᴜsᴇʀs: ${activeCount}
-*┃* ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number}
-*┃* ᴠᴇʀsɪᴏɴ: ${config.version}
-*┗──────────────⊷*`;
 
-        // Newsletter message context
-        const newsletterContext = {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363352087070233@newsletter',
-                newsletterName: 'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ',
-                serverMessageId: -1
-            }
-        };
-
-        await socket.sendMessage(from, {
-            image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
-            caption: captionText
-        }, { 
-            quoted: m,
-            contextInfo: newsletterContext
-        });
-    } catch (error) {
-        console.error('Bot stats error:', error);
-        const from = m.key.remoteJid;
-        await socket.sendMessage(from, { 
-            text: '❌ Failed to retrieve stats. Please try again later.' 
-        }, { quoted: m });
-    }
-    break;
-}
-// Case: bot_info
-case 'bot_info': {
-    try {
-        const from = m.key.remoteJid;
-        const captionText = `
-*┏────〘 ʜᴀɴꜱ 〙───⊷*
-*┃*  👤 ɴᴀᴍᴇ: ʜᴀɴꜱ ᴍɪɴɪ ʙᴏᴛ
-*┃*  👑 ᴄʀᴇᴀᴛᴏʀ: ᴍᴀᴅᴇ ʙʏ ʜᴀɴꜱ ᴛᴇᴄʜ
-*┃*  🌐 ᴠᴇʀsɪᴏɴ: ${config.version}
-*┃*  📍 ᴘʀᴇғɪx: ${config.PREFIX}
-*┃*  📖 ᴅᴇsᴄ: ʏᴏᴜʀ sᴘɪᴄʏ ᴡʜᴀᴛsᴀᴘᴘ ᴄᴏᴍᴘᴀɴɪᴏɴ 
-*┗──────────────⊷*`;
-        
-        // Common message context
-        const messageContext = {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363352087070233@newsletter',
-                newsletterName: 'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ',
-                serverMessageId: -1
-            }
-        };
-        
-        await socket.sendMessage(from, {
-            image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
-            caption: captionText
-        }, { quoted: m });
-    } catch (error) {
-        console.error('Bot info error:', error);
-        const from = m.key.remoteJid;
-        await socket.sendMessage(from, { text: '❌ Failed to retrieve bot info.' }, { quoted: m });
-    }
-    break;
-}
                 // Case: menu
        // Case: menu
 case 'menu': {
@@ -783,6 +701,7 @@ const messageContext = {
     newsletterName: 'Njabulo Jb',
     serverMessageId: -1
   },
+  forwardingScore: 999,
   externalAdReply: {
     title: "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ ᴏʟʟ🌃☕",
     mediaType: 1,
@@ -1067,8 +986,7 @@ case 'ping': {
       emoji = '🔴';
     }
     const finalMessage = `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮ ` +
-                        `┬│ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮\n` +
                         `┬│ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
                         `❒│▸ ▢ ${emoji} *ϙᴜᴀʟɪᴛʏ:* ${quality}\n` +
                         `❒│▸ ▢ *ᴛɪᴍᴇsᴛᴀᴍᴘ:* ${new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: true })}\n` +
@@ -1083,10 +1001,10 @@ case 'ping': {
       caption: finalMessage,
       contextInfo: {
         externalAdReply: {
-          title: "ɳʝαႦυʅσ ʝႦ",
+          title: "njabulo small pong🛒",
           mediaType: 1,
           previewType: 0,
-          thumbnailUrl: "https://files.catbox.moe/dfe0h0.jpg",
+          thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
           renderLargerThumbnail: false,
         },
         isForwarded: true,
