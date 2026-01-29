@@ -534,23 +534,27 @@ function setupCommandHandlers(socket, number) {
         // Define fakevCard for quoting messages
 
 
-const fakeQuoted = {
-  key: {
-    fromMe: false,
-    participant: "0@s.whatsapp.net",
-    remoteJid: "status@broadcast",
-  },
-  message: {
-    contactMessage: {
-      displayName: "Njabulo Jb",
-      displayVersion: 'v2.1.3',
-      displayMessage: 'Hello, this is a message!',
-      displayCopy: 'Copy this text!',
-      displayCart: '🛒 Cart is full!',
-    },
-  },
-};
 
+
+
+        const fakevCard = {
+            key: {
+                fromMe: false,
+                participant: "0@s.whatsapp.net",
+                remoteJid: "status@broadcast"
+            },
+            message: {
+                contactMessage: {
+                    displayName: "Node.js library",
+                    displayMessage: "Hello, this is a message!",
+                    displayCopy: "Copy this text!",
+                    displayCart: "🛒 Cart is full!",
+                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:Meta\nORG:META AI;\nTEL;type=CELL;type=VOICE;waid=254101022551:+254101022551\nEND:VCARD`
+                }
+            }
+        };
+
+        
 
 
 
