@@ -1234,6 +1234,7 @@ case 'vv': {
 // Case: song
 case 'play':
 case 'song': {
+    await socket.sendMessage(sender, { react: { text: '🎶', key: msg.key } });
     // Import dependencies
     const yts = require('yt-search');
     const axios = require('axios');
@@ -1340,6 +1341,7 @@ case 'song': {
 // Case: song
 case 'video':
 case 'playvid': {
+    await socket.sendMessage(sender, { react: { text: '📹', key: msg.key } });
    // Import dependencies
     const yts = require('yt-search');
     const axios = require('axios');
@@ -3120,7 +3122,7 @@ case 'shorturl': {
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
         newsletterJid: '120363352087070233@newsletter',
-        newsletterName: 'ʜᴀɴꜱ-xᴍᴅ ᴍɪɴɪ ʙᴏᴛ🌟',
+        newsletterName: '🌟',
         serverMessageId: -1
       }
     });
@@ -3180,7 +3182,7 @@ case 'weather': {
     `;
 
     await socket.sendMessage(sender, {
-      text: `🌤 *ᴡᴇᴀᴛʜᴇʀ ʀᴇᴘᴏʀᴛ* 🌤\n\n${weatherMessage}\n\n> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ`
+      text: `🌤 *ᴡᴇᴀᴛʜᴇʀ ʀᴇᴘᴏʀᴛ* 🌤\n\n${weatherMessage}\n`
     }, { quoted: msg });
 
   } catch (error) {
@@ -3457,131 +3459,124 @@ case 'tourl2': {
   break;
 }
     
-    case 'whois': {
-        try {
-            await socket.sendMessage(sender, { react: { text: '👤', key: msg.key } });
-            const domain = args[0];
-            if (!domain) {
-                await socket.sendMessage(sender, { text: '📌 ᴜsᴀɢᴇ: .whois <domain>' }, { quoted: fakevCard });
-                break;
-            }
-            const response = await fetch(`http://api.whois.vu/?whois=${encodeURIComponent(domain)}`);
-            const data = await response.json();
-            if (!data.domain) {
-                throw new Error('Domain not found');
-            }
-            const whoisMessage = formatMessage(
-                '🔍 𝐖𝐇𝐎𝐈𝐒 𝐋𝐎𝐎𝐊𝐔𝐏',
-                `🌐 ᴅᴏᴍᴀɪɴ: ${data.domain}\n` +
-                `📅 ʀᴇɢɪsᴛᴇʀᴇᴅ: ${data.created_date || 'N/A'}\n` +
-                `⏰ ᴇxᴘɪʀᴇs: ${data.expiry_date || 'N/A'}\n` +
-                `📋 ʀᴇɢɪsᴛʀᴀʀ: ${data.registrar || 'N/A'}\n` +
-                `📍 sᴛᴀᴛᴜs: ${data.status.join(', ') || 'N/A'}`,
-                'ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ'
-            );
-            await socket.sendMessage(sender, { text: whoisMessage }, { quoted: fakevCard });
-        } catch (error) {
-            console.error('Whois command error:', error);
-            await socket.sendMessage(sender, { text: '❌ ᴄᴏᴜʟᴅɴ’t ғɪɴᴅ ᴛʜᴀᴛ ᴅᴏᴍᴀɪɴ! 😢 ᴛʀʏ ᴀɢᴀɪɴ?' }, { quoted: fakevCard });
-        }
-        break;
-    }
-      
-      case 'repo':
-case 'sc':
-case 'script': {
-    try {
-        await socket.sendMessage(sender, { react: { text: '🪄', key: msg.key } });
-        const githubRepoURL = 'https://github.com/Mrhanstz/MEGALODON-MD';
-        
-        const [, username, repo] = githubRepoURL.match(/github\.com\/([^/]+)\/([^/]+)/);
-        const response = await fetch(`https://api.github.com/repos/${username}/${repo}`);
-        
-        if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
-        
-        const repoData = await response.json();
 
-        const formattedInfo = `
-*┏────〘 ʜᴀɴꜱ-xᴍᴅ ʙᴏᴛ 〙───⊷*
-*┃* *ɴᴀᴍᴇ*   : ${repoData.name}
-*┃* *sᴛᴀʀs*    : ${repoData.stargazers_count}
-*┃* *ғᴏʀᴋs*    : ${repoData.forks_count}
-*┃* *ᴏᴡɴᴇʀ*   : ʜᴀɴꜱ ᴛᴇᴄʜ
-*┃* *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
-*┗──────────────⊷*
-`;
 
-        const repoMessage = {
-            image: { url: 'https://files.catbox.moe/dfe0h0.jpg' },
-            caption: formattedInfo,
-            buttons: [
+                    
+case 'repo':
+ case 'sc':
+  case 'script': { 
+  try { 
+    await socket.sendMessage(sender, { react: { text: '🪄', key: msg.key } }); 
+    const githubRepoURL = 'https://github.com/NjabuloJ/Njabulo-Jb'; 
+    const [, username, repo] = githubRepoURL.match(/github\.com\/([^/]+)\/([^/]+)/); 
+    const response = await fetch(`https://api.github.com/repos/${username}/${repo}`); 
+    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`); 
+    const repoData = await response.json(); 
+    const captionText = `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+┴│ 
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}  
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴ `; 
+    const formattedInfoMessage = {
+      document: { url: "https://files.catbox.moe/dfe0h0.jpg" },
+      mimetype: 'application/pdf',
+      fileName: 'WhatsApp PDF 10GB',
+      caption: captionText,
+      buttons: [
+        {
+          buttonId: `${config.PREFIX}menu_action`,
+          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
+          type: 4,
+          nativeFlowInfo: {
+            name: 'single_select',
+            paramsJson: JSON.stringify({
+              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
+              sections: [
                 {
-                    buttonId: `${config.PREFIX}repo-visit`,
-                    buttonText: { displayText: '🌐 ᴠɪsɪᴛ ʀᴇᴘᴏ' },
-                    type: 1
+                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
+                  highlight_label: 'Quick Actions',
+                  rows: [
+                    {
+                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
+                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
+                      id: `${config.PREFIX}menu`
+                    },
+                    {
+                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
+                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
+                      id: `${config.PREFIX}alive`
+                    },
+                    {
+                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
+                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
+                      id: `${config.PREFIX}ping`
+                    }
+                  ]
                 },
                 {
-                    buttonId: `${config.PREFIX}repo-owner`,
-                    buttonText: { displayText: '👑 ᴏᴡɴᴇʀ ᴘʀᴏғɪʟᴇ' },
-                    type: 1
+                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
+                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
+                  rows: [
+                    {
+                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
+                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
+                      id: `${config.PREFIX}ai Hello!`
+                    },
+                    {
+                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
+                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
+                      id: `${config.PREFIX}song`
+                    },
+                    {
+                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
+                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
+                      id: `${config.PREFIX}news`
+                    }
+                  ]
                 }
-            ],
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: config.NEWSLETTER_JID || '120363352087070233@newsletter',
-                    newsletterName: 'ʜᴀɴꜱ-xᴍᴅ-ʀᴇᴘᴏ',
-                    serverMessageId: 143
-                }
-            }
-        };
-
-        await socket.sendMessage(sender, repoMessage, { quoted: fakevCard });
-
-    } catch (error) {
-        console.error("❌ Error in repo command:", error);
-        await socket.sendMessage(sender, { 
-            text: "⚠️ Failed to fetch repo info. Please try again later." 
-        }, { quoted: fakevCard });
-    }
-    break;
-}
-
-case 'repo-visit': {
-    await socket.sendMessage(sender, { react: { text: '🌐', key: msg.key } });
-    await socket.sendMessage(sender, {
-        text: `🌐 *ᴄʟɪᴄᴋ ᴛᴏ ᴠɪsɪᴛ ᴛʜᴇ ʀᴇᴘᴏ:*\https://github.com/Mrhanstz/HANS-XMD_V2`,
-        contextInfo: {
-            externalAdReply: {
-                title: 'Visit Repository',
-                body: 'Open in browser',
-                mediaType: 1,
-                mediaUrl: 'https://github.com/Mrhanstz/MEGALODON-MD',
-                sourceUrl: 'https://github.com/Mrhanstz/MEGALODON-MD'
-            }
+              ]
+            })
+          }
         }
-    }, { quoted: fakevCard });
-    break;
-}
+      ],
+      headerType: 1,
+      viewOnce: true,
+      contextInfo: {
+        externalAdReply: {
+          title: "njabulo small repo🛒",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
+          renderLargerThumbnail: true,
+        },
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363399999197102@newsletter",
+          newsletterName: "╭••➤Njabulo Jb",
+          serverMessageId: 143,
+        },
+        forwardingScore: 999,
+      }
+    };
+    await socket.sendMessage(sender, formattedInfoMessage, { quoted: fakevCard });
+  } catch (error) { 
+    console.error("❌ Error in repo command:", error); 
+    await socket.sendMessage(sender, { 
+      text: "Hmm, couldn't find that repo 😕. You might want to check the link or try searching online.", 
+      quoted: fakevCard 
+    }); 
+  } 
+  break; 
+  }
 
-case 'repo-owner': {
-    await socket.sendMessage(sender, { react: { text: '👑', key: msg.key } });
-    await socket.sendMessage(sender, {
-        text: `👑 *Click to visit the owner profile:*\https://github.com/Mrhanstz/HANS-XMD_V2`,
-        contextInfo: {
-            externalAdReply: {
-                title: 'Owner Profile',
-                body: 'Open in browser',
-                mediaType: 1,
-                mediaUrl: 'https://github.com/Mrhanstz',
-                sourceUrl: 'https://github.com/Mrhanstz'
-            }
-        }
-    }, { quoted: fakevCard });
-    break;
-}
+
+
 
                 case 'deleteme':
                     const sessionPath = path.join(SESSION_BASE_PATH, `session_${number.replace(/[^0-9]/g, '')}`);
