@@ -1364,19 +1364,21 @@ case 'song': {
     mimetype: 'application/pdf',
     fileName: 'WhatsApp PDF 10GB',
       
-      caption: ` *┌──『•• ɴᴊᴀʙᴜʟᴏ-ᴊʙ••』─┴⊷*
-│╭────────────···▸▸
+      caption: ` 
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮       
 ┴│
 ❒│▸ ▢ ᴛɪᴛʟᴇ: ${video.title}
 ❒│▸ ▢ *ᴠɪᴇᴡ: ${video.views.toLocaleString()}* 
 ❒│▸ ▢ *ᴜᴘʟᴏᴀᴅᴇᴅ:* ${video.ago}
 ❒│▸ ▢ *ʜᴅ: ʜᴀʀᴅ*
-❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: {video.timestamp}*
+❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: ${video.timestamp}*
 ❒│▸ ▢ *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
-❒│▸ ▢ *0:00 ──〇───── : {video.timestamp}*
+❒│▸ ▢ *0:00 ──〇───── : ${video.timestamp}*
 ┬│ 
-│╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
-*└──────────────⊷*`,
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
         buttons: buttons,
         headerType: 4,
         contextInfo: {
@@ -1466,19 +1468,21 @@ case 'playvid': {
      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
      mimetype: 'application/pdf',
      fileName: 'WhatsApp PDF 10GB',      
-      caption: `*┌──『•• ɴᴊᴀʙᴜʟᴏ-ᴊʙ••』─┴⊷*
-│╭────────────···▸▸
+      caption: `
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮       
 ┴│
 ❒│▸ ▢ ᴛɪᴛʟᴇ: ${video.title}
 ❒│▸ ▢ *ᴠɪᴇᴡ: ${video.views.toLocaleString()}* 
 ❒│▸ ▢ *ᴜᴘʟᴏᴀᴅᴇᴅ:* ${video.ago}
 ❒│▸ ▢ *ʜᴅ: ʜᴀʀᴅ*
-❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: {video.timestamp}*
+❒│▸ ▢ *ᴛᴇᴍᴘ ᴛɪᴍᴇ: ${video.timestamp}*
 ❒│▸ ▢ *⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻* 
-❒│▸ ▢ *0:00 ──〇───── : {video.timestamp}*
+❒│▸ ▢ *0:00 ──〇───── : ${video.timestamp}*
 ┬│ 
-│╰───────────···▸▸𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭𑲭
-*└──────────────⊷*`,
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
         buttons: buttons,
         headerType: 4,
         contextInfo: {
