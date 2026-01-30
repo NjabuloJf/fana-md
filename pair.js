@@ -2239,8 +2239,8 @@ case 'invite': {
                 }
 
 
-
-case 'img': { 
+case 'img':
+case 'image': { 
   try { 
     const query = args.join(' ').trim(); 
     if (!query) { 
@@ -2253,7 +2253,6 @@ case 'img': {
     const results = res.data?.result; 
     if (!Array.isArray(results) || results.length === 0) { 
       await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
-      await socket.deleteMessage(sender, loadingMessage.key); 
       break; 
     } 
     const images = results.slice(0, 8); 
@@ -2269,104 +2268,22 @@ case 'img': {
     const validImages = picked; 
     if (validImages.length === 0) { 
       await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
-      await socket.deleteMessage(sender, loadingMessage.key); 
       break; 
     } 
     for (const item of validImages) { 
       await socket.sendMessage(sender, { 
         image: item.buffer, 
-        caption: `🔍 Search: ${query}\n🌐 View: ${item.directLink}`, 
+        caption: `🔍 Search: ${query}\n`, 
       }, { quoted: fakevCard }); 
     } 
-    await socket.deleteMessage(sender, loadingMessage.key); 
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
   } catch (error) { 
     console.error('Error searching images:', error); 
     await socket.sendMessage(sender, { text: `Error: ${error.message}` }, { quoted: fakevCard }); 
-    await socket.deleteMessage(sender, loadingMessage.key); 
     await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
   } 
   break; 
-}
-
-case 'image': { 
-    const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
-  try { 
-    const query = args.join(' ').trim(); 
-    if (!query) { 
-      await socket.sendMessage(sender, { text: 'Which image?' }, { quoted: fakevCard }); 
-      break; 
-    } 
-    const loadingMessage = await socket.sendMessage(sender, { text: `*⏳ Searching for ${query} images...*` }, { quoted: fakevCard }); 
-    const apiUrl = `https://apiskeith.vercel.app/search/images?query=${encodeURIComponent(query)}`; 
-    const res = await axios.get(apiUrl, { timeout: 100000 }); 
-    const results = res.data?.result; 
-    if (!Array.isArray(results) || results.length === 0) { 
-      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
-      await socket.deleteMessage(sender, loadingMessage.key); 
-      break; 
-    } 
-    const images = results.slice(0, 8); 
-    const picked = await Promise.all(images.map(async (img) => { 
-      try { 
-        const bufferRes = await axios.get(img.url, { responseType: 'arraybuffer' }); 
-        return { buffer: bufferRes.data, directLink: img.url }; 
-      } catch { 
-        console.error('Image download failed:', img.url); 
-        return null; 
-      } 
-    })).then((results) => results.filter(Boolean)); 
-    const validImages = picked; 
-    if (validImages.length === 0) { 
-      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
-      await socket.deleteMessage(sender, loadingMessage.key); 
-      break; 
-    } 
-    const cards = await Promise.all(validImages.map(async (item, i) => ({ 
-      header: { 
-        title: `📸 Image ${i + 1}`, 
-        hasMediaAttachment: true, 
-        imageMessage: (await generateWAMessageContent({ image: item.buffer }, { upload: socket.waUploadToServer })).imageMessage, 
-      }, 
-      body: { text: `🔍 Search: ${query}` }, 
-      footer: { text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʜᴏᴛᴏ ɢʀᴀᴍ 🙄' }, 
-      nativeFlowMessage: { 
-        buttons: [ 
-          { 
-            name: 'cta_url', 
-            buttonParamsJson: JSON.stringify({ display_text: '🌐 View Original', url: item.directLink }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: item.directLink }), 
-          }, 
-        ], 
-      }, 
-    }))); 
-    const message = generateWAMessageFromContent(sender, { 
-      viewOnceMessage: { 
-        message: { 
-          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
-          interactiveMessage: { 
-            body: { text: `🔍 Search Results for: ${query}` }, 
-            footer: { text: `📂 Found ${validImages.length} images` }, 
-            carouselMessage: { cards }, 
-          }, 
-        }, 
-      }, 
-    }, { quoted: fakevCard }); 
-    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
-    await socket.deleteMessage(sender, loadingMessage.key); 
-    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
-  } catch (error) { 
-    console.error('Error searching images:', error); 
-    await socket.sendMessage(sender, { text: `Error: ${error.message}` }, { quoted: fakevCard }); 
-    await socket.deleteMessage(sender, loadingMessage.key); 
-    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
-  } 
-  break; 
-        }
-
+                 }
 
 // case 39: weather
 case 'weather': {
