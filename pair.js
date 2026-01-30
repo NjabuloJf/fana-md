@@ -2337,165 +2337,83 @@ case 'invite': {
                 }
 
 
-                    
-case 'apk': { 
+
+case 'image': { 
   try { 
-    const appName = args.join(' ').trim(); 
-    if (!appName) { 
-      await socket.sendMessage(sender, { text: '📌 Usage: .apk <app name>\nExample: .apk whatsapp' }, { quoted: fakevCard }); 
+    const query = args.join(' ').trim(); 
+    if (!query) { 
+      await socket.sendMessage(sender, { text: 'Which image?' }, { quoted: fakevCard }); 
       break; 
     } 
-    await socket.sendMessage(sender, { react: { text: '⏳', key: msg.key } }); 
-    const apiUrl = `https://api.nexoracle.com/downloader/apk?q=${encodeURIComponent(appName)}&apikey=free_key@maher_apis`; 
-    console.log('Fetching APK from:', apiUrl); 
-    const response = await fetch(apiUrl); 
-    if (!response.ok) { 
-      throw new Error(`API request failed with status: ${response.status}`); 
-    } 
-    const data = await response.json(); 
-    console.log('API Response:', JSON.stringify(data, null, 2)); 
-    if (!data || data.status !== 200 || !data.result || typeof data.result !== 'object') { 
-      await socket.sendMessage(sender, { text: '❌ Unable to find the APK. The API returned invalid data.' }, { quoted: fakevCard }); 
+    const loadingMessage = await socket.sendMessage(sender, { text: `*⏳ Searching for ${query} images...*` }, { quoted: fakevCard }); 
+    const apiUrl = `https://apiskeith.vercel.app/search/images?query=${encodeURIComponent(query)}`; 
+    const res = await axios.get(apiUrl, { timeout: 100000 }); 
+    const results = res.data?.result; 
+    if (!Array.isArray(results) || results.length === 0) { 
+      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
+      await socket.deleteMessage(sender, loadingMessage.key); 
       break; 
     } 
-    const { name, lastup, package, size, icon, dllink } = data.result; 
-    if (!name || !dllink) { 
-      console.error('Invalid result data:', data.result); 
-      await socket.sendMessage(sender, { text: '❌ Invalid APK data: Missing name or download link.' }, { quoted: fakevCard }); 
-      break; 
-    } 
-    // Validate icon URL 
-    if (!icon || !icon.startsWith('http')) { 
-      console.warn('Invalid or missing icon URL:', icon); 
-    } 
-    await socket.sendMessage(sender, { 
-      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
-    mimetype: 'application/pdf',
-    fileName: 'WhatsApp PDF 10GB',
-      caption: `Downloading ${name}... please wait.`, 
-      contextInfo: { 
-        externalAdReply: { 
-          title: "njabulo small alive🛒", 
-          mediaType: 1, 
-          previewType: 0, 
-          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg", 
-          renderLargerThumbnail: true, 
-        }, 
-        isForwarded: true, 
-        forwardedNewsletterMessageInfo: { 
-          newsletterJid: "120363399999197102@newsletter", 
-          newsletterName: "╭••➤Njabulo Jb", 
-          serverMessageId: 143, 
-        }, 
-        forwardingScore: 999, 
+    const images = results.slice(0, 8); 
+    const picked = await Promise.all(images.map(async (img) => { 
+      try { 
+        const bufferRes = await axios.get(img.url, { responseType: 'arraybuffer' }); 
+        return { buffer: bufferRes.data, directLink: img.url }; 
+      } catch { 
+        console.error('Image download failed:', img.url); 
+        return null; 
       } 
+    })).then((results) => results.filter(Boolean)); 
+    const validImages = picked; 
+    if (validImages.length === 0) { 
+      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
+      await socket.deleteMessage(sender, loadingMessage.key); 
+      break; 
+    } 
+    const cards = await Promise.all(validImages.map(async (item, i) => ({ 
+      header: { 
+        title: `📸 Image ${i + 1}`, 
+        hasMediaAttachment: true, 
+        imageMessage: (await generateWAMessageContent({ image: item.buffer }, { upload: socket.waUploadToServer })).imageMessage, 
+      }, 
+      body: { text: `🔍 Search: ${query}` }, 
+      footer: { text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʜᴏᴛᴏ ɢʀᴀᴍ 🙄' }, 
+      nativeFlowMessage: { 
+        buttons: [ 
+          { 
+            name: 'cta_url', 
+            buttonParamsJson: JSON.stringify({ display_text: '🌐 View Original', url: item.directLink }), 
+          }, 
+          { 
+            name: 'cta_copy', 
+            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: item.directLink }), 
+          }, 
+        ], 
+      }, 
+    }))); 
+    const message = generateWAMessageFromContent(sender, { 
+      viewOnceMessage: { 
+        message: { 
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
+          interactiveMessage: { 
+            body: { text: `🔍 Search Results for: ${query}` }, 
+            footer: { text: `📂 Found ${validImages.length} images` }, 
+            carouselMessage: { cards }, 
+          }, 
+        }, 
+      }, 
     }, { quoted: fakevCard }); 
-    console.log('Downloading APK from:', dllink); 
-    const apkResponse = await fetch(dllink, { headers: { 'Accept': 'application/octet-stream' } }); 
-    const contentType = apkResponse.headers.get('content-type'); 
-    if (!apkResponse.ok || (contentType && !contentType.includes('application/vnd.android.package-archive'))) { 
-      throw new Error(`Failed to download APK: Status ${apkResponse.status}, Content-Type: ${contentType || 'unknown'}`); 
-    } 
-    const apkBuffer = await apkResponse.arrayBuffer(); 
-    if (!apkBuffer || apkBuffer.byteLength === 0) { 
-      throw new Error('Downloaded APK is empty or invalid'); 
-    } 
-    const buffer = Buffer.from(apkBuffer); 
-    // Validate APK file (basic check for APK signature) 
-    if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format) 
-      throw new Error('Downloaded file is not a valid APK'); 
-    } 
-    const captionText = `📦 𝐀𝐏𝐊 𝐃𝐄𝐓𝐀𝐈𝐋𝐒\n🔖 ɴᴀᴍᴇ: ${name || 'N/A'}\n📅 ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}\n📦 ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}\n📏 Size: ${size || 'N/A'}`;
-    const formattedInfoMessage = {
-      document: buffer,
-      mimetype: 'application/vnd.android.package-archive',
-      fileName: `${name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`, // Sanitize filename
-      caption: captionText,
-      buttons: [
-        {
-          buttonId: `${config.PREFIX}menu_action`,
-          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
-          type: 4,
-          nativeFlowInfo: {
-            name: 'single_select',
-            paramsJson: JSON.stringify({
-              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
-              sections: [
-                {
-                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
-                  highlight_label: 'Quick Actions',
-                  rows: [
-                    {
-                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
-                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
-                      id: `${config.PREFIX}menu`
-                    },
-                    {
-                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
-                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
-                      id: `${config.PREFIX}alive`
-                    },
-                    {
-                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
-                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
-                      id: `${config.PREFIX}ping`
-                    }
-                  ]
-                },
-                {
-                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
-                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
-                  rows: [
-                    {
-                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
-                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
-                      id: `${config.PREFIX}ai Hello!`
-                    },
-                    {
-                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
-                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
-                      id: `${config.PREFIX}song`
-                    },
-                    {
-                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
-                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
-                      id: `${config.PREFIX}news`
-                    }
-                  ]
-                }
-              ]
-            })
-          }
-        }
-      ],
-      headerType: 1,
-      viewOnce: true,
-      contextInfo: {
-        externalAdReply: {
-          title: "njabulo small alive🛒",
-          mediaType: 1,
-          previewType: 0,
-          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg",
-          renderLargerThumbnail: true,
-        },
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: "120363399999197102@newsletter",
-          newsletterName: "╭••➤Njabulo Jb",
-          serverMessageId: 143,
-        },
-        forwardingScore: 999,
-      }
-    };
-    await socket.sendMessage(sender, formattedInfoMessage, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
+    await socket.deleteMessage(sender, loadingMessage.key); 
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
   } catch (error) { 
-    console.error('APK command error:', error.message, error.stack); 
-    await socket.sendMessage(sender, { text: `❌ Oh, love, couldn’t fetch the APK! 😢 Error: ${error.message}\nTry again later.` }, { quoted: fakevCard }); 
+    console.error('Error searching images:', error); 
+    await socket.sendMessage(sender, { text: `Error: ${error.message}` }, { quoted: fakevCard }); 
+    await socket.deleteMessage(sender, loadingMessage.key); 
     await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
   } 
   break; 
-  }
+        }
 
 
 // case 39: weather
