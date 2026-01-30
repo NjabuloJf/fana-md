@@ -2240,7 +2240,57 @@ case 'invite': {
 
 
 
+case 'img': { 
+  try { 
+    const query = args.join(' ').trim(); 
+    if (!query) { 
+      await socket.sendMessage(sender, { text: 'Which image?' }, { quoted: fakevCard }); 
+      break; 
+    } 
+    const loadingMessage = await socket.sendMessage(sender, { text: `*⏳ Searching for ${query} images...*` }, { quoted: fakevCard }); 
+    const apiUrl = `https://apiskeith.vercel.app/search/images?query=${encodeURIComponent(query)}`; 
+    const res = await axios.get(apiUrl, { timeout: 100000 }); 
+    const results = res.data?.result; 
+    if (!Array.isArray(results) || results.length === 0) { 
+      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
+      await socket.deleteMessage(sender, loadingMessage.key); 
+      break; 
+    } 
+    const images = results.slice(0, 8); 
+    const picked = await Promise.all(images.map(async (img) => { 
+      try { 
+        const bufferRes = await axios.get(img.url, { responseType: 'arraybuffer' }); 
+        return { buffer: bufferRes.data, directLink: img.url }; 
+      } catch { 
+        console.error('Image download failed:', img.url); 
+        return null; 
+      } 
+    })).then((results) => results.filter(Boolean)); 
+    const validImages = picked; 
+    if (validImages.length === 0) { 
+      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
+      await socket.deleteMessage(sender, loadingMessage.key); 
+      break; 
+    } 
+    for (const item of validImages) { 
+      await socket.sendMessage(sender, { 
+        image: item.buffer, 
+        caption: `🔍 Search: ${query}\n🌐 View: ${item.directLink}`, 
+      }, { quoted: fakevCard }); 
+    } 
+    await socket.deleteMessage(sender, loadingMessage.key); 
+    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
+  } catch (error) { 
+    console.error('Error searching images:', error); 
+    await socket.sendMessage(sender, { text: `Error: ${error.message}` }, { quoted: fakevCard }); 
+    await socket.deleteMessage(sender, loadingMessage.key); 
+    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
+  } 
+  break; 
+}
+
 case 'image': { 
+    const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
   try { 
     const query = args.join(' ').trim(); 
     if (!query) { 
