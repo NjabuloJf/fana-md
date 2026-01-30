@@ -1249,24 +1249,96 @@ case 'vv': {
 }
 
 
+    
+case 'playvideo': 
+case 'video': { 
+  await socket.sendMessage(sender, { react: { text: '🎥', key: msg.key } }); 
+  const yts = require('yt-search'); 
+  const axios = require('axios'); 
+  const { generateWAMessageContentMessage, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
+  if (!q || q.trim() === '') { 
+    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ ᴠɪᴅᴇᴏ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
+  } 
+  try { 
+    const search = await yts(q.trim()); 
+    const videos = search.videos.slice(0, 4); 
+    const cards = await Promise.all(videos.map(async (video, i) => ({ 
+      header: { 
+        title: `🎥 ${video.title}`, 
+        hasMediaAttachment: true, 
+        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
+      }, 
+      body: { 
+        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
+      }, 
+      footer: { 
+        text: '', 
+      }, 
+      nativeFlowMessage: { 
+        buttons: [ 
+          { 
+            name: 'cta_url', 
+            buttonParamsJson: JSON.stringify({ display_text: '🎥 Play Video', url: video.url }), 
+          }, 
+          { 
+            name: 'cta_copy', 
+            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
+          }, 
+        ], 
+      }, 
+    })));
+    const message = generateWAMessageFromContent(sender, { 
+      viewOnceMessage: { 
+        message: { 
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
+          interactiveMessage: { 
+            body: { text: `🔍 Search Results for: ${q}` }, 
+            footer: { text: `📂 Found ${videos.length} videos` }, 
+            carouselMessage: { cards }, 
+          }, 
+        }, 
+      }, 
+    }, { quoted: fakevCard }); 
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
+    const video = videos[0]; 
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
+    const fileName = `${safeTitle}.mp4`; 
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`; 
+    const response = await axios.get(apiURL); 
+    const data = response.data; 
+    if (!data.downloadLink) { 
+      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP4 download link.' }, { quoted: fakevCard }); 
+    } 
+    await socket.sendMessage(sender, { 
+      video: { url: data.downloadLink }, 
+      mimetype: 'video/mp4', 
+      fileName,       
+    }, { quoted: fakevCard }); 
+  } catch (err) { 
+    console.error('Video command error:', err); 
+    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴠɪᴅᴇᴏ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard }); 
+  } 
+  break; 
+}
+
+
+
+                    
 case 'play': 
 case 'song': { 
   await socket.sendMessage(sender, { react: { text: '🎶', key: msg.key } }); 
-    const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
-
   const yts = require('yt-search'); 
   const axios = require('axios'); 
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
   const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
   if (!q || q.trim() === '') { 
     return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
   } 
   try { 
     const search = await yts(q.trim()); 
-    const video = search.videos[0]; 
-    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
-    const fileName = `${safeTitle}.mp3`; 
-    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`; 
-    const card = { 
+    const videos = search.videos.slice(0, 4); 
+    const cards = await Promise.all(videos.map(async (video, i) => ({ 
       header: { 
         title: `🎵 ${video.title}`, 
         hasMediaAttachment: true, 
@@ -1276,7 +1348,7 @@ case 'song': {
         text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
       }, 
       footer: { 
-        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴍᴜꜱɪᴄ 🙄', 
+        text: '', 
       }, 
       nativeFlowMessage: { 
         buttons: [ 
@@ -1290,20 +1362,24 @@ case 'song': {
           }, 
         ], 
       }, 
-    }; 
+    })));
     const message = generateWAMessageFromContent(sender, { 
       viewOnceMessage: { 
         message: { 
           messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
           interactiveMessage: { 
             body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found 1 song` }, 
-            carouselMessage: { cards: [card] }, 
+            footer: { text: `📂 Found ${videos.length} songs` }, 
+            carouselMessage: { cards }, 
           }, 
         }, 
       }, 
     }, { quoted: fakevCard }); 
     await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
+    const video = videos[0]; 
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
+    const fileName = `${safeTitle}.mp3`; 
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`; 
     const response = await axios.get(apiURL); 
     const data = response.data; 
     if (!data.downloadLink) { 
@@ -1330,77 +1406,6 @@ case 'song': {
   break; 
 }
 
-case 'playvideo': 
-case 'video': { 
-  await socket.sendMessage(sender, { react: { text: '🎥', key: msg.key } }); 
-    const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
-
-  const yts = require('yt-search'); 
-  const axios = require('axios'); 
-  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
-  if (!q || q.trim() === '') { 
-    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ ᴠɪᴅᴇᴏ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
-  } 
-  try { 
-    const search = await yts(q.trim()); 
-    const video = search.videos[0]; 
-    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
-    const fileName = `${safeTitle}.mp4`; 
-    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`; 
-    const card = { 
-      header: { 
-        title: `🎥 ${video.title}`, 
-        hasMediaAttachment: true, 
-        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
-      }, 
-      body: { 
-        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
-      }, 
-      footer: { 
-        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴠɪᴅᴇᴏ 🙄', 
-      }, 
-      nativeFlowMessage: { 
-        buttons: [ 
-          { 
-            name: 'cta_url', 
-            buttonParamsJson: JSON.stringify({ display_text: '🎥 Play Video', url: video.url }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
-          }, 
-        ], 
-      }, 
-    }; 
-    const message = generateWAMessageFromContent(sender, { 
-      viewOnceMessage: { 
-        message: { 
-          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
-          interactiveMessage: { 
-            body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found 1 video` }, 
-            carouselMessage: { cards: [card] }, 
-          }, 
-        }, 
-      }, 
-    }, { quoted: fakevCard }); 
-    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
-    const response = await axios.get(apiURL); 
-    const data = response.data; 
-    if (!data.downloadLink) { 
-      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP4 download link.' }, { quoted: fakevCard }); 
-    } 
-    await socket.sendMessage(sender, { 
-      video: { url: data.downloadLink }, 
-      mimetype: 'video/mp4', 
-      fileName, 
-    }, { quoted: fakevCard }); 
-  } catch (err) { 
-    console.error('Video command error:', err); 
-    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴠɪᴅᴇᴏ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard }); 
-  } 
-  break; 
-}
 
                     
 // Case: song
