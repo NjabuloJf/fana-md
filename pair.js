@@ -848,7 +848,122 @@ socket.sendMessage(from, menuMessage, { quoted: fakevCard });
   }
   break;
 }
+  case 'allmenu': {
+  try {
+    await socket.sendMessage(sender, { react: { text: '📜', key: msg.key } });
+    const startTime = socketCreationTime.get(number) || Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+    
 
+    let allMenuText = `
+*┏────〘 ʜᴀɴꜱ ᴍɪɴɪ 〙───⊷*
+*┃*  ✨️ *ʙᴏᴛ*: ʜᴀɴꜱ ᴍɪɴɪ 
+*┃*  🎉 *ᴜsᴇʀ*: @${sender.split("@")[0]}
+*┃*  📍 *ᴘʀᴇғɪx*: ${config.PREFIX}
+*┃*  ⏰ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s
+*┃*  💾 *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ
+*┃*  💫 *ᴄᴏᴍᴍᴀɴᴅs*: ${count}
+*┃*  👑 *ᴅᴇᴠ*: ᴍᴀᴅᴇ ʙʏ ʜᴀɴꜱ ᴛᴇᴄʜ
+*┗──────────────⊷*
+
+╭─『 🌐 *ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅs* 』─╮
+*┃*  🟢 *${config.PREFIX}ᴀʟɪᴠᴇ* - ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛᴜs
+*┃*  📊 *${config.PREFIX}ʙᴏᴛ_sᴛᴀᴛs* - ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs
+*┃*  ℹ️ *${config.PREFIX}ʙᴏᴛ_ɪɴғᴏ* - ʙᴏᴛ ɪɴғᴏʀᴍᴀᴛɪᴏɴ
+*┃*  📋 *${config.PREFIX}ᴍᴇɴᴜ* - sʜᴏᴡ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴍᴇɴᴜ
+*┃*  📜 *${config.PREFIX}ᴀʟʟᴍᴇɴᴜ* - ʟɪsᴛ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs
+*┃*  🏓 *${config.PREFIX}ᴘɪɴɢ* - ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴsᴇ sᴘᴇᴇᴅ
+*┃*  🔗 *${config.PREFIX}ᴘᴀɪʀ* - ɢᴇɴᴇʀᴀᴛᴇ ᴘᴀɪʀɪɴɢ code
+*┃*  ✨ *${config.PREFIX}ғᴀɴᴄʏ* - ғᴀɴᴄʏ ᴛᴇxᴛ ɢᴇɴᴇʀᴀᴛᴏʀ
+*┃*  🎨 *${config.PREFIX}ʟᴏɢᴏ* - ᴄʀᴇᴀᴛᴇ ᴄᴜsᴛᴏᴍ ʟᴏɢᴏs
+*┃*  📱 *${config.PREFIX}ǫʀ* - ɢᴇɴᴇʀᴀᴛᴇ ǫʀ ᴄᴏᴅᴇs [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ᴅᴏᴡɴʟᴏᴀᴅ 〙───⊷*
+*┃*  🎵 *${config.PREFIX}sᴏɴɢ* - ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜᴛᴜʙᴇ ᴍᴜsɪᴄ
+*┃*  📱 *${config.PREFIX}ᴛɪᴋᴛᴏᴋ* - ᴅᴏᴡɴʟᴏᴀᴅ TikTok videos
+*┃*  📘 *${config.PREFIX}ғʙ* - ᴅᴏᴡɴʟᴏᴀᴅ ғᴀᴄᴇʙᴏᴏᴋ ᴄᴏɴᴛᴇɴᴛ
+*┃*  📸 *${config.PREFIX}ɪɢ* - ᴅᴏᴡɴʟᴏᴀᴅ ɪɴsᴛᴀɢʀᴀᴍ ᴄᴏɴᴛᴇɴᴛ
+*┃*  🖼️ *${config.PREFIX}ᴀɪɪᴍɢ* - ɢᴇɴᴇʀᴀᴛᴇ ᴀɪ ɪᴍᴀɢᴇs
+*┃*  👀 *${config.PREFIX}ᴠɪᴇᴡᴏɴᴄᴇ* - ᴠɪᴇᴡ ᴏɴᴄᴇ ᴍᴇᴅɪᴀ (ᴀʟsᴏ .ʀᴠᴏ, .ᴠᴠ)
+*┃*  🗣️ *${config.PREFIX}ᴛᴛs* - ᴛʀᴀɴsᴄʀɪʙᴇ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🎬 *${config.PREFIX}ᴛs* - ᴛᴇʀᴀʙᴏx ᴅᴏᴡɴʟᴏᴀᴅᴇʀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🖼️ *${config.PREFIX}sᴛɪᴄᴋᴇʀ* - ᴄᴏɴᴠᴇʀᴛ ᴛᴏ sᴛɪᴄᴋᴇʀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ɢʀᴏᴜᴘ 〙───⊷*
+*┃*  ➕ *${config.PREFIX}ᴀᴅᴅ* - ᴀᴅᴅ ᴍᴇᴍʙᴇʀ ᴛᴏ ɢʀᴏᴜᴘ
+*┃*  🦶 *${config.PREFIX}ᴋɪᴄᴋ* - ʀᴇᴍᴏᴠᴇ ᴍᴇᴍʙᴇʀ ғʀᴏᴍ ɢʀᴏᴜᴘ
+*┃*  🔓 *${config.PREFIX}ᴏᴘᴇɴ* - ᴜɴʟᴏᴄᴋ ɢʀᴏᴜᴘ
+*┃*  🙂‍↕️ *${config.PREFIX}ᴋɪᴄᴋᴀʟʟ* - ʀᴇᴍᴏᴠᴇ ᴀʟʟ ᴍᴇᴍʙᴇʀ 
+*┃*  🔒 *${config.PREFIX}ᴄʟᴏsᴇ* - ʟᴏᴄᴋ ɢʀᴏᴜᴘ
+*┃*  ✨️ *${config.PREFIX}ɪɴᴠɪᴛᴇ* - ɢᴇᴛ ɢʀᴏᴜᴘ ʟɪɴᴋ
+*┃*  👑 *${config.PREFIX}ᴘʀᴏᴍᴏᴛᴇ* - ᴘʀᴏᴍᴏᴛᴇ ᴛᴏ ᴀᴅᴍɪɴ
+*┃*  😢 *${config.PREFIX}ᴅᴇᴍᴏᴛᴇ* - ᴅᴇᴍᴏᴛᴇ ғʀᴏᴍ ᴀᴅᴍɪɴ
+*┃*  👥 *${config.PREFIX}ᴛᴀɢᴀʟʟ* - ᴛᴀɢ ᴀʟʟ ᴍᴇᴍʙᴇʀs
+*┃*  👤 *${config.PREFIX}ᴊᴏɪɴ* - ᴊᴏɪɴ ɢʀᴏᴜᴘ ᴠɪᴀ ʟɪɴᴋ
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ᴏᴛʜᴇʀ 〙───⊷*
+*┃*  📰 *${config.PREFIX}ɴᴇᴡs* - ʟᴀᴛᴇsᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs
+*┃*  🚀 *${config.PREFIX}ɴᴀsᴀ* - ɴᴀsᴀ sᴘᴀᴄᴇ ᴜᴘᴅᴀᴛᴇs
+*┃*  💬 *${config.PREFIX}ɢᴏssɪᴘ* - ᴇɴᴛᴇʀᴛᴀɪɴᴍᴇɴᴛ ɢᴏssɪᴘ
+*┃*  🏏 *${config.PREFIX}ᴄʀɪᴄᴋᴇᴛ* - ᴄʀɪᴄᴋᴇᴛ sᴄᴏʀᴇs & ɴᴇᴡs
+*┃*  🎭 *${config.PREFIX}ᴀɴᴏɴʏᴍᴏᴜs* - ғᴜɴ ɪɴᴛᴇʀᴀᴄᴛɪᴏɴ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ғᴜɴ 〙───⊷*
+*┃*  😂 *${config.PREFIX}ᴊᴏᴋᴇ* - ʟɪɢʜᴛʜᴇᴀʀᴛᴇᴅ ᴊᴏᴋᴇ
+*┃*  🌚 *${config.PREFIX}ᴅᴀʀᴋᴊᴏᴋᴇ* - ᴅᴀʀᴋ ʜᴜᴍᴏʀ ᴊᴏᴋᴇ
+*┃*  🏏 *${config.PREFIX}ᴡᴀɪғᴜ* - ʀᴀɴᴅᴏᴍ ᴀɴɪᴍᴇ ᴡᴀɪғᴜ
+*┃*  😂 *${config.PREFIX}ᴍᴇᴍᴇ* - ʀᴀɴᴅᴏᴍ ᴍᴇᴍᴇ
+*┃*  🐈 *${config.PREFIX}ᴄᴀᴛ* - ᴄᴜᴛᴇ ᴄᴀᴛ ᴘɪᴄᴛᴜʀᴇ
+*┃*  🐕 *${config.PREFIX}ᴅᴏɢ* - ᴄᴜᴛᴇ ᴅᴏɢ ᴘɪᴄᴛᴜʀᴇ
+*┃*  💡 *${config.PREFIX}ғᴀᴄᴛ* - ʀᴀɴᴅᴏᴍ ғᴀᴄᴛ
+*┃*  💘 *${config.PREFIX}ᴘɪᴄᴋᴜᴘʟɪɴᴇ* - ᴄʜᴇᴇsʏ ᴘɪᴄᴋᴜᴘ ʟɪɴᴇ
+*┃*  🔥 *${config.PREFIX}ʀᴏᴀsᴛ* - sᴀᴠᴀɢᴇ ʀᴏᴀsᴛ
+*┃*  ❤️ *${config.PREFIX}ʟᴏᴠᴇǫᴜᴏᴛᴇ* - ʀᴏᴍᴀɴᴛɪᴄ love quote
+*┃*  💭 *${config.PREFIX}ǫᴜᴏᴛᴇ* - ʙᴏʟᴅ ᴏʀ ᴡɪᴛᴛʏ ǫᴜᴏᴛᴇ
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ-xᴍᴅ ᴍᴀɪɴ 〙───⊷*
+*┃*  🤖 *${config.PREFIX}ᴀɪ* - ᴄʜᴀᴛ ᴡɪᴛʜ ᴀɪ
+*┃*  📊 *${config.PREFIX}ᴡɪɴғᴏ* - ᴡʜᴀᴛsᴀᴘᴘ ᴜsᴇʀ ɪɴғᴏ
+*┃*  🔍 *${config.PREFIX}ᴡʜᴏɪs* - ᴅᴏᴍᴀɪɴ ᴡʜᴏɪs ʟᴏᴏᴋᴜᴘ
+*┃*  💣 *${config.PREFIX}ʙᴏᴍʙ* - sᴇɴᴅ ᴍᴜʟᴛɪᴘʟᴇ ᴍᴇssᴀɢᴇs
+*┃*  🖼️ *${config.PREFIX}ɢᴇᴛᴘᴘ* - ғᴇᴛᴄʜ ᴘʀᴏғɪʟᴇ ᴘɪᴄᴛᴜʀᴇ
+*┃*  💾 *${config.PREFIX}sᴀᴠᴇsᴛᴀᴛᴜs* - sᴀᴠᴇ sᴛᴀᴛᴜs
+*┃*  ✍️ *${config.PREFIX}sᴇᴛsᴛᴀᴛᴜs* - sᴇᴛ sᴛᴀᴛᴜs [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🗑️ *${config.PREFIX}ᴅᴇʟᴇᴛᴇᴍᴇ* - ᴅᴇʟᴇᴛᴇ ᴜsᴇʀ ᴅᴀᴛᴀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🌦️ *${config.PREFIX}ᴡᴇᴀᴛʜᴇʀ* - ᴡᴇᴀᴛʜᴇʀ ғᴏʀᴇᴄᴀsᴛ
+*┃*  🔗 *${config.PREFIX}sʜᴏʀᴛᴜʀʟ* - sʜᴏʀᴛᴇɴ ᴜʀʟ
+*┃*  📤 *${config.PREFIX}ᴛᴏᴜʀʟ2* - ᴜᴘʟᴏᴀᴅ ᴍᴇᴅɪᴀ ᴛᴏ ʟɪɴᴋ
+*┃*  📦 *${config.PREFIX}ᴀᴘᴋ* - ᴅᴏᴡɴʟᴏᴀᴅ ᴀᴘᴋ ғɪʟᴇs
+*┃*  📲 *${config.PREFIX}ғᴄ* - ғᴏʟʟᴏᴡ ɴᴇᴡsʟᴇᴛᴛᴇʀ ᴄʜᴀɴɴᴇʟ
+*┗──────────────⊷*
+
+> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ*
+`;
+
+    await socket.sendMessage(from, {
+      image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
+      caption: allMenuText
+    }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
+  } catch (error) {
+    console.error('Allmenu command error:', error);
+    await socket.sendMessage(from, {
+      text: `❌* ᴛʜᴇ ᴍᴇɴᴜ ɢᴏᴛ sʜʏ! 😢*\nError: ${error.message || 'Unknown error'}\nTry again, love?`
+    }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } });
+  }
+  break;
+}
 
                 // Case: fc (follow channel)
                 case 'fc': {
@@ -931,12 +1046,11 @@ case 'ping': {
       emoji = '🔴';
     }
     const finalMessage = `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮\n┬│` +
-                       
-                        `┬│ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮\n` +
+                        `┬│ ▢ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
                         `❒│▸ ▢ ${emoji} *ϙᴜᴀʟɪᴛʏ:* ${quality}\n` +
                         `❒│▸ ▢ *ᴛɪᴍᴇsᴛᴀᴍᴘ:* ${new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: true })}\n` +
-                        `┬│ ᴄᴏɴɴᴇᴄᴛɪᴏɴ sᴛᴀᴛᴜs \n` +
+                        `┬│ ▢ ᴄᴏɴɴᴇᴄᴛɪᴏɴ sᴛᴀᴛᴜs \n` +
                         `┬│
 │╰─ׂ┄─ׅ─ׂ┄╯
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
@@ -2239,51 +2353,177 @@ case 'invite': {
                 }
 
 
-case 'img':
-case 'image': { 
+
+case 'apk': { 
   try { 
-    const query = args.join(' ').trim(); 
-    if (!query) { 
-      await socket.sendMessage(sender, { text: 'Which image?' }, { quoted: fakevCard }); 
+    const appName = args.join(' ').trim(); 
+    if (!appName) { 
+      await socket.sendMessage(sender, { text: '📌 Usage: .apk <app name>\nExample: .apk whatsapp' }, { quoted: fakevCard }); 
       break; 
     } 
-    const loadingMessage = await socket.sendMessage(sender, { text: `*⏳ Searching for ${query} images...*` }, { quoted: fakevCard }); 
-    const apiUrl = `https://apiskeith.vercel.app/search/images?query=${encodeURIComponent(query)}`; 
-    const res = await axios.get(apiUrl, { timeout: 100000 }); 
-    const results = res.data?.result; 
-    if (!Array.isArray(results) || results.length === 0) { 
-      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
+    await socket.sendMessage(sender, { react: { text: '⏳', key: msg.key } }); 
+    const apiUrl = `https://api.nexoracle.com/downloader/apk?q=${encodeURIComponent(appName)}&apikey=free_key@maher_apis`; 
+    console.log('Fetching APK from:', apiUrl); 
+    const response = await fetch(apiUrl); 
+    if (!response.ok) { 
+      throw new Error(`API request failed with status: ${response.status}`); 
+    } 
+    const data = await response.json(); 
+    console.log('API Response:', JSON.stringify(data, null, 2)); 
+    if (!data || data.status !== 200 || !data.result || typeof data.result !== 'object') { 
+      await socket.sendMessage(sender, { text: '❌ Unable to find the APK. The API returned invalid data.' }, { quoted: fakevCard }); 
       break; 
     } 
-    const images = results.slice(0, 8); 
-    const picked = await Promise.all(images.map(async (img) => { 
-      try { 
-        const bufferRes = await axios.get(img.url, { responseType: 'arraybuffer' }); 
-        return { buffer: bufferRes.data, directLink: img.url }; 
-      } catch { 
-        console.error('Image download failed:', img.url); 
-        return null; 
+    const { name, lastup, package, size, icon, dllink } = data.result; 
+    if (!name || !dllink) { 
+      console.error('Invalid result data:', data.result); 
+      await socket.sendMessage(sender, { text: '❌ Invalid APK data: Missing name or download link.' }, { quoted: fakevCard }); 
+      break; 
+    } 
+    // Validate icon URL 
+    if (!icon || !icon.startsWith('http')) { 
+      console.warn('Invalid or missing icon URL:', icon); 
+    } 
+    await socket.sendMessage(sender, { 
+      image: { url: icon || '' }, 
+      caption: formatMessage( 
+        '📦 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐈𝐍𝐆 𝐀𝐏𝐊', 
+        `ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ${name}... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.`, 
+        'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
+      ),
+      contextInfo: { 
+        externalAdReply: { 
+          title: "njabulo small alive🛒", 
+          mediaType: 1, 
+          previewType: 0, 
+          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg", 
+          renderLargerThumbnail: true, 
+        }, 
+        isForwarded: true, 
+        forwardedNewsletterMessageInfo: { 
+          newsletterJid: "120363399999197102@newsletter", 
+          newsletterName: "╭••➤Njabulo Jb", 
+          serverMessageId: 143, 
+        }, 
+        forwardingScore: 999, 
       } 
-    })).then((results) => results.filter(Boolean)); 
-    const validImages = picked; 
-    if (validImages.length === 0) { 
-      await socket.sendMessage(sender, { text: 'No images found.' }, { quoted: fakevCard }); 
-      break; 
+    }, { quoted: fakevCard }); 
+    console.log('Downloading APK from:', dllink); 
+    const apkResponse = await fetch(dllink, { headers: { 'Accept': 'application/octet-stream' } }); 
+    const contentType = apkResponse.headers.get('content-type'); 
+    if (!apkResponse.ok || (contentType && !contentType.includes('application/vnd.android.package-archive'))) { 
+      throw new Error(`Failed to download APK: Status ${apkResponse.status}, Content-Type: ${contentType || 'unknown'}`); 
     } 
-    for (const item of validImages) { 
-      await socket.sendMessage(sender, { 
-        image: item.buffer, 
-        caption: `🔍 Search: ${query}\n`, 
-      }, { quoted: fakevCard }); 
+    const apkBuffer = await apkResponse.arrayBuffer(); 
+    if (!apkBuffer || apkBuffer.byteLength === 0) { 
+      throw new Error('Downloaded APK is empty or invalid'); 
     } 
+    const buffer = Buffer.from(apkBuffer); 
+    // Validate APK file (basic check for APK signature) 
+    if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format) 
+      throw new Error('Downloaded file is not a valid APK'); 
+    } 
+    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+┬│
+❒│ ɴᴀᴍᴇ: ${name || 'N/A'}
+❒│ ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}
+❒│ ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}
+┬│ Size: ${size || 'N/A'}
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+    const formattedInfoMessage = {
+      document: buffer,
+      mimetype: 'application/vnd.android.package-archive',
+      fileName: `${name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`, // Sanitize filename
+      caption: captionText,
+      buttons: [
+        {
+          buttonId: `${config.PREFIX}menu_action`,
+          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
+          type: 4,
+          nativeFlowInfo: {
+            name: 'single_select',
+            paramsJson: JSON.stringify({
+              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
+              sections: [
+                {
+                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
+                  highlight_label: 'Quick Actions',
+                  rows: [
+                    {
+                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
+                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
+                      id: `${config.PREFIX}menu`
+                    },
+                    {
+                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
+                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
+                      id: `${config.PREFIX}alive`
+                    },
+                    {
+                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
+                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
+                      id: `${config.PREFIX}ping`
+                    }
+                  ]
+                },
+                {
+                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
+                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
+                  rows: [
+                    {
+                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
+                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
+                      id: `${config.PREFIX}ai Hello!`
+                    },
+                    {
+                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
+                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
+                      id: `${config.PREFIX}song`
+                    },
+                    {
+                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
+                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
+                      id: `${config.PREFIX}news`
+                    }
+                  ]
+                }
+              ]
+            })
+          }
+        }
+      ],
+      headerType: 1,
+      viewOnce: true,
+      contextInfo: {
+        externalAdReply: {
+          title: "njabulo small apk🛒",
+          mediaType: 1,
+          previewType: 0,
+          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg",
+          renderLargerThumbnail: true,
+        },
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363399999197102@newsletter",
+          newsletterName: "╭••➤Njabulo Jb",
+          serverMessageId: 143,
+        },
+        forwardingScore: 999,
+      }
+    };
+    await socket.sendMessage(sender, formattedInfoMessage, { quoted: fakevCard });
     await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
   } catch (error) { 
-    console.error('Error searching images:', error); 
-    await socket.sendMessage(sender, { text: `Error: ${error.message}` }, { quoted: fakevCard }); 
+    console.error('APK command error:', error.message, error.stack); 
+    await socket.sendMessage(sender, { text: `❌ Oh, love, couldn’t fetch the APK! 😢 Error: ${error.message}\nTry again later.` }, { quoted: fakevCard }); 
     await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
   } 
   break; 
-                 }
+}
+
 
 // case 39: weather
 case 'weather': {
