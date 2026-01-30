@@ -2337,7 +2337,7 @@ case 'invite': {
                 }
 
 
-
+                    
 case 'apk': { 
   try { 
     const appName = args.join(' ').trim(); 
@@ -2369,12 +2369,10 @@ case 'apk': {
       console.warn('Invalid or missing icon URL:', icon); 
     } 
     await socket.sendMessage(sender, { 
-      image: { url: icon || '' }, 
-      caption: formatMessage( 
-        '📦 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐈𝐍𝐆 𝐀𝐏𝐊', 
-        `ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ${name}... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.`, 
-        'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
-      ),
+      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+    mimetype: 'application/pdf',
+    fileName: 'WhatsApp PDF 10GB',
+      caption: `Downloading ${name}... please wait.`, 
       contextInfo: { 
         externalAdReply: { 
           title: "njabulo small alive🛒", 
@@ -2407,16 +2405,7 @@ case 'apk': {
     if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format) 
       throw new Error('Downloaded file is not a valid APK'); 
     } 
-    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
-┬│
-❒│ ɴᴀᴍᴇ: ${name || 'N/A'}
-❒│ ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}
-❒│ ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}
-┬│ Size: ${size || 'N/A'}
-┬│
-│╰─ׂ┄─ׅ─ׂ┄╯
-╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+    const captionText = `📦 𝐀𝐏𝐊 𝐃𝐄𝐓𝐀𝐈𝐋𝐒\n🔖 ɴᴀᴍᴇ: ${name || 'N/A'}\n📅 ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}\n📦 ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}\n📏 Size: ${size || 'N/A'}`;
     const formattedInfoMessage = {
       document: buffer,
       mimetype: 'application/vnd.android.package-archive',
@@ -2483,7 +2472,7 @@ case 'apk': {
       viewOnce: true,
       contextInfo: {
         externalAdReply: {
-          title: "njabulo small apk🛒",
+          title: "njabulo small alive🛒",
           mediaType: 1,
           previewType: 0,
           thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg",
@@ -2506,7 +2495,7 @@ case 'apk': {
     await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
   } 
   break; 
-}
+  }
 
 
 // case 39: weather
