@@ -579,124 +579,24 @@ function setupCommandHandlers(socket, number) {
 
 
 
-        try {
-            switch (command) {
-                // Case: alive
-             
-case 'alive': {
-  try {
-    await socket.sendMessage(sender, { react: { text: '🔮', key: msg.key } });
-            const startTime = socketCreationTime.get(number) || Date.now();
-                        const uptime = Math.floor((Date.now() - startTime) / 1000);
-                        const hours = Math.floor(uptime / 3600);
-                        const minutes = Math.floor((uptime % 3600) / 60);
-                        const seconds = Math.floor(uptime % 60);
-      
-    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
-┴│
-❒│▸ ▢ ᴀᴄᴛɪᴠᴇ ʙᴏᴛs: ${activeSockets.size} 
-❒│▸ ▢ ʏᴏᴜʀ ɴᴜᴍʙᴇʀ: ${number} 
-❒│▸ ▢ ᴠᴇʀsɪᴏɴ: ${config.version} 
-❒│▸ ▢ ᴍᴇᴍᴏʀʏ ᴜsᴀɢᴇ: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}ᴍʙ 
-┬│
-│╰─ׂ┄─ׅ─ׂ┄╯
-╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
-    const aliveMessage = {
-      document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
-      mimetype: 'application/pdf',
-      fileName: 'WhatsApp PDF 10GB',
-      caption: `${captionText}`,
-      buttons: [
-        {
-          buttonId: `${config.PREFIX}menu_action`,
-          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
-          type: 4,
-          nativeFlowInfo: {
-            name: 'single_select',
-            paramsJson: JSON.stringify({
-              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
-              sections: [
-                {
-                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
-                  highlight_label: 'Quick Actions',
-                  rows: [
-                    {
-                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
-                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
-                      id: `${config.PREFIX}menu`
-                    },
-                    {
-                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
-                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
-                      id: `${config.PREFIX}alive`
-                    },
-                    {
-                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
-                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
-                      id: `${config.PREFIX}ping`
-                    }
-                  ]
-                },
-                {
-                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
-                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
-                  rows: [
-                    {
-                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
-                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
-                      id: `${config.PREFIX}ai Hello!`
-                    },
-                    {
-                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
-                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
-                      id: `${config.PREFIX}song`
-                    },
-                    {
-                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
-                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
-                      id: `${config.PREFIX}news`
-                    }
-                  ]
-                }
-              ]
-            })
-          }
-        }
-      ],
-      headerType: 1,
-      viewOnce: true,
-      contextInfo: {
-        externalAdReply: {
-          title: "njabulo small alive🛒",
-          mediaType: 1,
-          previewType: 0,
-          thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
-          renderLargerThumbnail: true,
-        },
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: "120363399999197102@newsletter",
-          newsletterName: "╭••➤Njabulo Jb",
-          serverMessageId: 143,
-        },
-        forwardingScore: 999,
-      }
-    };
-    await socket.sendMessage(sender, aliveMessage, { quoted: fakevCard });
-  } catch (error) {
-    console.error('Alive command error:', error);
-  }
-  break;
-          }
+        
 
-                    
-case 'pins': {
-  await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
+
+case 'help':
+case 'bot':
+case 'list':
+case 'menu': {
+  await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
   try {
-      const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const startTime = socketCreationTime.get(number) || Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
     const startTime = new Date().getTime();
-    await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
     const endTime = new Date().getTime();
     const latency = endTime - startTime;
     let quality = '';
@@ -721,20 +621,24 @@ case 'pins': {
           title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
 │╭ׂ─ׂ┄─ׅ─ׂ┄ 
 ┴│
-❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
 ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
-❒│▸ ▢ *ʀᴜɴ:*
-❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
-❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
 ┴│
 │╰─ׂ┄─ׅ─ׂ┄
 ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
 │╭ׂ─ׂ┄─ׅ─ׂ┄
 ┴│
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
+❒│▸ ▢ *.ᴘʟᴀʏ* 
+❒│▸ ▢ *.ᴠɪᴅᴇᴏ* 
+❒│▸ ▢ *.ʏᴛs*
+❒│▸ ▢ *.ᴀᴘᴋ* 
+❒│▸ ▢ *.ᴍᴇɴᴜ*
+❒│▸ ▢ *.ғʙ*
+❒│▸ ▢ *.ᴠɪᴇᴡᴏɴᴄᴇ*
+❒│▸ ▢ *.sᴛɪᴄᴋᴇʀ*
 ┬│
 │╰─ׂ┄─ׅ─ׂ┄
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
@@ -756,7 +660,7 @@ case 'pins': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
@@ -766,20 +670,24 @@ case 'pins': {
           title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
 │╭ׂ─ׂ┄─ׅ─ׂ┄ 
 ┴│
-❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
 ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
-❒│▸ ▢ *ʀᴜɴ:*
-❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
-❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
 ┴│
 │╰─ׂ┄─ׅ─ׂ┄
 ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
 │╭ׂ─ׂ┄─ׅ─ׂ┄
 ┴│
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
+❒│▸ ▢ *.ᴍᴇɴᴜ*
+❒│▸ ▢ *.ʀᴇᴘᴏ*
+❒│▸ ▢ *.ᴏᴡɴᴇʀ*
+❒│▸ ▢ *.ᴘɪɴg*
+❒│▸ ▢ *.ᴜᴘᴛɪᴍᴇ* 
+❒│▸ ▢ *.ʙᴏᴛʟɪɴᴋ* 
+❒│▸ ▢ *.sᴇᴛᴛɪɴɢs* 
+❒│▸ ▢ *.ᴘᴀɪʀ*
 ┬│
 │╰─ׂ┄─ׅ─ׂ┄
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
@@ -801,7 +709,7 @@ case 'pins': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
@@ -811,20 +719,24 @@ case 'pins': {
           title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
 │╭ׂ─ׂ┄─ׅ─ׂ┄ 
 ┴│
-❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
 ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
-❒│▸ ▢ *ʀᴜɴ:*
-❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
-❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
 ┴│
 │╰─ׂ┄─ׅ─ׂ┄
 ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
 │╭ׂ─ׂ┄─ׅ─ׂ┄
 ┴│
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
+❒│▸ ▢ *.ᴀɪ*
+❒│▸ ▢ *.ɢᴇᴛᴘᴘ*
+❒│▸ ▢ *.sᴀᴠᴇsᴛᴀᴛᴜs*
+❒│▸ ▢ *.sᴇᴛsᴛᴀᴛᴜs*
+❒│▸ ▢ *.ɢᴘᴛ*
+❒│▸ ▢ *.ᴏᴘᴇɴᴀɪ*
+❒│▸ ▢ *.ɴᴊᴀʙᴜʟᴏ*
+❒│▸ ▢ *.ғᴀɴᴀ*
 ┬│
 │╰─ׂ┄─ׅ─ׂ┄
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
@@ -846,38 +758,42 @@ case 'pins': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
       },
       {
         header: {
-          title: `📊 Ping`,
-          hasMediaAttachment: true,
-          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
-        },
-        body: {
-          text: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
 │╭ׂ─ׂ┄─ׅ─ׂ┄ 
 ┴│
-❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
 ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
-❒│▸ ▢ *ʀᴜɴ:*
-❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
-❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
 ┴│
 │╰─ׂ┄─ׅ─ׂ┄
 ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
 │╭ׂ─ׂ┄─ׅ─ׂ┄
 ┴│
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
-❒│▸ ①◦➛
+❒│▸ ▢ *.ɪɴᴠɪᴛᴇ*
+❒│▸ ▢ *.ᴘʀᴏᴍᴏᴛᴇ*
+❒│▸ ▢ *.ᴅᴇᴍᴏᴛᴇ*
+❒│▸ ▢ *.ᴛᴀɢᴀʟʟ*
+❒│▸ ▢ *.ᴊᴏɪɴ*
+❒│▸ ▢ *.ᴀᴅᴅ*
+❒│▸ ▢ *.ᴏᴘᴇɴ*
+❒│▸ ▢ *.ᴄʟᴏsᴇ*
 ┬│
 │╰─ׂ┄─ׅ─ׂ┄
 ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
         },
         footer: {
           text: "",
@@ -886,7 +802,7 @@ case 'pins': {
           buttons: [
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
@@ -898,7 +814,7 @@ case 'pins': {
           messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
           interactiveMessage: {
             header: { text: `🔍 System Info` },
-            body: { text: `*📂 sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ*` },
+            body: { text: `*📔 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
             headerType: 1,
             carouselMessage: { cards },
           },
@@ -914,13 +830,290 @@ case 'pins': {
     await socket.sendMessage(sender, { text: `📌 *ᴘᴏɴɢ!*\n⚡ ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
   }
   break;
-                }
+}
+
+case 'sc':
+case 'botlink':
+case 'script':
+case 'repo': {
+  await socket.sendMessage(sender, { react: { text: '⚒️', key: msg.key } });
+  try {
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+    const startTime = new Date().getTime();
+    const githubRepoURL = 'https://github.com/NjabuloJ/Njabulo-Jb'; 
+    const [, username, repo] = githubRepoURL.match(/github\.com\/([^/]+)\/([^/]+)/); 
+    const response = await fetch(`https://api.github.com/repos/${username}/${repo}`); 
+    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`); 
+    const repoData = await response.json(); 
+    await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    const latency = endTime - startTime;
+    let quality = '';
+    let emoji = '';
+    if (latency < 100) {
+      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
+      emoji = '🟢';
+    } else if (latency < 300) {
+      quality = 'ɢᴏᴏᴅ';
+      emoji = '🟡';
+    } else if (latency < 600) {
+      quality = 'ғᴀɪʀ';
+      emoji = '🟠';
+    } else {
+      quality = 'ᴘᴏᴏʀ';
+      emoji = '🔴';
+    }
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
+    const cards = [
+          {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+❒│▸ ▢
+❒│▸ ▢ *ᴏᴡɴᴇʀ ᴡᴇʙ sɪᴛᴇ ɴᴊᴀʙᴜʟᴏ*
+❒│▸ ▢ *ᴡᴇʙsɪᴛᴇ: ᴏɴʟɪɴᴇ ᴀᴠᴀɪʟᴀʙʟᴇ*
+❒│▸ ▢ *ɴᴊᴀʙᴜʟᴏ ᴊʙ & ɴᴊᴀʙᴜʟᴏ ᴊʙ sᴍᴀʟʟ*
+❒│▸ ▢ *sᴜᴘᴘᴏʀᴛ ʀᴇᴘᴏsɪᴛᴏʀʏ sᴛᴀʀ ᴀɴᴅ ғᴏʀᴋs*
+❒│▸ ▢ *ᴏᴡᴇɴ ᴄᴏᴜɴᴛʀʏ ʙᴏᴛsᴡᴀɴᴀ ʙᴡ ᴢɪᴍ*
+❒│▸ ▢
+❒│▸ ▢ *ᴍᴏʀᴇ ᴠɪsɪᴛ ᴏɴ ᴡᴇʙsɪᴛᴇ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Website owner]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *don't forget give star*
+❒│▸ ①◦➛ *and forks to my repository*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Repository]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *njabulo jb small bot*
+❒│▸ ①◦➛ *get pair free bot available*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[mini bot]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *Njabulo Jb Normal bot*
+❒│▸ ①◦➛ *get pair and deploy on heroku*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[code pair]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *get pair code on telegram*
+❒│▸ ①◦➛ */code minibot /pair Njabulo Jb*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Telegram bot]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+    ];
+    const message = generateWAMessageFromContent(sender, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+          interactiveMessage: {
+            header: { text: `🔍 System Info` },
+            body: { text: `*📔 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
+            headerType: 1,
+            carouselMessage: { cards },
+          },
+        },
+      },
+    }, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id });
+  } catch (error) {
+    console.error('Ping command error:', error);
+    const startTime = new Date().getTime();
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ...' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: `📌 ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+  }
+  break;
+   }
+
+
+
+
+
+
+
+                    
+
+                    
 
 
 
                 // Case: menu
        // Case: menu
-case 'menu': {
+case 'allmenu': {
   try {
     await socket.sendMessage(sender, { react: { text: '🤖', key: msg.key } });
     const startTime = socketCreationTime.get(number) || Date.now();
@@ -1256,17 +1449,13 @@ case 'song': {
         text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
       }, 
       footer: { 
-        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴍᴜꜱɪᴄ 🙄', 
+        text: '', 
       }, 
       nativeFlowMessage: { 
         buttons: [ 
           { 
             name: 'cta_url', 
             buttonParamsJson: JSON.stringify({ display_text: '🎧 Play Audio', url: video.url }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
           }, 
         ], 
       }, 
@@ -1277,7 +1466,7 @@ case 'song': {
           messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
           interactiveMessage: { 
             body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found ${videos.length} songs` }, 
+            footer: { text: `📂 Found ${videos.length} songs\nＮＪＡＢＵＬＯ ＳＭＡＬＬ` }, 
             carouselMessage: { cards }, 
           }, 
         }, 
@@ -1341,18 +1530,14 @@ case 'video': {
         text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
       }, 
       footer: { 
-        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴠɪᴅᴇᴢ 🙄', 
+        text: '', 
       }, 
       nativeFlowMessage: { 
         buttons: [ 
           { 
             name: 'cta_url', 
             buttonParamsJson: JSON.stringify({ display_text: '🎥 Play Video', url: video.url }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
-          }, 
+           }, 
         ], 
       }, 
     })));
@@ -1362,7 +1547,7 @@ case 'video': {
           messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
           interactiveMessage: { 
             body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found ${videos.length} videos` }, 
+            footer: { text: `📂 Found ${videos.length} videos\n> ＮＪＡＢＵＬＯ ＳＭＡＬＬ` }, 
             carouselMessage: { cards }, 
           }, 
         }, 
@@ -1383,15 +1568,7 @@ case 'video': {
       mimetype: 'video/mp4', 
       fileName, 
       caption: `🎥 ${video.title}`, 
-      contextInfo: { 
-        externalAdReply: { 
-          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ", 
-          mediaType: 1, 
-          previewType: 0, 
-          thumbnailUrl: video.thumbnail, 
-          renderLargerThumbnail: true, 
-        }, 
-      }, 
+      
     }, { quoted: fakevCard }); 
   } catch (err) { 
     console.error('Video command error:', err);
@@ -1401,7 +1578,11 @@ case 'video': {
 }
 
 
-                    
+
+        case 'pi':
+        case 'up':
+        case 'alive': 
+        case 'uptime': 
 case 'ping': {
   await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
 
@@ -1415,13 +1596,13 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
     const startTime = new Date().getTime();
     let ping = await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
     const progressSteps = [
-      { bar: '《 █▒▒▒▒▒▒▒▒▒▒▒》', percent: '10%', delay: 100 },
-      { bar: '《 ███▒▒▒▒▒▒▒▒▒》', percent: '25%', delay: 150 },
-      { bar: '《 █████▒▒▒▒▒▒▒》', percent: '40%', delay: 100 },
-      { bar: '《 ███████▒▒▒▒▒》', percent: '55%', delay: 120 },
-      { bar: '《 █████████▒▒▒》', percent: '70%', delay: 100 },
-      { bar: '《 ███████████▒》', percent: '85%', delay: 100 },
-      { bar: '《 ████████████》', percent: '100%', delay: 200 }
+      { bar: '《 █▒▒▒▒▒▒▒》', percent: '10%', delay: 100 },
+      { bar: '《 ███▒▒▒▒▒》', percent: '25%', delay: 150 },
+      { bar: '《 ████▒▒▒▒》', percent: '40%', delay: 100 },
+      { bar: '《 █████▒▒▒▒》', percent: '55%', delay: 120 },
+      { bar: '《 ██████▒▒▒》', percent: '70%', delay: 100 },
+      { bar: '《 ████████▒》', percent: '85%', delay: 100 },
+      { bar: '《 █████████》', percent: '100%', delay: 200 }
     ];
     for (let step of progressSteps) {
       await new Promise(resolve => setTimeout(resolve, step.delay));
@@ -1453,12 +1634,12 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
     const cards = [
       {
         header: {
-          title: `📊 Uptime`,
+          title: `*📊 Uptime*`,
           hasMediaAttachment: true,
           imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
         },
         body: {
-          text: `Uptime: ${hours}h ${minutes}m ${seconds}s`,
+          text: `*Uptime: ${hours}h ${minutes}m ${seconds}s*n\ *Am alive oll time service me*`,
         },
         footer: {
           text: "",
@@ -1472,19 +1653,19 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
       },
       {
         header: {
-          title: `📊 Ping`,
+          title: `*📊 Ping*`,
           hasMediaAttachment: true,
           imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
         },
         body: {
-          text: `Speed: ${latency}ms\nQuality: ${quality} ${emoji}`,
+          text: `*Speed: ${latency}ms*\nQuality: ${quality} ${emoji}`,
         },
         footer: {
           text: "",
@@ -1493,7 +1674,7 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
           buttons: [
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
             },
           ],
         },
@@ -1505,7 +1686,7 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
           messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
           interactiveMessage: {
             header: { text: `🔍 System Info` },
-            body: { text: `*📂 sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ*` },
+            body: { text: `*📂 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
             headerType: 1,
             carouselMessage: { cards },
           },
@@ -3244,9 +3425,9 @@ case 'tourl2': {
 
 
                     
-case 'repo':
- case 'sc':
-  case 'script': { 
+case 'repo1':
+ case 'sc1':
+  case 'script1': { 
   try { 
     await socket.sendMessage(sender, { react: { text: '🪄', key: msg.key } }); 
     const githubRepoURL = 'https://github.com/NjabuloJ/Njabulo-Jb'; 
