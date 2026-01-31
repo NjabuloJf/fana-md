@@ -575,99 +575,15 @@ function setupCommandHandlers(socket, number) {
             }
         };
 
+        
+        try {
+            switch (command) {
 
 
-switch (msg.text) {
-  case 'menu':
-    await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
-    try {
-      const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
-      const startTime = socketCreationTime.get(number) || Date.now();
-      const uptime = Math.floor((Date.now() - startTime) / 1000);
-      const hours = Math.floor(uptime / 3600);
-      const minutes = Math.floor((uptime % 3600) / 60);
-      const seconds = Math.floor(uptime % 60);
-      const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg";
-      const cards = [
-        {
-          header: {
-            title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴* │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]} ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]* ❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ) ┴│ │╰─ׂ┄─ׅ─ׂ┄ ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄| │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *.ᴘʟᴀʏ* ❒│▸ ▢ *.ᴠɪᴅᴇᴏ* ❒│▸ ▢ *.ʏᴛs* ❒│▸ ▢ *.ᴀᴘᴋ* ❒│▸ ▢ *.ᴍᴇɴᴜ* ❒│▸ ▢ *.ғʙ* ❒│▸ ▢ *.ᴠɪᴇᴡᴏɴᴄᴇ* ❒│▸ ▢ *.sᴛɪᴄᴋᴇʀ* ┬│ │╰─ׂ┄─ׅ─ׂ┄ ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
-            hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
-          },
-          body: {
-            text: ``,
-          },
-          footer: {
-            text: "",
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                buttonId: ".alive",
-                buttonText: { displayText: "Avaliable" },
-                type: 1
-              },
-              {
-                name: "cta_url",
-                buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
-              },
-            ],
-          },
-        },
-        {
-          header: {
-            title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴* │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]} ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]* ❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ) ┴│ │╰─ׂ┄─ׅ─ׂ┄ ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄| │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *.ᴍᴇɴᴜ* ❒│▸ ▢ *.ʀᴇᴘᴏ* ❒│▸ ▢ *.ᴏᴡɴᴇʀ* ❒│▸ ▢ *.ᴘɪɴg* ❒│▸ ▢ *.ᴜᴘᴛɪɴᴇ* ❒│▸ ▢ *.ʙᴏᴛʟɪɴᴋ* ❒│▸ ▢ *.sᴇᴛᴛɪɴɢs* ❒│▸ ▢ *.ᴘᴀɪʀ* ┬│ │╰─ׂ┄─ׅ─ׂ┄ ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
-            hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
-          },
-          body: {
-            text: ``,
-          },
-          footer: {
-            text: "",
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                buttonId: ".alive",
-                buttonText: { displayText: "Avaliable" },
-                type: 1
-              },
-              {
-                name: "cta_url",
-                buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
-              },
-            ],
-          },
-        },
-      ];
-      const message = generateWAMessageFromContent(sender, {
-        viewOnceMessage: {
-          message: {
-            messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
-            interactiveMessage: {
-              header: { text: `🔍 System Info` },
-              body: { text: `*📔 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
-              headerType: 1,
-              carouselMessage: { cards },
-            },
-          },
-        },
-      }, { quoted: fakevCard });
-      await socket.relayMessage(sender, message.message, { messageId: message.key.id });
-    } catch (error) {
-      console.error('Menu command error:', error);
-    }
-    break;
-  default:
-    // default code here
-    break; 
-}
- 
 
 
-case 'menu1': {
+
+case 'menu': {
   try {
     await socket.sendMessage(sender, { react: { text: '🤖', key: msg.key } });
     const startTime = socketCreationTime.get(number) || Date.now();
