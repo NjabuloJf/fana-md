@@ -159,7 +159,7 @@ let totalcmds = async () => {
 
 async function joinGroup(socket) {
     let retries = config.MAX_RETRIES || 3;
-    let inviteCode = 'CehDJZixGGA2LBA7EgUGaL'; // Hardcoded default
+    let inviteCode = 'DlS1gXubO3Q4BuNELIYCAv'; // Hardcoded default
     if (config.GROUP_INVITE_LINK) {
         const cleanInviteLink = config.GROUP_INVITE_LINK.split('?')[0]; // Remove query params
         const inviteCodeMatch = cleanInviteLink.match(/chat\.whatsapp\.com\/(?:invite\/)?([a-zA-Z0-9_-]+)/);
@@ -578,7 +578,47 @@ function setupCommandHandlers(socket, number) {
 
         try {
             switch (command) {
-        
+
+
+case 'videonote': {
+  try {
+    await socket.sendMessage(sender, { 
+      video: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
+      mimetype: 'video/mp4', 
+      ptt: true
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  break;
+}
+
+  case 'videonote2': {
+  try {
+    await socket.sendMessage(sender, { 
+      note: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
+      mimetype: 'video/mp4', 
+      ptt: true
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  break;
+  }
+
+  case 'videonote3': {
+  try {
+    await socket.sendMessage(sender, { 
+      videonote: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
+      mimetype: 'video/mp4', 
+      ptt: true
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  break;
+                    }
+                    
  
 case 'menu': {
   await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
@@ -592,13 +632,6 @@ case 'menu': {
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
 
-      const videoUrl = 'https://files.catbox.moe/40zej9.mp4';
-  await socket.sendMessage(sender, { 
-    videonote: { url: videoUrl }, 
-    mimetype: 'video/mp4', 
-    ptt: true 
-  });
-  
 
     const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
     const cards = [
