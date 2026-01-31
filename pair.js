@@ -815,11 +815,7 @@ case 'menu': {
     }, { quoted: fakevCard });
     await socket.relayMessage(sender, message.message, { messageId: message.key.id });
   } catch (error) {
-    console.error('Ping command error:', error);
-    const startTime = new Date().getTime();
-    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ...' }, { quoted: msg });
-    const endTime = new Date().getTime();
-    await socket.sendMessage(sender, { text: ` ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+    console.error('Menu command error:', error);
   }
   break;
 }
