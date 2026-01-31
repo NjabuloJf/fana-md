@@ -575,30 +575,68 @@ function setupCommandHandlers(socket, number) {
             }
         };
 
-        
+
         try {
             switch (command) {
-
-
-
-
-
+        
+ 
 case 'menu': {
+  await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
   try {
-    await socket.sendMessage(sender, { react: { text: '🤖', key: msg.key } });
-    const startTime = socketCreationTime.get(number) || Date.now();
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const startTime = socketCreationTime.get(number) || Date.now();
     const uptime = Math.floor((Date.now() - startTime) / 1000);
     const hours = Math.floor(uptime / 3600);
     const minutes = Math.floor((uptime % 3600) / 60);
     const seconds = Math.floor(uptime % 60);
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
-    const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
-    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg";
+    const startTime = new Date().getTime();
+    const endTime = new Date().getTime();
+    const latency = endTime - startTime;
+    let quality = '';
+    let emoji = '';
+    if (latency < 100) {
+      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
+      emoji = '🟢';
+    } else if (latency < 300) {
+      quality = 'ɢᴏᴏᴅ';
+      emoji = '🟡';
+    } else if (latency < 600) {
+      quality = 'ғᴀɪʀ';
+      emoji = '🟠';
+    } else {
+      quality = 'ᴘᴏᴏʀ';
+      emoji = '🔴';
+    }
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
     const cards = [
-      {
+         {
         header: {
-          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴* │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]} ❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]* ❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s ❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ) ┴│ │╰─ׂ┄─ׅ─ׂ┄ ├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄| │╭ׂ─ׂ┄─ׅ─ׂ┄ ┴│ ❒│▸ ▢ *.ᴘʟᴀʏ* ❒│▸ ▢ *.ᴠɪᴅᴇᴏ* ❒│▸ ▢ *.ʏᴛs* ❒│▸ ▢ *.ᴀᴘᴋ* ❒│▸ ▢ *.ᴍᴇɴᴜ* ❒│▸ ▢ *.ғʙ* ❒│▸ ▢ *.ᴠɪᴇᴡᴏɴᴄᴇ* ❒│▸ ▢ *.sᴛɪᴄᴋᴇʀ* ┬│ │╰─ׂ┄─ׅ─ׂ┄ ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ▢ *.ᴘʟᴀʏ* 
+❒│▸ ▢ *.ᴠɪᴅᴇᴏ* 
+❒│▸ ▢ *.ʏᴛs*
+❒│▸ ▢ *.ᴀᴘᴋ* 
+❒│▸ ▢ *.ᴍᴇɴᴜ*
+❒│▸ ▢ *.ғʙ*
+❒│▸ ▢ *.ᴠɪᴇᴡᴏɴᴄᴇ*
+❒│▸ ▢ *.sᴛɪᴄᴋᴇʀ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
           hasMediaAttachment: true,
           imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
         },
@@ -622,7 +660,148 @@ case 'menu': {
           ],
         },
       },
-      // Add more cards here...
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ▢ *.ᴍᴇɴᴜ*
+❒│▸ ▢ *.ʀᴇᴘᴏ*
+❒│▸ ▢ *.ᴏᴡɴᴇʀ*
+❒│▸ ▢ *.ᴘɪɴg*
+❒│▸ ▢ *.ᴜᴘᴛɪᴍᴇ* 
+❒│▸ ▢ *.ʙᴏᴛʟɪɴᴋ* 
+❒│▸ ▢ *.sᴇᴛᴛɪɴɢs* 
+❒│▸ ▢ *.ᴘᴀɪʀ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ▢ *.ᴀɪ*
+❒│▸ ▢ *.ɢᴇᴛᴘᴘ*
+❒│▸ ▢ *.sᴀᴠᴇsᴛᴀᴛᴜs*
+❒│▸ ▢ *.sᴇᴛsᴛᴀᴛᴜs*
+❒│▸ ▢ *.ɢᴘᴛ*
+❒│▸ ▢ *.ᴏᴘᴇɴᴀɪ*
+❒│▸ ▢ *.ɴᴊᴀʙᴜʟᴏ*
+❒│▸ ▢ *.ғᴀɴᴀ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)*
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ▢ *.ɪɴᴠɪᴛᴇ*
+❒│▸ ▢ *.ᴘʀᴏᴍᴏᴛᴇ*
+❒│▸ ▢ *.ᴅᴇᴍᴏᴛᴇ*
+❒│▸ ▢ *.ᴛᴀɢᴀʟʟ*
+❒│▸ ▢ *.ᴊᴏɪɴ*
+❒│▸ ▢ *.ᴀᴅᴅ*
+❒│▸ ▢ *.ᴏᴘᴇɴ*
+❒│▸ ▢ *.ᴄʟᴏsᴇ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
     ];
     const message = generateWAMessageFromContent(sender, {
       viewOnceMessage: {
@@ -638,23 +817,566 @@ case 'menu': {
       },
     }, { quoted: fakevCard });
     await socket.relayMessage(sender, message.message, { messageId: message.key.id });
-    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
   } catch (error) {
-    console.error('Menu command error:', error);
-    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
-    let fallbackMenuText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴* │╭ׂ─ׂ┄─ׅ─ׂ┄╮ ❒│ *ʙᴏᴛ ɴᴀᴍᴇ*: ʜᴀɴꜱ ᴍɪɴɪ ❒│ *ᴜsᴇʀ*: @${m.sender.split('@')[0]} ❒│ *ᴘʀᴇғɪx*: ${config.PREFIX} ❒│ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s ❒│ *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ* ┬│ │╰─ׂ┄─ׅ─ׂ┄╯ ╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴ `;
-    await socket.sendMessage(from, { image: { url: "https://files.catbox.moe/dfe0h0.jpg" }, caption: fallbackMenuText, contextInfo: messageContext }, { quoted: fakevCard });
-    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } });
+    console.error('Ping command error:', error);
+    const startTime = new Date().getTime();
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ...' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: ` ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
   }
   break;
-        }
+}
 
+case 'sc':
+case 'botlink':
+case 'script':
+case 'repo': {
+  await socket.sendMessage(sender, { react: { text: '⚒️', key: msg.key } });
+  try {
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+    const startTime = new Date().getTime();
+    const githubRepoURL = 'https://github.com/NjabuloJ/Njabulo-Jb'; 
+    const [, username, repo] = githubRepoURL.match(/github\.com\/([^/]+)\/([^/]+)/); 
+    const response = await fetch(`https://api.github.com/repos/${username}/${repo}`); 
+    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`); 
+    const repoData = await response.json(); 
+    await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    const latency = endTime - startTime;
+    let quality = '';
+    let emoji = '';
+    if (latency < 100) {
+      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
+      emoji = '🟢';
+    } else if (latency < 300) {
+      quality = 'ɢᴏᴏᴅ';
+      emoji = '🟡';
+    } else if (latency < 600) {
+      quality = 'ғᴀɪʀ';
+      emoji = '🟠';
+    } else {
+      quality = 'ᴘᴏᴏʀ';
+      emoji = '🔴';
+    }
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
+    const cards = [
+          {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+❒│▸ ▢
+❒│▸ ▢ *ᴏᴡɴᴇʀ ᴡᴇʙ sɪᴛᴇ ɴᴊᴀʙᴜʟᴏ*
+❒│▸ ▢ *ᴡᴇʙsɪᴛᴇ: ᴏɴʟɪɴᴇ ᴀᴠᴀɪʟᴀʙʟᴇ*
+❒│▸ ▢ *ɴᴊᴀʙᴜʟᴏ ᴊʙ & ɴᴊᴀʙᴜʟᴏ ᴊʙ sᴍᴀʟʟ*
+❒│▸ ▢ *sᴜᴘᴘᴏʀᴛ ʀᴇᴘᴏsɪᴛᴏʀʏ sᴛᴀʀ ᴀɴᴅ ғᴏʀᴋs*
+❒│▸ ▢ *ᴏᴡᴇɴ ᴄᴏᴜɴᴛʀʏ ʙᴏᴛsᴡᴀɴᴀ ʙᴡ ᴢɪᴍ*
+❒│▸ ▢
+❒│▸ ▢ *ᴍᴏʀᴇ ᴠɪsɪᴛ ᴏɴ ᴡᴇʙsɪᴛᴇ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Website owner]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *don't forget give star*
+❒│▸ ①◦➛ *and forks to my repository*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Repository]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *njabulo jb small bot*
+❒│▸ ①◦➛ *get pair free bot available*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[mini bot]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *Njabulo Jb Normal bot*
+❒│▸ ①◦➛ *get pair and deploy on heroku*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[code pair]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+❒│▸ ▢ *sᴛᴀʀs* : ${repoData.stargazers_count} 
+❒│▸ ▢ *ғᴏʀᴋs* : ${repoData.forks_count} 
+❒│▸ ▢ *ᴏᴡɴᴇʀ : ɴᴊᴀʙᴜʟᴏ-ᴊʙ*
+❒│▸ ▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛ *get pair code on telegram*
+❒│▸ ①◦➛ */code minibot /pair Njabulo Jb*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Telegram bot]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+    ];
+    const message = generateWAMessageFromContent(sender, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+          interactiveMessage: {
+            header: { text: `🔍 System Info` },
+            body: { text: `*📔 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
+            headerType: 1,
+            carouselMessage: { cards },
+          },
+        },
+      },
+    }, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id });
+  } catch (error) {
+    console.error('Ping command error:', error);
+    const startTime = new Date().getTime();
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ...' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: `📌 ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+  }
+  break;
+   }
+
+
+
+
+
+
+
+                    
 
                     
 
 
 
+                // Case: menu
+       // Case: menu
+case 'allmenu': {
+  try {
+    await socket.sendMessage(sender, { react: { text: '🤖', key: msg.key } });
+    const startTime = socketCreationTime.get(number) || Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+    
+    let menuText = `
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:* @${m.sender.split('@')[0]}
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ:* ${hours}h ${minutes}m ${seconds}s
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+❒│▸ ▢ *ᴠᴇʀsɪᴏɴ:* ^3.0.
+┬│   
+│╰─ׂ┄─ׅ─ׂ┄╯
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮
+┴│       
+❒│▸ ①◦➛ *.ᴘʟᴀʏ* 
+❒│▸ ②◦➛ *.ᴠɪᴅᴇᴏ* 
+❒│▸ ③◦➛ *.ʏᴛs*
+❒│▸ ④◦➛ *.ᴀᴘᴋ* 
+❒│▸ ⑤◦➛ *.ᴍᴇɴᴜ*
+❒│▸ ⑥◦➛ *.ʀᴇᴘᴏ*
+❒│▸ ⑦◦➛ *.ᴏᴡɴᴇʀ*
+❒│▸ ⑧◦➛ *.ᴘɪɴg*
+❒│▸ ⑨◦➛ *.ᴜᴘᴛɪᴍᴇ* 
+❒│▸ ⑩◦➛ *.ʙᴏᴛʟɪɴᴋ* 
+❒│▸ ⑪◦➛ *.sᴇᴛᴛɪɴɢs* 
+❒│▸ ⑫◦➛ *.ᴘᴀɪʀ*
+❒│▸ ⑬◦➛ *.ғʙ*
+❒│▸ ⑭◦➛ *.ᴠɪᴇᴡᴏɴᴄᴇ*
+❒│▸ ⑮◦➛ *.sᴛɪᴄᴋᴇʀ*
+❒│▸ ⑯◦➛ *.ᴀᴅᴅ*
+❒│▸ ⑰◦➛ *.ᴏᴘᴇɴ*
+❒│▸ ⑱◦➛ *.ᴄʟᴏsᴇ*
+❒│▸ ⑲◦➛ *.ɪɴᴠɪᴛᴇ*
+❒│▸ ⑳◦➛ *.ᴘʀᴏᴍᴏᴛᴇ*
+❒│▸ ㉑◦➛ *.ᴅᴇᴍᴏᴛᴇ*
+❒│▸ ㉒◦➛ *.ᴛᴀɢᴀʟʟ*
+❒│▸ ㉓◦➛ *.ᴊᴏɪɴ*
+❒│▸ ㉔◦➛ *.ᴀɪ*
+❒│▸ ㉕◦➛ *.ɢᴇᴛᴘᴘ*
+❒│▸ ㉖◦➛ *.sᴀᴠᴇsᴛᴀᴛᴜs*
+❒│▸ ㉗◦➛ *.sᴇᴛsᴛᴀᴛᴜs*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
+
+
+const messageContext = {
+  forwardingScore: 1,
+  isForwarded: true,
+  forwardedNewsletterMessageInfo: {
+    newsletterJid: '120363352087070233@newsletter',
+    newsletterName: '╭••➤Njabulo Jb',
+    serverMessageId: -1
+  },
+  forwardingScore: 999,
+  externalAdReply: {
+    title: "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ ᴏʟʟ🌃☕",
+    mediaType: 1,
+    previewType: 0,
+    thumbnailUrl: 'https://files.catbox.moe/mh36c7.jpg',
+    renderLargerThumbnail: true,
+  }
+};
+
+const menuMessage = {
+  document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
+  mimetype: 'application/pdf',
+  fileName: 'WhatsApp PDF 10GB',
+  caption: `${menuText}`,
+  buttons: [
+    {
+      buttonId: `${config.PREFIX}quick_commands`,
+      buttonText: {
+        displayText: 'ＮＪＡＢＵＬＯ ＪＢ'
+      },
+      type: 4,
+      nativeFlowInfo: {
+        name: 'single_select',
+        paramsJson: JSON.stringify({
+          title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
+          sections: [
+            {
+              title: "🌐 ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅs",
+              highlight_label: '© Njabulo Jb',
+              rows: [
+                { title: "🤖 ᴀɪ", description: "ᴄʜᴀᴛ ᴡɪᴛʜ ᴀɪ ᴀssɪsᴛᴀɴᴛ", id: `.ai` },
+                { title: "📊 ᴡɪɴғᴏ", description: "ɢᴇᴛ ᴡʜᴀᴛsᴀᴘᴘ ᴜsᴇʀ ɪɴғᴏ", id: `.winfo` },
+                { title: "🔍 ᴡʜᴏɪs", description: "ʀᴇᴛʀɪᴇᴠᴇ ᴅᴏᴍᴀɪɴ ᴅᴇᴛᴀɪʟs", id: `.whois` },
+                { title: "💣 ʙᴏᴍʙ", description: "sᴇɴᴅ ᴍᴜʟᴛɪᴘʟᴇ ᴍᴇssᴀɢᴇs", id: `.bomb` },
+                { title: "📲 ғᴄ", description: "ғᴏʟʟᴏᴡ ᴀ ɴᴇᴡsʟᴇᴛᴛᴇʀ ᴄʜᴀɴɴᴇʟ", id: `.fc` }
+              ]
+            },
+            {
+              title: "🔧 ᴛᴏᴏʟs & ᴜᴛɪʟɪᴛɪᴇs",
+              rows: [
+                { title: "🤖 ᴀɪ", description: "ᴄʜᴀᴛ ᴡɪᴛʜ ᴀɪ ᴀssɪsᴛᴀɴᴛ", id: `.ai` },
+                { title: "📊 ᴡɪɴғᴏ", description: "ɢᴇᴛ ᴡʜᴀᴛsᴀᴘᴘ ᴜsᴇʀ ɪɴғᴏ", id: `.winfo` },
+                { title: "🔍 ᴡʜᴏɪs", description: "ʀᴇᴛʀɪᴇᴠᴇ ᴅᴏᴍᴀɪɴ ᴅᴇᴛᴀɪʟs", id: `.whois` },
+                { title: "💣 ʙᴏᴍʙ", description: "sᴇɴᴅ ᴍᴜʟᴛɪᴘʟᴇ ᴍᴇssᴀɢᴇs", id: `.bomb` },
+                { title: "📲 ғᴄ", description: "ғᴏʟʟᴏᴡ ᴀ ɴᴇᴡsʟᴇᴛᴛᴇʀ ᴄʜᴀɴɴᴇʟ", id: `.fc` }
+              ]
+            }
+          ]
+        })
+      }
+    }
+  ],
+  headerType: 1,
+  contextInfo: messageContext
+};
+
+socket.sendMessage(from, menuMessage, { quoted: fakevCard });
+
+
+    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
+  } catch (error) {
+    console.error('Menu command error:', error);
+    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+    let fallbackMenuText = `
+*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
+❒│ *ʙᴏᴛ ɴᴀᴍᴇ*: ʜᴀɴꜱ ᴍɪɴɪ 
+❒│ *ᴜsᴇʀ*: @${m.sender.split('@')[0]}
+❒│ *ᴘʀᴇғɪx*: ${config.PREFIX}
+❒│ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s
+❒│ *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ*
+┬│
+│╰─ׂ┄─ׅ─ׂ┄╯
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴
+`;
+
+    await socket.sendMessage(from, {
+      image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
+      caption: fallbackMenuText,
+      contextInfo: messageContext // Added the newsletter context here too
+    }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } });
+  }
+  break;
+}
+  case 'allmenuii': {
+  try {
+    await socket.sendMessage(sender, { react: { text: '📜', key: msg.key } });
+    const startTime = socketCreationTime.get(number) || Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+    
+
+    let allMenuText = `
+*┏────〘 ʜᴀɴꜱ ᴍɪɴɪ 〙───⊷*
+*┃*  ✨️ *ʙᴏᴛ*: ʜᴀɴꜱ ᴍɪɴɪ 
+*┃*  🎉 *ᴜsᴇʀ*: @${sender.split("@")[0]}
+*┃*  📍 *ᴘʀᴇғɪx*: ${config.PREFIX}
+*┃*  ⏰ *ᴜᴘᴛɪᴍᴇ*: ${hours}h ${minutes}m ${seconds}s
+*┃*  💾 *ᴍᴇᴍᴏʀʏ*: ${usedMemory}MB/${totalMemory}ᴍʙ
+*┃*  💫 *ᴄᴏᴍᴍᴀɴᴅs*: ${count}
+*┃*  👑 *ᴅᴇᴠ*: ᴍᴀᴅᴇ ʙʏ ʜᴀɴꜱ ᴛᴇᴄʜ
+*┗──────────────⊷*
+
+╭─『 🌐 *ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅs* 』─╮
+*┃*  🟢 *${config.PREFIX}ᴀʟɪᴠᴇ* - ᴄʜᴇᴄᴋ ʙᴏᴛ sᴛᴀᴛᴜs
+*┃*  📊 *${config.PREFIX}ʙᴏᴛ_sᴛᴀᴛs* - ʙᴏᴛ sᴛᴀᴛɪsᴛɪᴄs
+*┃*  ℹ️ *${config.PREFIX}ʙᴏᴛ_ɪɴғᴏ* - ʙᴏᴛ ɪɴғᴏʀᴍᴀᴛɪᴏɴ
+*┃*  📋 *${config.PREFIX}ᴍᴇɴᴜ* - sʜᴏᴡ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ ᴍᴇɴᴜ
+*┃*  📜 *${config.PREFIX}ᴀʟʟᴍᴇɴᴜ* - ʟɪsᴛ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs
+*┃*  🏓 *${config.PREFIX}ᴘɪɴɢ* - ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴsᴇ sᴘᴇᴇᴅ
+*┃*  🔗 *${config.PREFIX}ᴘᴀɪʀ* - ɢᴇɴᴇʀᴀᴛᴇ ᴘᴀɪʀɪɴɢ code
+*┃*  ✨ *${config.PREFIX}ғᴀɴᴄʏ* - ғᴀɴᴄʏ ᴛᴇxᴛ ɢᴇɴᴇʀᴀᴛᴏʀ
+*┃*  🎨 *${config.PREFIX}ʟᴏɢᴏ* - ᴄʀᴇᴀᴛᴇ ᴄᴜsᴛᴏᴍ ʟᴏɢᴏs
+*┃*  📱 *${config.PREFIX}ǫʀ* - ɢᴇɴᴇʀᴀᴛᴇ ǫʀ ᴄᴏᴅᴇs [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ᴅᴏᴡɴʟᴏᴀᴅ 〙───⊷*
+*┃*  🎵 *${config.PREFIX}sᴏɴɢ* - ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜᴛᴜʙᴇ ᴍᴜsɪᴄ
+*┃*  📱 *${config.PREFIX}ᴛɪᴋᴛᴏᴋ* - ᴅᴏᴡɴʟᴏᴀᴅ TikTok videos
+*┃*  📘 *${config.PREFIX}ғʙ* - ᴅᴏᴡɴʟᴏᴀᴅ ғᴀᴄᴇʙᴏᴏᴋ ᴄᴏɴᴛᴇɴᴛ
+*┃*  📸 *${config.PREFIX}ɪɢ* - ᴅᴏᴡɴʟᴏᴀᴅ ɪɴsᴛᴀɢʀᴀᴍ ᴄᴏɴᴛᴇɴᴛ
+*┃*  🖼️ *${config.PREFIX}ᴀɪɪᴍɢ* - ɢᴇɴᴇʀᴀᴛᴇ ᴀɪ ɪᴍᴀɢᴇs
+*┃*  👀 *${config.PREFIX}ᴠɪᴇᴡᴏɴᴄᴇ* - ᴠɪᴇᴡ ᴏɴᴄᴇ ᴍᴇᴅɪᴀ (ᴀʟsᴏ .ʀᴠᴏ, .ᴠᴠ)
+*┃*  🗣️ *${config.PREFIX}ᴛᴛs* - ᴛʀᴀɴsᴄʀɪʙᴇ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🎬 *${config.PREFIX}ᴛs* - ᴛᴇʀᴀʙᴏx ᴅᴏᴡɴʟᴏᴀᴅᴇʀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🖼️ *${config.PREFIX}sᴛɪᴄᴋᴇʀ* - ᴄᴏɴᴠᴇʀᴛ ᴛᴏ sᴛɪᴄᴋᴇʀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ɢʀᴏᴜᴘ 〙───⊷*
+*┃*  ➕ *${config.PREFIX}ᴀᴅᴅ* - ᴀᴅᴅ ᴍᴇᴍʙᴇʀ ᴛᴏ ɢʀᴏᴜᴘ
+*┃*  🦶 *${config.PREFIX}ᴋɪᴄᴋ* - ʀᴇᴍᴏᴠᴇ ᴍᴇᴍʙᴇʀ ғʀᴏᴍ ɢʀᴏᴜᴘ
+*┃*  🔓 *${config.PREFIX}ᴏᴘᴇɴ* - ᴜɴʟᴏᴄᴋ ɢʀᴏᴜᴘ
+*┃*  🙂‍↕️ *${config.PREFIX}ᴋɪᴄᴋᴀʟʟ* - ʀᴇᴍᴏᴠᴇ ᴀʟʟ ᴍᴇᴍʙᴇʀ 
+*┃*  🔒 *${config.PREFIX}ᴄʟᴏsᴇ* - ʟᴏᴄᴋ ɢʀᴏᴜᴘ
+*┃*  ✨️ *${config.PREFIX}ɪɴᴠɪᴛᴇ* - ɢᴇᴛ ɢʀᴏᴜᴘ ʟɪɴᴋ
+*┃*  👑 *${config.PREFIX}ᴘʀᴏᴍᴏᴛᴇ* - ᴘʀᴏᴍᴏᴛᴇ ᴛᴏ ᴀᴅᴍɪɴ
+*┃*  😢 *${config.PREFIX}ᴅᴇᴍᴏᴛᴇ* - ᴅᴇᴍᴏᴛᴇ ғʀᴏᴍ ᴀᴅᴍɪɴ
+*┃*  👥 *${config.PREFIX}ᴛᴀɢᴀʟʟ* - ᴛᴀɢ ᴀʟʟ ᴍᴇᴍʙᴇʀs
+*┃*  👤 *${config.PREFIX}ᴊᴏɪɴ* - ᴊᴏɪɴ ɢʀᴏᴜᴘ ᴠɪᴀ ʟɪɴᴋ
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ᴏᴛʜᴇʀ 〙───⊷*
+*┃*  📰 *${config.PREFIX}ɴᴇᴡs* - ʟᴀᴛᴇsᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs
+*┃*  🚀 *${config.PREFIX}ɴᴀsᴀ* - ɴᴀsᴀ sᴘᴀᴄᴇ ᴜᴘᴅᴀᴛᴇs
+*┃*  💬 *${config.PREFIX}ɢᴏssɪᴘ* - ᴇɴᴛᴇʀᴛᴀɪɴᴍᴇɴᴛ ɢᴏssɪᴘ
+*┃*  🏏 *${config.PREFIX}ᴄʀɪᴄᴋᴇᴛ* - ᴄʀɪᴄᴋᴇᴛ sᴄᴏʀᴇs & ɴᴇᴡs
+*┃*  🎭 *${config.PREFIX}ᴀɴᴏɴʏᴍᴏᴜs* - ғᴜɴ ɪɴᴛᴇʀᴀᴄᴛɪᴏɴ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ ғᴜɴ 〙───⊷*
+*┃*  😂 *${config.PREFIX}ᴊᴏᴋᴇ* - ʟɪɢʜᴛʜᴇᴀʀᴛᴇᴅ ᴊᴏᴋᴇ
+*┃*  🌚 *${config.PREFIX}ᴅᴀʀᴋᴊᴏᴋᴇ* - ᴅᴀʀᴋ ʜᴜᴍᴏʀ ᴊᴏᴋᴇ
+*┃*  🏏 *${config.PREFIX}ᴡᴀɪғᴜ* - ʀᴀɴᴅᴏᴍ ᴀɴɪᴍᴇ ᴡᴀɪғᴜ
+*┃*  😂 *${config.PREFIX}ᴍᴇᴍᴇ* - ʀᴀɴᴅᴏᴍ ᴍᴇᴍᴇ
+*┃*  🐈 *${config.PREFIX}ᴄᴀᴛ* - ᴄᴜᴛᴇ ᴄᴀᴛ ᴘɪᴄᴛᴜʀᴇ
+*┃*  🐕 *${config.PREFIX}ᴅᴏɢ* - ᴄᴜᴛᴇ ᴅᴏɢ ᴘɪᴄᴛᴜʀᴇ
+*┃*  💡 *${config.PREFIX}ғᴀᴄᴛ* - ʀᴀɴᴅᴏᴍ ғᴀᴄᴛ
+*┃*  💘 *${config.PREFIX}ᴘɪᴄᴋᴜᴘʟɪɴᴇ* - ᴄʜᴇᴇsʏ ᴘɪᴄᴋᴜᴘ ʟɪɴᴇ
+*┃*  🔥 *${config.PREFIX}ʀᴏᴀsᴛ* - sᴀᴠᴀɢᴇ ʀᴏᴀsᴛ
+*┃*  ❤️ *${config.PREFIX}ʟᴏᴠᴇǫᴜᴏᴛᴇ* - ʀᴏᴍᴀɴᴛɪᴄ love quote
+*┃*  💭 *${config.PREFIX}ǫᴜᴏᴛᴇ* - ʙᴏʟᴅ ᴏʀ ᴡɪᴛᴛʏ ǫᴜᴏᴛᴇ
+*┗──────────────⊷*
+
+*┏────〘 ʜᴀɴꜱ-xᴍᴅ ᴍᴀɪɴ 〙───⊷*
+*┃*  🤖 *${config.PREFIX}ᴀɪ* - ᴄʜᴀᴛ ᴡɪᴛʜ ᴀɪ
+*┃*  📊 *${config.PREFIX}ᴡɪɴғᴏ* - ᴡʜᴀᴛsᴀᴘᴘ ᴜsᴇʀ ɪɴғᴏ
+*┃*  🔍 *${config.PREFIX}ᴡʜᴏɪs* - ᴅᴏᴍᴀɪɴ ᴡʜᴏɪs ʟᴏᴏᴋᴜᴘ
+*┃*  💣 *${config.PREFIX}ʙᴏᴍʙ* - sᴇɴᴅ ᴍᴜʟᴛɪᴘʟᴇ ᴍᴇssᴀɢᴇs
+*┃*  🖼️ *${config.PREFIX}ɢᴇᴛᴘᴘ* - ғᴇᴛᴄʜ ᴘʀᴏғɪʟᴇ ᴘɪᴄᴛᴜʀᴇ
+*┃*  💾 *${config.PREFIX}sᴀᴠᴇsᴛᴀᴛᴜs* - sᴀᴠᴇ sᴛᴀᴛᴜs
+*┃*  ✍️ *${config.PREFIX}sᴇᴛsᴛᴀᴛᴜs* - sᴇᴛ sᴛᴀᴛᴜs [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🗑️ *${config.PREFIX}ᴅᴇʟᴇᴛᴇᴍᴇ* - ᴅᴇʟᴇᴛᴇ ᴜsᴇʀ ᴅᴀᴛᴀ [ɴᴏᴛ ɪᴍᴘʟᴇᴍᴇɴᴛᴇᴅ]
+*┃*  🌦️ *${config.PREFIX}ᴡᴇᴀᴛʜᴇʀ* - ᴡᴇᴀᴛʜᴇʀ ғᴏʀᴇᴄᴀsᴛ
+*┃*  🔗 *${config.PREFIX}sʜᴏʀᴛᴜʀʟ* - sʜᴏʀᴛᴇɴ ᴜʀʟ
+*┃*  📤 *${config.PREFIX}ᴛᴏᴜʀʟ2* - ᴜᴘʟᴏᴀᴅ ᴍᴇᴅɪᴀ ᴛᴏ ʟɪɴᴋ
+*┃*  📦 *${config.PREFIX}ᴀᴘᴋ* - ᴅᴏᴡɴʟᴏᴀᴅ ᴀᴘᴋ ғɪʟᴇs
+*┃*  📲 *${config.PREFIX}ғᴄ* - ғᴏʟʟᴏᴡ ɴᴇᴡsʟᴇᴛᴛᴇʀ ᴄʜᴀɴɴᴇʟ
+*┗──────────────⊷*
+
+> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʜᴀɴꜱ-ᴛᴇᴄʜ*
+`;
+
+    await socket.sendMessage(from, {
+      image: { url: "https://files.catbox.moe/dfe0h0.jpg" },
+      caption: allMenuText
+    }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } });
+  } catch (error) {
+    console.error('Allmenu command error:', error);
+    await socket.sendMessage(from, {
+      text: `❌* ᴛʜᴇ ᴍᴇɴᴜ ɢᴏᴛ sʜʏ! 😢*\nError: ${error.message || 'Unknown error'}\nTry again, love?`
+    }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } });
+  }
+  break;
+}
 
                 // Case: fc (follow channel)
                 case 'fc': {
