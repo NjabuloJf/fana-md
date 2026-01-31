@@ -577,7 +577,7 @@ function setupCommandHandlers(socket, number) {
 
         
  
-case 'bot':
+
 case 'list':
 case 'menu': {
   await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
