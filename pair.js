@@ -675,7 +675,7 @@ case 'menu': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u" }),
             },
           ],
         },
@@ -720,7 +720,7 @@ case 'menu': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u" }),
             },
           ],
         },
@@ -765,7 +765,7 @@ case 'menu': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u" }),
             },
           ],
         },
@@ -805,7 +805,7 @@ case 'menu': {
           buttons: [
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹]", url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u" }),
             },
           ],
         },
@@ -885,7 +885,7 @@ case 'repo': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[Website owner]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[Website owner]", url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u" }),
             },
           ],
         },
@@ -922,7 +922,7 @@ case 'repo': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[Repository]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[Repository]", url: "https://exam" }),
             },
           ],
         },
@@ -1029,7 +1029,7 @@ case 'repo': {
           buttons: [
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[Telegram bot]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[Telegram bot]", url: "https://t.me/njabullo_bot" }),
             },
           ],
         },
@@ -1064,7 +1064,112 @@ case 'repo': {
 
 
 
-                    
+       case 'code':
+case 'pair': {
+  await socket.sendMessage(sender, { react: { text: '⚒️', key: msg.key } });
+  try {
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+    const startTime = new Date().getTime();
+    const githubRepoURL = 'https://github.com/NjabuloJ/Njabulo-Jb'; 
+    const [, username, repo] = githubRepoURL.match(/github\.com\/([^/]+)\/([^/]+)/); 
+    const response = await fetch(`https://api.github.com/repos/${username}/${repo}`); 
+    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`); 
+    const repoData = await response.json(); 
+    
+    
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
+    const cards = [
+              {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+┊▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+┊▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+╔
+ *🌐 Njabulo Jb pair code website*
+ ①◦➛ *Njabulo Jb small free bot*
+ ①◦➛ *get pair code free bot*
+╚
+┌┤🌇 *Hallo family Good Evᥱrnιng!*
+┊😩 *The best is yet to come.*
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴⳹`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[live code pair]", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+┊▢ *ɴᴀᴍᴇ* : ${repoData.name} 
+┊▢ *ᴅᴇsᴄ* : ${repoData.description || 'ɴ/ᴀ'}
+╔
+ *🌐 Telegram bot*
+ ①◦➛ *get pair code on telegram*
+ ①◦➛ */code njabulo /pair minibot*
+╚
+┌┤🌇 *Hallo family Good Evᥱrnιng!*
+┊😩 *The best is yet to come.*
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴⳹`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "[Telegram bot pair]", url: "https://t.me/njabullo_bot" }),
+            },
+          ],
+        },
+      },
+    ];
+    const message = generateWAMessageFromContent(sender, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+          interactiveMessage: {
+            header: { text: `🔍 System Info` },
+            body: { text: `*📔 ＮＪＡＢＵＬＯ ＳＭＡＬＬ*` },
+            headerType: 1,
+            carouselMessage: { cards },
+          },
+        },
+      },
+    }, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id });
+  } catch (error) {
+    console.error('Ping command error:', error);
+    const simplePing = await socket.sendMessage(sender, { text: 'try again late .repo' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: `error loading repository web` }, { quoted: fakevCard });
+  }
+  break;
+        }
+   
 
                     
 
