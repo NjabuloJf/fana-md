@@ -576,13 +576,7 @@ function setupCommandHandlers(socket, number) {
         };
 
         
-
-
-
-        
-
-
-case 'help':
+ 
 case 'bot':
 case 'list':
 case 'menu': {
@@ -825,9 +819,9 @@ case 'menu': {
   } catch (error) {
     console.error('Ping command error:', error);
     const startTime = new Date().getTime();
-    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ᴘɪɴɢ...' }, { quoted: msg });
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ...' }, { quoted: msg });
     const endTime = new Date().getTime();
-    await socket.sendMessage(sender, { text: `📌 *ᴘᴏɴɢ!*\n⚡ ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { text: ` ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
   }
   break;
 }
