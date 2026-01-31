@@ -1004,9 +1004,188 @@ socket.sendMessage(from, menuMessage, { quoted: fakevCard });
                 }
                     
 
-                // Case: ping
+
+case 'play': 
+case 'song': { 
+  await socket.sendMessage(sender, { react: { text: '🎶', key: msg.key } }); 
+  const yts = require('yt-search'); 
+  const axios = require('axios'); 
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
+  if (!q || q.trim() === '') { 
+    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
+  } 
+  try { 
+    const search = await yts(q.trim()); 
+    const videos = search.videos.slice(0, 4); 
+    if (videos.length === 0) {
+      return await socket.sendMessage(sender, { text: '*No songs found*' }, { quoted: fakevCard });
+    }
+    const cards = await Promise.all(videos.map(async (video, i) => ({ 
+      header: { 
+        title: `🎵 ${video.title}`, 
+        hasMediaAttachment: true, 
+        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
+      }, 
+      body: { 
+        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
+      }, 
+      footer: { 
+        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴍᴜꜱɪᴄ 🙄', 
+      }, 
+      nativeFlowMessage: { 
+        buttons: [ 
+          { 
+            name: 'cta_url', 
+            buttonParamsJson: JSON.stringify({ display_text: '🎧 Play Audio', url: video.url }), 
+          }, 
+          { 
+            name: 'cta_copy', 
+            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
+          }, 
+        ], 
+      }, 
+    })));
+    const message = generateWAMessageFromContent(sender, { 
+      viewOnceMessage: { 
+        message: { 
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
+          interactiveMessage: { 
+            body: { text: `🔍 Search Results for: ${q}` }, 
+            footer: { text: `📂 Found ${videos.length} songs` }, 
+            carouselMessage: { cards }, 
+          }, 
+        }, 
+      }, 
+    }, { quoted: fakevCard }); 
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
+    const video = videos[0]; 
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
+    const fileName = `${safeTitle}.mp3`; 
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`; 
+    const response = await axios.get(apiURL); 
+    const data = response.data; 
+    if (!data.downloadLink) { 
+      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP3 download link.' }, { quoted: fakevCard }); 
+    } 
+    await socket.sendMessage(sender, { 
+      audio: { url: data.downloadLink }, 
+      mimetype: 'audio/mpeg', 
+      fileName, 
+      contextInfo: { 
+        externalAdReply: { 
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ", 
+          mediaType: 1, 
+          previewType: 0, 
+          thumbnailUrl: video.thumbnail, 
+          renderLargerThumbnail: true, 
+        }, 
+      }, 
+    }, { quoted: fakevCard }); 
+  } catch (err) { 
+    console.error('Song command error:', err);
+    await socket.sendMessage(sender, { text: `*❌ Error: ${err.message}*` }, { quoted: fakevCard }); 
+  } 
+  break; 
+}
+
+
+case 'playvideo': 
+case 'video': { 
+  await socket.sendMessage(sender, { react: { text: '🎥', key: msg.key } }); 
+  const yts = require('yt-search'); 
+  const axios = require('axios'); 
+  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
+  if (!q || q.trim() === '') { 
+    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ ᴠɪᴅᴇᴏ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
+  } 
+  try { 
+    const search = await yts(q.trim()); 
+    const videos = search.videos.slice(0, 4); 
+    if (videos.length === 0) {
+      return await socket.sendMessage(sender, { text: '*No videos found*' }, { quoted: fakevCard });
+    }
+    const cards = await Promise.all(videos.map(async (video, i) => ({ 
+      header: { 
+        title: `🎥 ${video.title}`, 
+        hasMediaAttachment: true, 
+        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
+      }, 
+      body: { 
+        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
+      }, 
+      footer: { 
+        text: 'Nᴊᴀʙᴜʟᴏ Jʙ ᴘʟʏ ᴠɪᴅᴇᴢ 🙄', 
+      }, 
+      nativeFlowMessage: { 
+        buttons: [ 
+          { 
+            name: 'cta_url', 
+            buttonParamsJson: JSON.stringify({ display_text: '🎥 Play Video', url: video.url }), 
+          }, 
+          { 
+            name: 'cta_copy', 
+            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
+          }, 
+        ], 
+      }, 
+    })));
+    const message = generateWAMessageFromContent(sender, { 
+      viewOnceMessage: { 
+        message: { 
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
+          interactiveMessage: { 
+            body: { text: `🔍 Search Results for: ${q}` }, 
+            footer: { text: `📂 Found ${videos.length} videos` }, 
+            carouselMessage: { cards }, 
+          }, 
+        }, 
+      }, 
+    }, { quoted: fakevCard }); 
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
+    const video = videos[0]; 
+    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
+    const fileName = `${safeTitle}.mp4`; 
+    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`; 
+    const response = await axios.get(apiURL); 
+    const data = response.data; 
+    if (!data.downloadLink) { 
+      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP4 download link.' }, { quoted: fakevCard }); 
+    } 
+    await socket.sendMessage(sender, { 
+      video: { url: data.downloadLink }, 
+      mimetype: 'video/mp4', 
+      fileName, 
+      caption: `🎥 ${video.title}`, 
+      contextInfo: { 
+        externalAdReply: { 
+          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ", 
+          mediaType: 1, 
+          previewType: 0, 
+          thumbnailUrl: video.thumbnail, 
+          renderLargerThumbnail: true, 
+        }, 
+      }, 
+    }, { quoted: fakevCard }); 
+  } catch (err) { 
+    console.error('Video command error:', err);
+    await socket.sendMessage(sender, { text: `*❌ Error: ${err.message}*` }, { quoted: fakevCard }); 
+  } 
+  break; 
+}
+
+
+                    
 case 'ping': {
   await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
+
+const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+  const startTime = socketCreationTime.get(number) || Date.now();
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
   try {
     const startTime = new Date().getTime();
     let ping = await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
@@ -1045,37 +1224,70 @@ case 'ping': {
       quality = 'ᴘᴏᴏʀ';
       emoji = '🔴';
     }
-    const finalMessage = `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮\n\n┬│` +
-                        `┬│ ▢ *sᴘᴇᴇᴅ:* ${latency}ms\n` +
-                        `❒│▸ ▢ ${emoji} *ϙᴜᴀʟɪᴛʏ:* ${quality}\n` +
-                        `❒│▸ ▢ *ᴛɪᴍᴇsᴛᴀᴍᴘ:* ${new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: true })}\n` +
-                        `┬│ ▢ ᴄᴏɴɴᴇᴄᴛɪᴏɴ sᴛᴀᴛᴜs \n` +
-                        `┬│
-│╰─ׂ┄─ׅ─ׂ┄╯
-╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
-    await socket.sendMessage(sender, {
-    document: {url: "https://files.catbox.moe/dfe0h0.jpg",},
-    mimetype: 'application/pdf',
-    fileName: 'WhatsApp PDF 10GB',
-      caption: finalMessage,
-      contextInfo: {
-        externalAdReply: {
-          title: "njabulo small pong🛒",
-          mediaType: 1,
-          previewType: 0,
-          thumbnailUrl: "https://files.catbox.moe/mh36c7.jpg",
-          renderLargerThumbnail: false,
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; // replace with your random image URL
+    const cards = [
+      {
+        header: {
+          title: `📊 Uptime`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
         },
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: "120363399999197102@newsletter",
-          newsletterName: "╭••➤Njabulo Jb",
-          serverMessageId: 143,
+        body: {
+          text: `Uptime: ${hours}h ${minutes}m ${seconds}s`,
         },
-        forwardingScore: 999,
-      }
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `📊 Ping`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: `Speed: ${latency}ms\nQuality: ${quality} ${emoji}`,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+    ];
+    const message = generateWAMessageFromContent(sender, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+          interactiveMessage: {
+            header: { text: `🔍 System Info` },
+            body: { text: `*📂 sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ*` },
+            headerType: 1,
+            carouselMessage: { cards },
+          },
+        },
+      },
     }, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id });
   } catch (error) {
     console.error('Ping command error:', error);
     const startTime = new Date().getTime();
@@ -1085,6 +1297,7 @@ case 'ping': {
   }
   break;
 }
+
 
 
             // Case: viewonce
@@ -1250,161 +1463,7 @@ case 'vv': {
 
 
     
-case 'playvideo': 
-case 'video': { 
-  await socket.sendMessage(sender, { react: { text: '🎥', key: msg.key } }); 
-  const yts = require('yt-search'); 
-  const axios = require('axios'); 
-  const { generateWAMessageContentMessage, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
-  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
-  if (!q || q.trim() === '') { 
-    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ ᴠɪᴅᴇᴏ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
-  } 
-  try { 
-    const search = await yts(q.trim()); 
-    const videos = search.videos.slice(0, 4); 
-    const cards = await Promise.all(videos.map(async (video, i) => ({ 
-      header: { 
-        title: `🎥 ${video.title}`, 
-        hasMediaAttachment: true, 
-        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
-      }, 
-      body: { 
-        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
-      }, 
-      footer: { 
-        text: '', 
-      }, 
-      nativeFlowMessage: { 
-        buttons: [ 
-          { 
-            name: 'cta_url', 
-            buttonParamsJson: JSON.stringify({ display_text: '🎥 Play Video', url: video.url }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
-          }, 
-        ], 
-      }, 
-    })));
-    const message = generateWAMessageFromContent(sender, { 
-      viewOnceMessage: { 
-        message: { 
-          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
-          interactiveMessage: { 
-            body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found ${videos.length} videos` }, 
-            carouselMessage: { cards }, 
-          }, 
-        }, 
-      }, 
-    }, { quoted: fakevCard }); 
-    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
-    const video = videos[0]; 
-    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
-    const fileName = `${safeTitle}.mp4`; 
-    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp4`; 
-    const response = await axios.get(apiURL); 
-    const data = response.data; 
-    if (!data.downloadLink) { 
-      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP4 download link.' }, { quoted: fakevCard }); 
-    } 
-    await socket.sendMessage(sender, { 
-      video: { url: data.downloadLink }, 
-      mimetype: 'video/mp4', 
-      fileName,       
-    }, { quoted: fakevCard }); 
-  } catch (err) { 
-    console.error('Video command error:', err); 
-    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴠɪᴅᴇᴏ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard }); 
-  } 
-  break; 
-}
 
-
-
-                    
-case 'play': 
-case 'song': { 
-  await socket.sendMessage(sender, { react: { text: '🎶', key: msg.key } }); 
-  const yts = require('yt-search'); 
-  const axios = require('axios'); 
-  const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
-  const q = msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || msg.message?.videoMessage?.caption || ''; 
-  if (!q || q.trim() === '') { 
-    return await socket.sendMessage(sender, { text: '*`ɢɪᴠᴇ ᴍᴇ ᴀ sᴏɴɢ ᴛɪᴛʟᴇ ᴏʀ ʏᴏᴜᴛᴜʙᴇ ʟɪɴᴋ`*' }, { quoted: fakevCard }); 
-  } 
-  try { 
-    const search = await yts(q.trim()); 
-    const videos = search.videos.slice(0, 4); 
-    const cards = await Promise.all(videos.map(async (video, i) => ({ 
-      header: { 
-        title: `🎵 ${video.title}`, 
-        hasMediaAttachment: true, 
-        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: socket.waUploadToServer })).imageMessage, 
-      }, 
-      body: { 
-        text: `Artist: Unknown\nDuration: ${video.timestamp}`, 
-      }, 
-      footer: { 
-        text: '', 
-      }, 
-      nativeFlowMessage: { 
-        buttons: [ 
-          { 
-            name: 'cta_url', 
-            buttonParamsJson: JSON.stringify({ display_text: '🎧 Play Audio', url: video.url }), 
-          }, 
-          { 
-            name: 'cta_copy', 
-            buttonParamsJson: JSON.stringify({ display_text: '📋 Copy Link', copy_code: video.url }), 
-          }, 
-        ], 
-      }, 
-    })));
-    const message = generateWAMessageFromContent(sender, { 
-      viewOnceMessage: { 
-        message: { 
-          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 }, 
-          interactiveMessage: { 
-            body: { text: `🔍 Search Results for: ${q}` }, 
-            footer: { text: `📂 Found ${videos.length} songs` }, 
-            carouselMessage: { cards }, 
-          }, 
-        }, 
-      }, 
-    }, { quoted: fakevCard }); 
-    await socket.relayMessage(sender, message.message, { messageId: message.key.id }); 
-    const video = videos[0]; 
-    const safeTitle = video.title.replace(/[\\/:*?"<>|]/g, ''); 
-    const fileName = `${safeTitle}.mp3`; 
-    const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(video.videoId)}&format=mp3`; 
-    const response = await axios.get(apiURL); 
-    const data = response.data; 
-    if (!data.downloadLink) { 
-      return await socket.sendMessage(sender, { text: 'Failed to retrieve the MP3 download link.' }, { quoted: fakevCard }); 
-    } 
-    await socket.sendMessage(sender, { 
-      audio: { url: data.downloadLink }, 
-      mimetype: 'audio/mpeg', 
-      fileName, 
-      contextInfo: { 
-        externalAdReply: { 
-          title: " ⇆ㅤ ||◁ㅤ❚❚ㅤ▷||ㅤ ↻ ", 
-          mediaType: 1, 
-          previewType: 0, 
-          thumbnailUrl: video.thumbnail, 
-          renderLargerThumbnail: true, 
-        }, 
-      }, 
-    }, { quoted: fakevCard }); 
-  } catch (err) { 
-    console.error('Song command error:', err); 
-    await socket.sendMessage(sender, { text: "*❌ ᴛʜᴇ ᴍᴜsɪᴄ sᴛᴏᴘᴘᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ?*" }, { quoted: fakevCard }); 
-  } 
-  break; 
-}
 
 
                     
@@ -2638,176 +2697,8 @@ case 'image': {
         }
 
 
-                    
-case 'apk': { 
-  try { 
-    const appName = args.join(' ').trim(); 
-    if (!appName) { 
-      await socket.sendMessage(sender, { text: '📌 Usage: .apk <app name>\nExample: .apk whatsapp' }, { quoted: fakevCard }); 
-      break; 
-    } 
-    await socket.sendMessage(sender, { react: { text: '⏳', key: msg.key } }); 
-    const apiUrl = `https://api.nexoracle.com/downloader/apk?q=${encodeURIComponent(appName)}&apikey=free_key@maher_apis`; 
-    console.log('Fetching APK from:', apiUrl); 
-    const response = await fetch(apiUrl); 
-    if (!response.ok) { 
-      throw new Error(`API request failed with status: ${response.status}`); 
-    } 
-    const data = await response.json(); 
-    console.log('API Response:', JSON.stringify(data, null, 2)); 
-    if (!data || data.status !== 200 || !data.result || typeof data.result !== 'object') { 
-      await socket.sendMessage(sender, { text: '❌ Unable to find the APK. The API returned invalid data.' }, { quoted: fakevCard }); 
-      break; 
-    } 
-    const { name, lastup, package, size, icon, dllink } = data.result; 
-    if (!name || !dllink) { 
-      console.error('Invalid result data:', data.result); 
-      await socket.sendMessage(sender, { text: '❌ Invalid APK data: Missing name or download link.' }, { quoted: fakevCard }); 
-      break; 
-    } 
-    // Validate icon URL 
-    if (!icon || !icon.startsWith('http')) { 
-      console.warn('Invalid or missing icon URL:', icon); 
-    } 
-    await socket.sendMessage(sender, { 
-      image: { url: icon || '' }, 
-      caption: formatMessage( 
-        '📦 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐈𝐍𝐆 𝐀𝐏𝐊', 
-        `ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ${name}... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.`, 
-        'Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ'
-      ),
-      contextInfo: { 
-        externalAdReply: { 
-          title: "njabulo small alive🛒", 
-          mediaType: 1, 
-          previewType: 0, 
-          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg", 
-          renderLargerThumbnail: true, 
-        }, 
-        isForwarded: true, 
-        forwardedNewsletterMessageInfo: { 
-          newsletterJid: "120363399999197102@newsletter", 
-          newsletterName: "╭••➤Njabulo Jb", 
-          serverMessageId: 143, 
-        }, 
-        forwardingScore: 999, 
-      } 
-    }, { quoted: fakevCard }); 
-    console.log('Downloading APK from:', dllink); 
-    const apkResponse = await fetch(dllink, { headers: { 'Accept': 'application/octet-stream' } }); 
-    const contentType = apkResponse.headers.get('content-type'); 
-    if (!apkResponse.ok || (contentType && !contentType.includes('application/vnd.android.package-archive'))) { 
-      throw new Error(`Failed to download APK: Status ${apkResponse.status}, Content-Type: ${contentType || 'unknown'}`); 
-    } 
-    const apkBuffer = await apkResponse.arrayBuffer(); 
-    if (!apkBuffer || apkBuffer.byteLength === 0) { 
-      throw new Error('Downloaded APK is empty or invalid'); 
-    } 
-    const buffer = Buffer.from(apkBuffer); 
-    // Validate APK file (basic check for APK signature) 
-    if (!buffer.slice(0, 2).toString('hex').startsWith('504b')) { // APK files start with 'PK' (ZIP format) 
-      throw new Error('Downloaded file is not a valid APK'); 
-    } 
-    const captionText = ` *╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
-│╭ׂ─ׂ┄─ׅ─ׂ┄╮ 
-┬│
-❒│ ɴᴀᴍᴇ: ${name || 'N/A'}
-❒│ ʟᴀsᴛ ᴜᴘᴅᴀᴛᴇ: ${lastup || 'N/A'}
-❒│ ᴘᴀᴄᴋᴀɢᴇ: ${package || 'N/A'}
-┬│ Size: ${size || 'N/A'}
-┬│
-│╰─ׂ┄─ׅ─ׂ┄╯
-╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`;
-    const formattedInfoMessage = {
-      document: buffer,
-      mimetype: 'application/vnd.android.package-archive',
-      fileName: `${name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`, // Sanitize filename
-      caption: captionText,
-      buttons: [
-        {
-          buttonId: `${config.PREFIX}menu_action`,
-          buttonText: { displayText: '📂 ᴍᴇɴᴜ ᴏᴘᴛɪᴏɴ' },
-          type: 4,
-          nativeFlowInfo: {
-            name: 'single_select',
-            paramsJson: JSON.stringify({
-              title: 'ＮＪＡＢＵＬＯ ＳＭＡＬＬ',
-              sections: [
-                {
-                  title: `ＮＪＡＢＵＬＯ ＪＢ`,
-                  highlight_label: 'Quick Actions',
-                  rows: [
-                    {
-                      title: '📋 ғᴜʟʟ ᴍᴇɴᴜ',
-                      description: 'ᴠɪᴇᴡ ᴀʟʟ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴍᴅs',
-                      id: `${config.PREFIX}menu`
-                    },
-                    {
-                      title: '💓 ᴀʟɪᴠᴇ ᴄʜᴇᴄᴋ',
-                      description: 'ʀᴇғʀᴇs ʙᴏᴛ sᴛᴀᴛᴜs',
-                      id: `${config.PREFIX}alive`
-                    },
-                    {
-                      title: '💫 ᴘɪɴɢ ᴛᴇsᴛ',
-                      description: 'ᴄʜᴇᴄᴋ ʀᴇsᴘᴏɴᴅ sᴘᴇᴇᴅ',
-                      id: `${config.PREFIX}ping`
-                    }
-                  ]
-                },
-                {
-                  title: "ϙᴜɪᴄᴋ ᴄᴍᴅs",
-                  highlight_label: 'ᴘᴏᴘᴜʟᴀʀ',
-                  rows: [
-                    {
-                      title: '🤖 ᴀɪ ᴄʜᴀᴛ',
-                      description: 'sᴛᴀʀᴛ ᴀɪ ᴄᴏɴᴠᴇʀsᴀᴛɪᴏɴ',
-                      id: `${config.PREFIX}ai Hello!`
-                    },
-                    {
-                      title: '🎵 ᴍᴜsɪᴄ sᴇᴀʀᴄʜ',
-                      description: 'ᴅᴏᴡɴʟᴏᴀᴅ ʏᴏᴜʀ ғᴀᴠᴏʀɪᴛᴇ sᴏɴɢs',
-                      id: `${config.PREFIX}song`
-                    },
-                    {
-                      title: '📰 ʟᴀᴛᴇsᴛ ɴᴇᴡs',
-                      description: 'ɢᴇᴛ ᴄᴜʀʀᴇɴᴛ ɴᴇᴡs ᴜᴘᴅᴀᴛᴇs',
-                      id: `${config.PREFIX}news`
-                    }
-                  ]
-                }
-              ]
-            })
-          }
-        }
-      ],
-      headerType: 1,
-      viewOnce: true,
-      contextInfo: {
-        externalAdReply: {
-          title: "njabulo small apk🛒",
-          mediaType: 1,
-          previewType: 0,
-          thumbnailUrl: icon || "https://files.catbox.moe/mh36c7.jpg",
-          renderLargerThumbnail: true,
-        },
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: "120363399999197102@newsletter",
-          newsletterName: "╭••➤Njabulo Jb",
-          serverMessageId: 143,
-        },
-        forwardingScore: 999,
-      }
-    };
-    await socket.sendMessage(sender, formattedInfoMessage, { quoted: fakevCard });
-    await socket.sendMessage(sender, { react: { text: '✅', key: msg.key } }); 
-  } catch (error) { 
-    console.error('APK command error:', error.message, error.stack); 
-    await socket.sendMessage(sender, { text: `❌ Oh, love, couldn’t fetch the APK! 😢 Error: ${error.message}\nTry again later.` }, { quoted: fakevCard }); 
-    await socket.sendMessage(sender, { react: { text: '❌', key: msg.key } }); 
-  } 
-  break; 
-}
+
+
 
 
 // case 39: weather
