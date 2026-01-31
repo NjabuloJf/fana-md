@@ -580,44 +580,7 @@ function setupCommandHandlers(socket, number) {
             switch (command) {
 
 
-case 'videonote': {
-  try {
-    await socket.sendMessage(sender, { 
-      video: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
-      mimetype: 'video/mp4', 
-      ptt: true
-    });
-  } catch (error) {
-    console.error('Error:', error);
-  }
-  break;
-}
 
-  case 'videonote2': {
-  try {
-    await socket.sendMessage(sender, { 
-      note: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
-      mimetype: 'video/mp4', 
-      ptt: true
-    });
-  } catch (error) {
-    console.error('Error:', error);
-  }
-  break;
-  }
-
-  case 'videonote3': {
-  try {
-    await socket.sendMessage(sender, { 
-      videonote: { url: 'https://files.catbox.moe/40zej9.mp4' }, 
-      mimetype: 'video/mp4', 
-      ptt: true
-    });
-  } catch (error) {
-    console.error('Error:', error);
-  }
-  break;
-                    }
                     
  
 case 'menu': {
@@ -960,7 +923,7 @@ case 'repo': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[mini bot]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[mini bot]", url: "https://fana-md-kyv1.onrender.com" }),
             },
           ],
         },
@@ -1110,7 +1073,7 @@ case 'pair': {
             },
             {
               name: "cta_url",
-              buttonParamsJson: JSON.stringify({ display_text: "[live code pair]", url: "https://example.com" }),
+              buttonParamsJson: JSON.stringify({ display_text: "[live code pair]", url: "https://fana-md-kyv1.onrender.com" }),
             },
           ],
         },
