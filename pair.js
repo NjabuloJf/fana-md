@@ -36,16 +36,16 @@ const config = {
     PREFIX: '.',
     MAX_RETRIES: 3,
     IMAGE_PATH: 'https://files.catbox.moe/mh36c7.jpg',
-    GROUP_INVITE_LINK: 'https://chat.whatsapp.com/HFUKihXr4qp9TjWiGATE8h?mode=ems_copy_t',
+    GROUP_INVITE_LINK: 'https://chat.whatsapp.com/DlS1gXubO3Q4BuNELIYCAv',
     ADMIN_LIST_PATH: './admin.json',
     RCD_IMAGE_PATH: 'https://files.catbox.moe/mh36c7.jpg',
-    NEWSLETTER_JID: '120363352087070233@newsletter',
+    NEWSLETTER_JID: '120363399999197102@newsletter',
     NEWSLETTER_MESSAGE_ID: '428',
     OTP_EXPIRY: 300000,
     version: '1.0.0',
-    OWNER_NUMBER: '255753668403',
+    OWNER_NUMBER: '26777821911',
     BOT_FOOTER: '> *Pσɯҽɾԃ Ⴆყ ɳʝαႦυʅσ ʝႦ*',
-    CHANNEL_LINK: 'https://whatsapp.com/channel/0029VasiOoR3bbUw5aV4qB31'
+    CHANNEL_LINK: 'https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u'
 };
 
 const octokit = new Octokit({ auth: 'Ve7nyoWuYsZMIVT403m2Lctqejy90jF3h5' });
@@ -591,6 +591,14 @@ case 'menu': {
     const seconds = Math.floor(uptime % 60);
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+
+      const videoUrl = 'https://files.catbox.moe/40zej9.mp4';
+  await socket.sendMessage(sender, { 
+    video: { url: videoUrl }, 
+    mimetype: 'video/mp4', 
+    ptt: true 
+  });
+  
 
     const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
     const cards = [
