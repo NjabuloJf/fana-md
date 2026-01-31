@@ -594,7 +594,7 @@ case 'menu': {
 
       const videoUrl = 'https://files.catbox.moe/40zej9.mp4';
   await socket.sendMessage(sender, { 
-    video: { url: videoUrl }, 
+    videonote: { url: videoUrl }, 
     mimetype: 'video/mp4', 
     ptt: true 
   });
@@ -2149,7 +2149,7 @@ const TIKTOK_API_KEY = process.env.TIKTOK_API_KEY || 'free_key@maher_apis'; // F
     await socket.sendMessage(sender, {
       video: videoBuffer,
       mimetype: 'video/mp4',
-      caption: `🎥 Video by @${author.username.replace(/[<>:"\/\\|?*]/g, '')}\n> ᴍᴀᴅᴇ ʙʏ ʜᴀɴꜱ ᴛᴇᴄʜ`
+      caption: `🎥 Video by @${author.username.replace(/[<>:"\/\\|?*]/g, '')}`
     }, { quoted: fakevCard });
 
     // Update loading message
