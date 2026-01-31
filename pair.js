@@ -576,7 +576,7 @@ function setupCommandHandlers(socket, number) {
         };
 
 
-        😊 Here's the script:
+
 switch (msg.text) {
   case 'menu':
     await socket.sendMessage(sender, { react: { text: '📔', key: msg.key } });
