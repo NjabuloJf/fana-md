@@ -591,24 +591,7 @@ case 'menu': {
     const seconds = Math.floor(uptime % 60);
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
-    const startTime = new Date().getTime();
-    const endTime = new Date().getTime();
-    const latency = endTime - startTime;
-    let quality = '';
-    let emoji = '';
-    if (latency < 100) {
-      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
-      emoji = '🟢';
-    } else if (latency < 300) {
-      quality = 'ɢᴏᴏᴅ';
-      emoji = '🟡';
-    } else if (latency < 600) {
-      quality = 'ғᴀɪʀ';
-      emoji = '🟠';
-    } else {
-      quality = 'ᴘᴏᴏʀ';
-      emoji = '🔴';
-    }
+
     const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
     const cards = [
          {
@@ -819,10 +802,9 @@ case 'menu': {
     await socket.relayMessage(sender, message.message, { messageId: message.key.id });
   } catch (error) {
     console.error('Ping command error:', error);
-    const startTime = new Date().getTime();
-    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ...' }, { quoted: msg });
+    const simplePing = await socket.sendMessage(sender, { text: 'try again .menu' }, { quoted: msg });
     const endTime = new Date().getTime();
-    await socket.sendMessage(sender, { text: ` ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { text: ` error menu replaces` }, { quoted: fakevCard });
   }
   break;
 }
@@ -840,24 +822,8 @@ case 'repo': {
     const response = await fetch(`https://api.github.com/repos/${username}/${repo}`); 
     if (!response.ok) throw new Error(`GitHub API error: ${response.status}`); 
     const repoData = await response.json(); 
-    await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
-    const endTime = new Date().getTime();
-    const latency = endTime - startTime;
-    let quality = '';
-    let emoji = '';
-    if (latency < 100) {
-      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
-      emoji = '🟢';
-    } else if (latency < 300) {
-      quality = 'ɢᴏᴏᴅ';
-      emoji = '🟡';
-    } else if (latency < 600) {
-      quality = 'ғᴀɪʀ';
-      emoji = '🟠';
-    } else {
-      quality = 'ᴘᴏᴏʀ';
-      emoji = '🔴';
-    }
+    
+    
     const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
     const cards = [
           {
@@ -1086,10 +1052,9 @@ case 'repo': {
     await socket.relayMessage(sender, message.message, { messageId: message.key.id });
   } catch (error) {
     console.error('Ping command error:', error);
-    const startTime = new Date().getTime();
-    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ...' }, { quoted: msg });
+    const simplePing = await socket.sendMessage(sender, { text: 'try again late .repo' }, { quoted: msg });
     const endTime = new Date().getTime();
-    await socket.sendMessage(sender, { text: `📌 ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+    await socket.sendMessage(sender, { text: `error loading repository web` }, { quoted: fakevCard });
   }
   break;
    }
