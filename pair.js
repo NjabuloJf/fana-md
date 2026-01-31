@@ -690,6 +690,231 @@ case 'alive': {
   break;
           }
 
+                    
+case 'pins': {
+  await socket.sendMessage(sender, { react: { text: '📍', key: msg.key } });
+  try {
+      const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys'); 
+    const startTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: '*_⚡️ ᴘɪɴɢɪɴɢ ᴛᴏ sᴇʀᴠᴇʀ..._* ❗' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    const latency = endTime - startTime;
+    let quality = '';
+    let emoji = '';
+    if (latency < 100) {
+      quality = 'ᴇxᴄᴇʟʟᴇɴᴛ';
+      emoji = '🟢';
+    } else if (latency < 300) {
+      quality = 'ɢᴏᴏᴅ';
+      emoji = '🟡';
+    } else if (latency < 600) {
+      quality = 'ғᴀɪʀ';
+      emoji = '🟠';
+    } else {
+      quality = 'ᴘᴏᴏʀ';
+      emoji = '🔴';
+    }
+    const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
+    const cards = [
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:*
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+         {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:*
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:*
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: ``,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              buttonId: ".alive",
+              buttonText: { displayText: "Avaliable" },
+              type: 1
+            },
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+      {
+        header: {
+          title: `📊 Ping`,
+          hasMediaAttachment: true,
+          imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: socket.waUploadToServer })).imageMessage,
+        },
+        body: {
+          text: `*╭ׂ─ׂ┄『• ɴᴊᴀʙᴜʟᴏ-ᴊʙ•』┴*
+│╭ׂ─ׂ┄─ׅ─ׂ┄ 
+┴│
+❒│▸ ▢ *ᴜsᴇ:*
+❒│▸ ▢ *ᴘʀᴇғɪx: [ . ]*
+❒│▸ ▢ *ʀᴜɴ:*
+❒│▸ ▢ *sᴛᴏʀᴀɢᴇ
+❒│▸ ▢ *ᴏᴡɴᴇʀ:* (ɴᴊᴀʙᴜʟᴏ)
+┴│
+│╰─ׂ┄─ׅ─ׂ┄
+├┅┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄|
+│╭ׂ─ׂ┄─ׅ─ׂ┄
+┴│
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+❒│▸ ①◦➛
+┬│
+│╰─ׂ┄─ׅ─ׂ┄
+╰─┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ─ׂ┄┴`,
+        },
+        footer: {
+          text: "",
+        },
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_url",
+              buttonParamsJson: JSON.stringify({ display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", url: "https://example.com" }),
+            },
+          ],
+        },
+      },
+    ];
+    const message = generateWAMessageFromContent(sender, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+          interactiveMessage: {
+            header: { text: `🔍 System Info` },
+            body: { text: `*📂 sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ*` },
+            headerType: 1,
+            carouselMessage: { cards },
+          },
+        },
+      },
+    }, { quoted: fakevCard });
+    await socket.relayMessage(sender, message.message, { messageId: message.key.id });
+  } catch (error) {
+    console.error('Ping command error:', error);
+    const startTime = new Date().getTime();
+    const simplePing = await socket.sendMessage(sender, { text: '📍 ᴄᴀʟᴄᴜʟᴀᴛɪɴɢ ᴘɪɴɢ...' }, { quoted: msg });
+    const endTime = new Date().getTime();
+    await socket.sendMessage(sender, { text: `📌 *ᴘᴏɴɢ!*\n⚡ ʟᴀᴛᴇɴᴄʏ: ${endTime - startTime}ᴍs` }, { quoted: fakevCard });
+  }
+  break;
+                }
 
 
 
