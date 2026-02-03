@@ -599,8 +599,7 @@ case 'menu': {
 
       
     await socket.sendMessage(sender, { 
-    video: { url: randomNjabulourl },
-    mimetype: 'video/mp4',
+    video: { url: randomNjabulourl },   
     videoNote: true // 👈 THIS makes it a video note
     }, { quoted: msg });
 
