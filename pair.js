@@ -594,6 +594,15 @@ case 'menu': {
     const seconds = Math.floor(uptime % 60);
     const usedMemory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     const totalMemory = Math.round(os.totalmem() / 1024 / 1024);
+      const randomNjabulomp4 = "https://files.catbox.moe/wrl23x.mp4"; 
+
+
+      
+    await socket.sendMessage(sender, { 
+    video: { url: randomNjabulourl },
+    mimetype: 'video/mp4',
+    videoNote: true // 👈 THIS makes it a video note
+    }, { quoted: msg });
 
 
     const randomNjabulourl = "https://files.catbox.moe/mh36c7.jpg"; 
