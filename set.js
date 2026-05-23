@@ -73,8 +73,9 @@ module.exports = {
     //process.env.STARTING_BOT_MESSAGE//             
     DP : process.env.STARTING_BOT_MESSAGE || "yes",
     
-    //process.env.ANTI_DELETE_MESSAGE//             
-    ADM : process.env.ANTI_DELETE_MESSAGE || 'no',
+    // ========== ANTI-DELETE SETTING ==========
+    // Set to "yes" to enable anti-delete, "no" to disable
+    ADM : process.env.ANTI_DELETE_MESSAGE || "yes",
     
     DATABASE_URL,
     DATABASE: DATABASE_URL === databasePath
