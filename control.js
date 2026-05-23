@@ -264,6 +264,23 @@ setTimeout(() => {
             }
         }
 
+        // Get phone number from participant object
+        function getParticipantJid(participant) {
+            if (typeof participant === 'string') {
+                return participant;
+            }
+            if (participant && typeof participant === 'object') {
+                // Check for phoneNumber first (as seen in your logs)
+                if (participant.phoneNumber) {
+                    return participant.phoneNumber;
+                }
+                if (participant.id) {
+                    return participant.id;
+                }
+            }
+            return null;
+        }
+
         const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
 
         // ========== AUTO-STATUS HANDLER ==========
@@ -318,6 +335,7 @@ setTimeout(() => {
                 const groupName = groupMetadata.subject || "Unknown Group";
                 const groupDesc = groupMetadata.desc || "No description";
                 const participantCount = groupMetadata.participants.length;
+                const groupPP = await getProfilePic(groupId);
                 
                 const currentTime = new Date();
                 const joinTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -331,7 +349,16 @@ setTimeout(() => {
                     if (welcomeEnabled === 'on' && participants && participants.length > 0) {
                         for (const participant of participants) {
                             try {
-                                const memberJid = typeof participant === 'string' ? participant : String(participant);
+                                // Get the correct JID from participant object
+                                const memberJid = getParticipantJid(participant);
+                                
+                                if (!memberJid) {
+                                    console.log("Could not extract JID from participant:", participant);
+                                    continue;
+                                }
+                                
+                                console.log(`Member JID extracted: ${memberJid}`);
+                                
                                 const memberName = await getName(memberJid);
                                 const memberPP = await getProfilePic(memberJid);
                                 
@@ -372,7 +399,7 @@ setTimeout(() => {
                                 
                                 // Send DM to new member
                                 try {
-                                    const dmMsg = `🎉 *Welcome to ${groupName}!* 🎉\n\nHi ${memberName}! We're excited to have you.\n\n📌 *Group Rules:*\n• Be respectful\n• No spam\n• No NSFW\n\nUse ${prefixe}help to see available commands.\n\nEnjoy your stay! 🚀`;
+                                    const dmMsg = `🎉 *Welcome to ${groupName}!* 🎉\n\nHi ${memberName}! We're excited to have you.\n\n📌 *Group Rules:*\n• Be respectful\n• No spam\n• No NSFW\n• No links without permission\n\n📌 *Commands:*\n• ${prefixe}help - Show all commands\n• ${prefixe}ping - Check bot status\n• ${prefixe}alive - Bot info\n\nEnjoy your stay! 🚀`;
                                     await zk.sendMessage(memberJid, { text: dmMsg });
                                     console.log(`✅ DM welcome sent to ${memberName}`);
                                 } catch (dmErr) {
@@ -394,7 +421,14 @@ setTimeout(() => {
                     if (goodbyeEnabled === 'on' && participants && participants.length > 0) {
                         for (const participant of participants) {
                             try {
-                                const memberJid = typeof participant === 'string' ? participant : String(participant);
+                                // Get the correct JID from participant object
+                                const memberJid = getParticipantJid(participant);
+                                
+                                if (!memberJid) {
+                                    console.log("Could not extract JID from participant:", participant);
+                                    continue;
+                                }
+                                
                                 const memberName = await getName(memberJid);
                                 
                                 console.log(`👋 Member left: ${memberName} (${memberJid})`);
@@ -680,6 +714,56 @@ setTimeout(() => {
                 }
             } catch (e) {
                 console.log("Anti-link error:", e);
+            }
+
+            // ========== ANTI-BOT ==========
+            try {
+                const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
+                const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
+                
+                if (botMsg || baileysMsg) {
+                    if (mtype === 'reactionMessage') return;
+                    
+                    const antibotactiver = await atbverifierEtatJid(origineMessage);
+                    if (!antibotactiver) return;
+                    if (verifAdmin || auteurMessage === idBot) return;
+
+                    const key = {
+                        remoteJid: origineMessage,
+                        fromMe: false,
+                        id: ms.key.id,
+                        participant: auteurMessage
+                    };
+                    
+                    var txt = "🤖 *BOT DETECTED* 🤖\n";
+                    var action = await atbrecupererActionJid(origineMessage);
+
+                    if (action === 'remove') {
+                        txt += `🚫 Bot detected\n👤 @${auteurMessage.split("@")[0]} removed from group.`;
+                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
+                        await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    } 
+                    else if (action === 'delete') {
+                        txt += `🚫 Bot message deleted\n👤 @${auteurMessage.split("@")[0]} avoid sending bot messages.`;
+                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    } 
+                    else if (action === 'warn') {
+                        const { getWarnCountByJID, ajouterUtilisateurAvecWarnCount } = require('./bdd/warn');
+                        let warn = await getWarnCountByJID(auteurMessage);
+                        let warnlimit = conf.WARN_COUNT || 3;
+                        
+                        if (warn >= warnlimit) {
+                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                        } else {
+                            await ajouterUtilisateurAvecWarnCount(auteurMessage);
+                        }
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    }
+                }
+            } catch (er) {
+                console.log('Anti-bot error:', er);
             }
 
             // ========== COMMAND EXECUTION ==========
