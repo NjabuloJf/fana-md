@@ -21,10 +21,9 @@
   "author": "NjabuloJf",
   "license": "ISC",
   "dependencies": {
-    "@adiwajshing/keyed-db": "npm:wileys",
+    "@whiskeysockets/baileys": "github:xhclintohn/Baileys",
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
-    "@whiskeysockets/baileys": "^6.7.0",
     "@xaviabot/fb-downloader": "^1.0.14",
     "aptoide-scraper": "^1.0.1",
     "axios": "^1.4.0",
@@ -65,4 +64,4 @@
     "ytdl-core": "4.11.5",
     "youtube-yts": "^2.0.0"
   }
-  }
+}
