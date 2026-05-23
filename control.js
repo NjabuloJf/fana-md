@@ -543,43 +543,28 @@ setTimeout(() => {
                 sudoList: sudoNumbersList
             };
 
-            // ========== ANTI-LINK WITH STICKER AND BUTTONS (FIXED - WILL DELETE LINKS) ==========
+            // ========== ANTI-LINK WITH STICKER AND BUTTONS ==========
+            // anti-lien
             try {
-                const yes = await verifierEtatJid(origineMessage);
-                // Detect all types of links
-                const isLink = texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com') || texte.includes('wa.me') || texte.includes('.com') || texte.includes('.net'));
-                
-                if (isLink && verifGroupe && yes) {
-                    console.log("🔗 LINK DETECTED");
-                    console.log(`📝 Link: ${texte}`);
-                    console.log(`👤 User: ${auteurMessage}`);
+                const yes = await verifierEtatJid(origineMessage)
+                if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com') || texte.includes('wa.me')) && verifGroupe && yes) {
+
+                    console.log("🔗 LINK DETECTED")
                     
                     // Check if bot is admin
                     const isBotAdmin = admins.includes(idBot);
-                    console.log(`🤖 Bot is Admin: ${isBotAdmin}`);
                     
-                    if (!isBotAdmin) {
-                        console.log('❌ Bot is not admin, cannot take action');
+                    // Skip for superUser, group admin, or if bot not admin
+                    if (isSuperUser || verifAdmin || !isBotAdmin) {
+                        console.log(`⏭️ Skipping action - SuperUser: ${isSuperUser}, GroupAdmin: ${verifAdmin}, BotAdmin: ${isBotAdmin}`);
+                        // Still send warning message even if skipping action
                         await zk.sendMessage(origineMessage, { 
-                            text: "⚠️ *ANTI-LINK WARNING* ⚠️\n\nPlease don't send links in this group!\n\n> Bot is not admin, cannot enforce rules.",
+                            text: `⚠️ *LINK DETECTED* ⚠️\n\nPlease don't send links in this group!\n\n@${auteurMessage.split("@")[0]} avoid sending links.`,
                             mentions: [auteurMessage]
                         }, { quoted: ms });
                         return;
                     }
                     
-                    // ONLY skip if user is the OWNER (not just any superUser)
-                    const ownerNumberRaw = conf.NUMERO_OWNER || "26777821911";
-                    const isOwner = auteurMessage === ownerNumberRaw + "@s.whatsapp.net" || 
-                                    auteurMessage === ownerNumberRaw ||
-                                    auteurMessage?.split('@')[0] === ownerNumberRaw;
-                    
-                    if (isOwner) {
-                        console.log('⏭️ Skipping action - User is the OWNER');
-                        return;
-                    }
-                    
-                    console.log(`👤 Regular user detected, will take action!`);
-
                     const key = {
                         remoteJid: origineMessage,
                         fromMe: false,
@@ -588,7 +573,7 @@ setTimeout(() => {
                     };
                     
                     var txt = "⚠️ *LINK DETECTED* ⚠️\n";
-                    const gifLink = "https://raw.githubusercontent.com/NjabuloJ/fana-md/main/media/remover.gif";
+                    const gifLink = "https://raw.githubusercontent.com/NjabuloJ/fana-xmd/main/media/remover.gif";
                     
                     try {
                         var sticker = new Sticker(gifLink, {
@@ -608,7 +593,7 @@ setTimeout(() => {
                     var action = await recupererActionJid(origineMessage);
                     console.log(`Action for this group: ${action}`);
 
-                    // ALWAYS delete the link message first
+                    // Delete the link message
                     try {
                         await zk.sendMessage(origineMessage, { delete: key });
                         console.log(`✅ Link message deleted`);
@@ -626,7 +611,7 @@ setTimeout(() => {
                         
                         await zk.sendMessage(origineMessage, {
                             interactiveMessage: {
-                                header: txt,
+                                header: { text: txt },
                                 mentions: [auteurMessage],
                                 buttons: buttons,
                                 headerType: 1
@@ -647,7 +632,7 @@ setTimeout(() => {
                         
                         await zk.sendMessage(origineMessage, {
                             interactiveMessage: {
-                                header: text,
+                                header: { text: txt },
                                 mentions: [auteurMessage],
                                 buttons: buttons,
                                 headerType: 1
@@ -663,12 +648,15 @@ setTimeout(() => {
                         let warn = await getWarnCountByJID(auteurMessage);
                         let warnlimit = parseInt(conf.WARN_COUNT) || 3;
                         
-                        console.log(`User ${auteurMessage} has ${warn}/${warnlimit} warnings`);
+                        console.log(`User has ${warn}/${warnlimit} warnings`);
                         
                         if (warn >= warnlimit) {
                             var kikmsg = `⚠️ Link detected! You have been removed because of reaching warn limit (${warnlimit})`;
                             await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                            
+                            if (isBotAdmin) {
+                                await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                            }
                             console.log(`✅ User removed after ${warnlimit} warnings`);
                         } else {
                             var rest = warnlimit - warn;
@@ -678,7 +666,7 @@ setTimeout(() => {
                             
                             await zk.sendMessage(origineMessage, {
                                 interactiveMessage: {
-                                    header: msg ,
+                                    header: { text: msg },
                                     mentions: [auteurMessage],
                                     buttons: buttons,
                                     headerType: 1
@@ -704,7 +692,13 @@ setTimeout(() => {
                     
                     const antibotactiver = await atbverifierEtatJid(origineMessage);
                     if (!antibotactiver) return;
-                    if (verifAdmin || auteurMessage === idBot) return;
+                    
+                    const isBotAdmin = admins.includes(idBot);
+                    
+                    if (verifAdmin || auteurMessage === idBot || !isBotAdmin) {
+                        console.log('⏭️ Skipping anti-bot action');
+                        return;
+                    }
 
                     const key = {
                         remoteJid: origineMessage,
@@ -716,16 +710,19 @@ setTimeout(() => {
                     var txt = "🤖 *BOT DETECTED* 🤖\n";
                     var action = await atbrecupererActionJid(origineMessage);
 
+                    // Delete bot message
+                    try {
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    } catch (e) {}
+
                     if (action === 'remove') {
                         txt += `🚫 Bot detected\n👤 @${auteurMessage.split("@")[0]} removed from group.`;
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
                         await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        await zk.sendMessage(origineMessage, { delete: key });
                     } 
                     else if (action === 'delete') {
                         txt += `🚫 Bot message deleted\n👤 @${auteurMessage.split("@")[0]} avoid sending bot messages.`;
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
-                        await zk.sendMessage(origineMessage, { delete: key });
                     } 
                     else if (action === 'warn') {
                         const { getWarnCountByJID, ajouterUtilisateurAvecWarnCount } = require('./bdd/warn');
@@ -737,7 +734,6 @@ setTimeout(() => {
                         } else {
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
                         }
-                        await zk.sendMessage(origineMessage, { delete: key });
                     }
                 }
             } catch (er) {
