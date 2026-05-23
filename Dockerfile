@@ -8,24 +8,24 @@ RUN apt-get update && \
   git \
   python3 \
   make \
-  g++ && \
-  apt-get upgrade -y && \
-  rm -rf /var/lib/apt/lists/*
+  g++ \
+  && apt-get upgrade -y \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g pm2
 
 RUN git clone https://github.com/NjabuloJf/fana-md /root/fana-md
 WORKDIR /root/fana-md
 
-# Copy fixed package.json first
+# Copy package.json with GitHub baileys
 COPY package.json ./
 
-# Clean install with specific registry
-RUN npm cache clean --force
-RUN npm install --legacy-peer-deps --no-optional --registry=https://registry.npmjs.org/
+# Install GitHub baileys first (needs git)
+RUN npm install github:xhclintohn/Baileys --save --legacy-peer-deps || \
+    npm install https://github.com/xhclintohn/Baileys.git --save --legacy-peer-deps
 
-# If the above fails, try this alternative
-# RUN npm install --legacy-peer-deps --no-optional --force
+# Install other dependencies
+RUN npm install --legacy-peer-deps --no-optional
 
 COPY . .
 
