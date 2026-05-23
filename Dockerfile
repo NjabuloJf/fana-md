@@ -17,17 +17,18 @@ RUN npm install -g pm2
 RUN git clone https://github.com/NjabuloJf/fana-md /root/fana-md
 WORKDIR /root/fana-md
 
-# Fix for baileys compatibility - overwrite package.json with fixed version
+# Copy fixed package.json first
 COPY package.json ./
 
-# Clean install
+# Clean install with specific registry
 RUN npm cache clean --force
-RUN npm install --legacy-peer-deps --no-optional
+RUN npm install --legacy-peer-deps --no-optional --registry=https://registry.npmjs.org/
 
-# Copy the rest of the application
+# If the above fails, try this alternative
+# RUN npm install --legacy-peer-deps --no-optional --force
+
 COPY . .
 
 EXPOSE 5000
 
-# Run with PM2
 CMD ["pm2-runtime", "start", "control.js", "--name", "fana-md"]
