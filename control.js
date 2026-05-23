@@ -64,25 +64,102 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
-const prefixe = conf.PREFIXE;
+// ========== BASE64 SESSION HANDLER WITH fana~ PREFIX ==========
+let session = conf.session || 'zokk';
 
-// Status reaction emojis
-const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
+// Function to clean and decode session
+function decodeSession(sessionStr) {
+    try {
+        let cleanSession = sessionStr;
+        
+        // Remove any wrapper/prefix like "fana~" or "Zokou-MD-WHATSAPP-BOT;;;=>"
+        if (cleanSession.includes('fana~')) {
+            cleanSession = cleanSession.split('fana~')[1];
+            console.log("✅ Removed 'fana~' prefix from session");
+        }
+        if (cleanSession.includes('Zokou-MD-WHATSAPP-BOT;;;=>')) {
+            cleanSession = cleanSession.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
+            console.log("✅ Removed Zokou-MD prefix from session");
+        }
+        
+        // Remove any whitespace
+        cleanSession = cleanSession.replace(/\s/g, '');
+        
+        // Try to decode base64
+        const decoded = Buffer.from(cleanSession, 'base64').toString('utf8');
+        
+        // Check if decoded is valid JSON
+        if (decoded.includes('creds') || decoded.includes('noiseKey')) {
+            console.log("✅ Successfully decoded base64 session");
+            return decoded;
+        } else {
+            // Try to parse as JSON
+            JSON.parse(decoded);
+            console.log("✅ Session is valid JSON");
+            return decoded;
+        }
+    } catch (e) {
+        console.log("Session decode error:", e.message);
+        return null;
+    }
+}
 
 async function authentification() {
     try {
-        if (!fs.existsSync(__dirname + "/auth/creds.json")) {
-            console.log("connexion en cour ...");
-            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
-        } else if (fs.existsSync(__dirname + "/auth/creds.json") && session != "zokk") {
-            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
+        const credsPath = __dirname + "/auth/creds.json";
+        const credsBackupPath = __dirname + "/auth/creds_backup.json";
+        
+        // If session is provided and not default
+        if (session && session !== 'zokk' && session.length > 10) {
+            console.log("📱 Processing session...");
+            
+            // Decode the session
+            const decodedSession = decodeSession(session);
+            
+            if (decodedSession) {
+                // Backup existing creds if exists
+                if (fs.existsSync(credsPath)) {
+                    fs.copySync(credsPath, credsBackupPath);
+                    console.log("📁 Existing session backed up");
+                }
+                
+                // Write decoded session
+                await fs.writeFileSync(credsPath, decodedSession, "utf8");
+                console.log("✅ Session saved successfully!");
+                
+                // Verify the saved session
+                const saved = fs.readFileSync(credsPath, 'utf8');
+                if (saved.includes('creds') || saved.includes('noiseKey')) {
+                    console.log("✅ Session verification passed!");
+                } else {
+                    console.log("⚠️ Session may be invalid, will generate new QR if needed");
+                }
+            } else {
+                console.log("❌ Failed to decode session, will generate new QR code");
+                // Remove invalid creds file
+                if (fs.existsSync(credsPath)) {
+                    fs.removeSync(credsPath);
+                }
+            }
+        } else {
+            console.log("📱 No session provided, will generate new QR code");
+        }
+        
+        // Check if creds file exists and is valid
+        if (fs.existsSync(credsPath)) {
+            const credsContent = fs.readFileSync(credsPath, 'utf8');
+            if (credsContent && credsContent.length > 100) {
+                console.log("✅ Valid session file found!");
+            } else {
+                console.log("⚠️ Session file exists but may be invalid");
+            }
         }
     } catch (e) {
-        console.log("Session Invalid " + e);
-        return;
+        console.log("Session error: " + e.message);
     }
 }
+
+// Run authentication
 authentification();
 
 const store = baileys_1.makeInMemoryStore({
@@ -97,8 +174,8 @@ setTimeout(() => {
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
-            browser: ['Fana-MD', "Chrome", "1.0.0"],
-            markOnlineOnConnect: false,
+            browser: ['NJABULO-MD', "Chrome", "1.0.0"],
+            markOnlineOnConnect: true,
             keepAliveIntervalMs: 30_000,
             auth: {
                 creds: state.creds,
@@ -129,6 +206,9 @@ setTimeout(() => {
             return jid;
         };
 
+        // Status emojis array
+        const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
+
         // ========== AUTO-STATUS HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
@@ -137,13 +217,18 @@ setTimeout(() => {
             // Handle status messages
             if (msg.key && msg.key.remoteJid === "status@broadcast") {
                 
-                // Skip if sender is null or unknown
-                if (!msg.pushName || msg.pushName === "null" || msg.key.fromMe) {
-                    console.log("⏭️ Skipping status from unknown/null sender");
+                // Get bot JID
+                const botJid = decodeJid(zk.user.id);
+                const senderJid = msg.key.participant || msg.key.remoteJid;
+                
+                // Skip if sender is null, unknown, or bot itself
+                if (!msg.pushName || msg.pushName === "null" || msg.key.fromMe || senderJid === botJid) {
+                    console.log("⏭️ Skipping status from unknown/null sender or own status");
                     return;
                 }
 
                 console.log("📱 Status received from:", msg.pushName);
+                console.log("📱 Status sender JID:", senderJid);
                 
                 // Auto-read status
                 if (conf.AUTO_READ_STATUS === "yes") {
@@ -161,55 +246,9 @@ setTimeout(() => {
                                 key: msg.key,
                             }
                         });
-                        console.log(`✅ Reacted to status with ${randomEmoji}`);
+                        console.log(`✅ Reacted to status from ${msg.pushName} with ${randomEmoji}`);
                     } catch (e) {
                         console.log("Could not react to status:", e.message);
-                    }
-                }
-                
-                // Auto-reply to status
-                if (conf.AUTO_STATUS_REPLY === "true") {
-                    try {
-                        const userJid = msg.key.participant || msg.key.remoteJid;
-                        const replyText = conf.AUTO_STATUS_MSG || "Nice status! 👍";
-                        await zk.sendMessage(userJid, { text: replyText });
-                        console.log("✅ Replied to status");
-                    } catch (e) {
-                        console.log("Could not reply to status:", e.message);
-                    }
-                }
-                
-                // Auto-download status - SEND TO OWNER DM
-                if (conf.AUTO_DOWNLOAD_STATUS === "yes") {
-                    try {
-                        const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                        if (msg.message.imageMessage) {
-                            var stMsg = msg.message.imageMessage.caption || "";
-                            var stImg = await zk.downloadAndSaveMediaMessage(msg.message.imageMessage);
-                            if (stImg) {
-                                await zk.sendMessage(ownerNumber, {
-                                    image: { url: stImg },
-                                    caption: `📱 *Status Image*\nFrom: ${msg.pushName}\n\n${stMsg}`
-                                });
-                            }
-                        } else if (msg.message.videoMessage) {
-                            var stMsg = msg.message.videoMessage.caption || "";
-                            var stVideo = await zk.downloadAndSaveMediaMessage(msg.message.videoMessage);
-                            if (stVideo) {
-                                await zk.sendMessage(ownerNumber, {
-                                    video: { url: stVideo },
-                                    caption: `📱 *Status Video*\nFrom: ${msg.pushName}\n\n${stMsg}`
-                                });
-                            }
-                        } else if (msg.message.extendedTextMessage) {
-                            var stTxt = msg.message.extendedTextMessage.text;
-                            await zk.sendMessage(ownerNumber, {
-                                text: `📱 *Status Text*\nFrom: ${msg.pushName}\n\n${stTxt}`
-                            });
-                        }
-                        console.log("✅ Status downloaded and sent to owner DM");
-                    } catch (e) {
-                        console.log("Could not download status:", e.message);
                     }
                 }
             }
@@ -271,7 +310,7 @@ setTimeout(() => {
                                               `👤 *${senderName}* deleted a message!\n\n` +
                                               `📝 *Deleted Message:*\n${messageContent}\n\n` +
                                               `🕐 *Time:* ${new Date().toLocaleString()}\n\n` +
-                                              `> Powered by Fana-MD Bot`,
+                                              `> Powered by NJABULO-MD`,
                                         mentions: [sender]
                                     });
                                     
@@ -326,7 +365,7 @@ setTimeout(() => {
                 zk.sendMessage(origineMessage, { text: mes }, { quoted: ms });
             }
 
-            console.log("\tFANA MD ONLINE");
+            console.log("\tNJABULO MD ONLINE");
             console.log("=========== written message===========");
             if (verifGroupe) console.log("message provenant du groupe : " + (nomGroupe || "unknown"));
             console.log("message envoyé par : " + "[" + (nomAuteurMessage || "unknown") + " : " + (auteurMessage?.split("@s.whatsapp.net")[0] || "unknown") + " ]");
@@ -463,7 +502,7 @@ setTimeout(() => {
                 const groupName = metadata.subject;
 
                 if (group.action == 'add' && (await recupevents(group.id, "welcome") == 'on')) {
-                    let msg = `*✨ WELCOME TO ${groupName.toUpperCase()} ✨*\n\n👤 New Member Joined!\n\n🎉 Enjoy your stay!\n\nPowered by Fana-MD Bot`;
+                    let msg = `*✨ WELCOME TO ${groupName.toUpperCase()} ✨*\n\n👤 New Member Joined!\n\n🎉 Enjoy your stay!\n\nPowered by NJABULO-MD`;
                     let membres = group.participants;
                     
                     await zk.sendMessage(group.id, { 
@@ -472,7 +511,7 @@ setTimeout(() => {
                         mentions: membres
                     });
                 } else if (group.action == 'remove' && (await recupevents(group.id, "goodbye") == 'on')) {
-                    let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by Fana-MD Bot`;
+                    let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by NJABULO-MD`;
                     await zk.sendMessage(group.id, { text: msg });
                 }
             } catch (e) {
@@ -482,15 +521,22 @@ setTimeout(() => {
 
         // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
-            const { lastDisconnect, connection } = con;
+            const { lastDisconnect, connection, qr } = con;
+            
+            if (qr) {
+                console.log("📱 Scan this QR code with WhatsApp:");
+                console.log(qr);
+            }
+            
             if (connection === "connecting") {
-                console.log("ℹ️ Fana MD is connecting...");
+                console.log("ℹ️ NJABULO MD is connecting...");
             } else if (connection === 'open') {
-                console.log("✅ Fana MD Connected to WhatsApp! ☺️");
-                console.log("Fana MD is Online 🕸\n\n");
+                console.log("✅ NJABULO MD Connected to WhatsApp! ☺️");
+                console.log("NJABULO MD is Online 🕸\n\n");
 
                 var md = (conf.MODE || "").toLocaleLowerCase() === "yes" ? "public" : "private";
                 console.log("Bot Mode: " + md);
+                console.log("Bot Name: NJABULO MD");
                 console.log("Loading Commands...");
 
                 if (fs.existsSync(__dirname + "/src")) {
@@ -506,19 +552,17 @@ setTimeout(() => {
                     });
                 }
 
-                console.log("✅ Fana MD is Online!");
-                
-                // Wait for zk.user.id to be available
-                let waitCount = 0;
-                while (!zk.user?.id && waitCount < 10) {
-                    await baileys_1.delay(1000);
-                    waitCount++;
-                    console.log(`Waiting for bot ID... (${waitCount}/10)`);
-                }
+                console.log("✅ NJABULO MD is Online!");
+                console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                console.log("📌 BOT IS READY TO USE");
+                console.log("📌 Prefix: " + prefixe);
+                console.log("📌 Mode: " + md);
+                console.log("📌 Owner: " + conf.NUMERO_OWNER);
+                console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
                 // Get bot number
                 const botNumber = zk.user?.id?.split(':')[0] || "Unknown";
-                console.log(`Bot Number: ${botNumber}`);
+                console.log(`🤖 Bot Number: ${botNumber}`);
                 
                 // Get owner number for DM
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
@@ -526,8 +570,8 @@ setTimeout(() => {
                 // Create startup message
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
-┊┊ *ᯤNJABULO JB: CONNECTED* 
-┊┊ *NAME: NJABULO JB*
+┊┊ *ᯤNJABULO MD: CONNECTED* 
+┊┊ *NAME: NJABULO MD*
 ┊┊ *PREFIX: [ ${prefixe} ]*
 ┊┊ *MODE:* ${md}
 ┊┊ *ANTI-DELETE:* ${isAntiDeleteEnabled ? "✅ ENABLED" : "❌ DISABLED"}
@@ -535,40 +579,29 @@ setTimeout(() => {
 ┊┗━┈┈┈┈┈┈┈┈
 ╰───────────⊷`;
                 
-                // SEND TO OWNER DM (YOUR MESSAGES)
+                // SEND TO OWNER DM
                 try {
                     await zk.sendMessage(ownerNumber, { text: cmsg });
                     console.log("✅ Startup message sent to OWNER DM: " + ownerNumber);
                 } catch (e) {
                     console.log("Could not send to owner DM:", e.message);
                 }
-                
-                // Send simple status to owner DM
-                try {
-                    await zk.sendMessage(ownerNumber, { 
-                        text: `🤖 *FANA-MD BOT ONLINE*\n\n📡 *Status:* Active\n🎮 *Mode:* ${md}\n📌 *Prefix:* ${prefixe}\n🛡️ *Anti-Delete:* ${isAntiDeleteEnabled ? "ON" : "OFF"}\n🤖 *Bot Number:* ${botNumber}\n🕐 *Time:* ${new Date().toLocaleString()}`
-                    });
-                    console.log("✅ Status message sent to OWNER DM");
-                } catch (e) {
-                    console.log("Could not send status to owner DM:", e.message);
-                }
-                
-                // Send anti-delete status to owner DM
-                if (isAntiDeleteEnabled) {
-                    try {
-                        await zk.sendMessage(ownerNumber, { 
-                            text: `🛡️ *ANTI-DELETE SYSTEM*\n\nStatus: ACTIVE ✅\n\nBot will recover and forward any deleted messages in groups where it is admin.`
-                        });
-                        console.log("✅ Anti-delete notification sent to owner DM");
-                    } catch (e) {
-                        console.log("Could not send anti-delete notification:", e.message);
-                    }
-                }
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
-                if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
+                if (reason === baileys_1.DisconnectReason.badSession) {
+                    console.log("Bad session, deleting auth folder...");
+                    if (fs.existsSync(__dirname + "/auth")) {
+                        fs.removeSync(__dirname + "/auth");
+                    }
+                    console.log("Please restart the bot to get new QR code");
+                } else if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
                     console.log("Restarting bot...");
                     main();
+                } else if (reason === baileys_1.DisconnectReason.loggedOut) {
+                    console.log("Logged out, deleting session...");
+                    if (fs.existsSync(__dirname + "/auth")) {
+                        fs.removeSync(__dirname + "/auth");
+                    }
                 }
             }
         });
