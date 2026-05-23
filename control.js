@@ -1,32 +1,67 @@
 "use strict";
 
 // ========== IMPORT GITHUB BAILEYS ==========
-// This version is from github:xhclintohn/Baileys
-const baileys_1 = require("@whiskeysockets/baileys");
+const baileysOriginal = require("@whiskeysockets/baileys");
 const logger_1 = require("@whiskeysockets/baileys/lib/Utils/logger");
 const logger = logger_1.default.child({});
 logger.level = 'silent';
 const pino = require("pino");
 const boom_1 = require("@hapi/boom");
 
-// The GitHub version might already have makeInMemoryStore
 console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 
-// Check if makeInMemoryStore exists (GitHub version might have it)
+// ========== CREATE WRAPPER INSTEAD OF MODIFYING ORIGINAL ==========
+// Create a wrapper object that extends the original
+const baileys_1 = { ...baileysOriginal };
+
+// Add polyfill to the wrapper (not the original)
 if (!baileys_1.makeInMemoryStore) {
-    console.log("⚠️ makeInMemoryStore not found, adding polyfill...");
+    console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
     baileys_1.makeInMemoryStore = function(options) {
         console.log("Using polyfilled store");
         return {
             chats: new Map(),
             contacts: new Map(),
             messages: new Map(),
-            bind: () => {},
-            writeToFile: () => {},
-            loadMessage: async () => null
+            bind: function(ev) {
+                console.log("Store bound to events");
+            },
+            writeToFile: function(filename) {
+                try {
+                    const fs = require('fs-extra');
+                    const data = {
+                        chats: Array.from(this.chats.entries()),
+                        contacts: Array.from(this.contacts.entries()),
+                        messages: Array.from(this.messages.entries())
+                    };
+                    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+                } catch (e) {}
+            },
+            loadMessage: async function(jid, id) {
+                if (this.messages.has(jid)) {
+                    const messages = this.messages.get(jid);
+                    if (messages && Array.isArray(messages)) {
+                        return messages.find(msg => msg.key && msg.key.id === id);
+                    }
+                }
+                return undefined;
+            }
         };
     };
+    console.log("✅ Polyfill added to wrapper");
 }
+
+// Also add any other missing functions to wrapper
+if (!baileys_1.downloadMediaMessage && baileysOriginal.downloadMediaMessage) {
+    baileys_1.downloadMediaMessage = baileysOriginal.downloadMediaMessage;
+}
+if (!baileys_1.downloadContentFromMessage && baileysOriginal.downloadContentFromMessage) {
+    baileys_1.downloadContentFromMessage = baileysOriginal.downloadContentFromMessage;
+}
+if (!baileys_1.makeCacheableSignalKeyStore && baileysOriginal.makeCacheableSignalKeyStore) {
+    baileys_1.makeCacheableSignalKeyStore = baileysOriginal.makeCacheableSignalKeyStore;
+}
+// ========== END OF WRAPPER ==========
 
 const conf = require("./set");
 const axios = require("axios");
@@ -43,10 +78,24 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-// Import button handler (create this file if needed)
+// Button handler
 let handleButtons = async (zk, msg) => {
     console.log("Button handler triggered");
-    // Add your button handling logic here
+    try {
+        if (msg.message?.buttonsResponseMessage) {
+            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
+            const from = msg.key.remoteJid;
+            console.log(`Button clicked: ${buttonId}`);
+            
+            if (buttonId === "view_rules") {
+                await zk.sendMessage(from, { 
+                    text: `📜 *GROUP RULES* 📜\n\n1. No spam\n2. No NSFW\n3. Respect members\n4. No links without permission` 
+                });
+            }
+        }
+    } catch (error) {
+        console.error("Button handler error:", error);
+    }
 };
 
 var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
@@ -113,7 +162,7 @@ setTimeout(() => {
 
             if (isButtonResponse) {
                 console.log("🎯 Button interaction detected!");
-                if (handleButtons) await handleButtons(zk, msg);
+                await handleButtons(zk, msg);
                 return;
             }
         });
@@ -125,13 +174,13 @@ setTimeout(() => {
             if (!ms.message) return;
 
             // Skip reaction messages
-            const mtype = (0, baileys_1.getContentType)(ms.message);
+            const mtype = baileys_1.getContentType(ms.message);
             if (mtype === "reactionMessage") return;
 
             const decodeJid = (jid) => {
                 if (!jid) return jid;
                 if (/:\d+@/gi.test(jid)) {
-                    let decode = (0, baileys_1.jidDecode)(jid) || {};
+                    let decode = baileys_1.jidDecode(jid) || {};
                     return decode.user && decode.server && decode.user + '@' + decode.server || jid;
                 }
                 return jid;
@@ -237,6 +286,32 @@ setTimeout(() => {
             }
         });
 
+        // ========== GROUP PARTICIPANTS UPDATE ==========
+        const { recupevents } = require('./bdd/welcome');
+        zk.ev.on('group-participants.update', async (group) => {
+            let ppgroup;
+            try {
+                ppgroup = await zk.profilePictureUrl(group.id, 'image');
+            } catch {
+                ppgroup = 'https://i.imgur.com/4M6Y6qT.png';
+            }
+            try {
+                const metadata = await zk.groupMetadata(group.id);
+                const groupName = metadata.subject;
+
+                if (group.action == 'add' && (await recupevents(group.id, "welcome") == 'on')) {
+                    let msg = `*✨ WELCOME TO ${groupName.toUpperCase()} ✨*\n\n👤 New Member Joined!\n\n🎉 Enjoy your stay!\n\nPowered by Fana-MD Bot`;
+                    let membres = group.participants;
+                    await zk.sendMessage(group.id, { image: { url: ppgroup }, caption: msg, mentions: membres });
+                } else if (group.action == 'remove' && (await recupevents(group.id, "goodbye") == 'on')) {
+                    let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by Fana-MD Bot`;
+                    await zk.sendMessage(group.id, { text: msg });
+                }
+            } catch (e) {
+                console.error("Group update error:", e);
+            }
+        });
+
         // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
             const { lastDisconnect, connection } = con;
@@ -264,6 +339,12 @@ setTimeout(() => {
                 }
 
                 console.log("✅ Fana MD is Online!");
+                
+                // Send startup message to owner
+                try {
+                    const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}` });
+                } catch (e) {}
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
                 if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
@@ -278,7 +359,7 @@ setTimeout(() => {
         // Download and save media message
         zk.downloadAndSaveMediaMessage = async (message, filename = '') => {
             try {
-                const buffer = await (0, baileys_1.downloadMediaMessage)(
+                const buffer = await baileys_1.downloadMediaMessage(
                     message,
                     'buffer',
                     {},
