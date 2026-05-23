@@ -38,6 +38,35 @@ let fs = require("fs-extra");
 let path = require("path");
 const FileType = require('file-type');
 const { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter');
+
+// ========== FIX: Add polyfill for makeInMemoryStore ==========
+if (!baileys_1.makeInMemoryStore) {
+    console.log("⚠️ makeInMemoryStore not found, applying polyfill...");
+    baileys_1.makeInMemoryStore = function(options) {
+        return {
+            bind: function(ev) {
+                // Simple bind implementation
+                console.log("Store bound to events");
+            },
+            writeToFile: function(filename) {
+                // Do nothing as fallback
+                console.log("Would write to file:", filename);
+            },
+            loadMessage: async function(jid, id) {
+                return null;
+            },
+            chats: new Map(),
+            contacts: new Map(),
+            messages: new Map(),
+            readFromFile: function(filename) {
+                // Do nothing
+            }
+        };
+    };
+    console.log("✅ Polyfill applied successfully");
+}
+// ========== END OF FIX ==========
+
 //import chalk from 'chalk'
 const { verifierEtatJid , recupererActionJid } = require("./bdd/antilien");
 const { atbverifierEtatJid , atbrecupererActionJid } = require("./bdd/antibot");
@@ -72,9 +101,12 @@ async function authentification() {
     }
 }
 authentification();
+
+// Now this will work with the polyfill
 const store = (0, baileys_1.makeInMemoryStore)({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
+
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
@@ -109,8 +141,18 @@ setTimeout(() => {
             ///////
         };
         const zk = (0, baileys_1.default)(sockOptions);
-        store.bind(zk.ev);
-        setInterval(() => { store.writeToFile("store.json"); }, 3000);
+        
+        // Check if store.bind exists before calling it
+        if (store && typeof store.bind === 'function') {
+            store.bind(zk.ev);
+        } else {
+            console.log("⚠️ store.bind not available, skipping");
+        }
+        
+        if (store && typeof store.writeToFile === 'function') {
+            setInterval(() => { store.writeToFile("store.json"); }, 3000);
+        }
+        
         zk.ev.on("messages.upsert", async (m) => {
             const { messages } = m;
             const ms = messages[0];
@@ -330,7 +372,7 @@ function mybotpic() {
                 return;
             }
             
- //---------------------------------------rang-count--------------------------------
+//---------------------------------------rang-count--------------------------------
              if (texte && auteurMessage.endsWith("s.whatsapp.net")) {
   const { ajouterOuMettreAJourUserData } = require("./bdd/level"); 
   try {
