@@ -1049,6 +1049,24 @@ setTimeout(() => {
                 }
             });
         };
+
+    // ========== BUTTON HANDLER - Add this before your main message handler ==========
+zk.ev.on("messages.upsert", async (m) => {
+    const msg = m.messages[0];
+    if (!msg.message) return;
+    
+    // Check if this is a button interaction
+    const isButtonResponse = msg.message?.buttonsResponseMessage || 
+                            msg.message?.listResponseMessage ||
+                            msg.message?.templateButtonReplyMessage ||
+                            msg.message?.interactiveResponseMessage;
+    
+    if (isButtonResponse) {
+        console.log("🎯 Button/LIST interaction detected!");
+        await handleButtons(zk, msg);
+        return; // Don't process as normal message
+    }
+});
         
         return zk;
     }
