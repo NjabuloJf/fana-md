@@ -7,7 +7,8 @@ const databasePath = path.join(__dirname, './database.db');
 const DATABASE_URL = process.env.DATABASE_URL === undefined
     ? databasePath
     : process.env.DATABASE_URL;
-module.exports = { session: process.env.SESSION_ID || 'zokk',
+module.exports = { 
+    session: process.env.SESSION_ID || 'zokk',
 
     //process.env.PREFIX//
     PREFIXE: process.env.PREFIX || ".",
@@ -20,6 +21,15 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
    
     //process.env.AUTO_READ_STATUS//             
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "yes",
+
+    //process.env.AUTO_STATUS_REACT - React to status with random emojis//
+    AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
+    
+    //process.env.AUTO_STATUS_REPLY - Reply to status messages//
+    AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
+    
+    //process.env.AUTO_STATUS_MSG - Message to reply to status//
+    AUTO_STATUS_MSG: process.env.AUTO_STATUS_MSG || "Nice status! 👍",
 
     //process.env.AUTO_BIO//
     AUTO_BIO : process.env.AUTO_BIO || 'yes',
@@ -37,7 +47,7 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
     URL : process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
 
     //GURL: process.env.GURL//
-     GURL: process.env.GURL  || 'https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u',
+    GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u',
   
     //process.env.PUBLIC_MODE//             
     MODE: process.env.PUBLIC_MODE || "yes",
@@ -49,10 +59,10 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
     HEROKU_APP_NAME : process.env.HEROKU_APP_NAME,
     
     //process.env.HEROKU_APY_KEY//             
-    HEROKU_APY_KEY : process.env.HEROKU_APY_KEY ,
+    HEROKU_APY_KEY : process.env.HEROKU_APY_KEY,
     
     //process.env.WARN_COUNT//            
-    WARN_COUNT : process.env.WARN_COUNT || '3' ,
+    WARN_COUNT : process.env.WARN_COUNT || '3',
     
     //process.env.PRESENCE//             
     ETAT : process.env.PRESENCE || '',
@@ -65,18 +75,17 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
     
     //process.env.ANTI_DELETE_MESSAGE//             
     ADM : process.env.ANTI_DELETE_MESSAGE || 'no',
+    
     DATABASE_URL,
     DATABASE: DATABASE_URL === databasePath
-        ? "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway" : "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway",
-   
+        ? "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway" 
+        : "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway",
 };
+
 let fichier = require.resolve(__filename);
 fs.watchFile(fichier, () => {
     fs.unwatchFile(fichier);
     console.log(`mise à jour ${__filename}`);
     delete require.cache[fichier];
     require(fichier);
-})
-
-
-
+});
