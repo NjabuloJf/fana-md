@@ -218,6 +218,7 @@ setTimeout(() => {
 
         const decodeJid = (jid) => {
             if (!jid) return jid;
+            if (typeof jid !== 'string') return jid;
             if (/:\d+@/gi.test(jid)) {
                 let decode = baileys_1.jidDecode(jid) || {};
                 return decode.user && decode.server && decode.user + '@' + decode.server || jid;
@@ -247,6 +248,20 @@ setTimeout(() => {
                 second: '2-digit',
                 hour12: true
             });
+        }
+
+        // FIXED: Get name function with proper JID handling
+        async function getName(jid) {
+            try {
+                if (!jid) return "Unknown";
+                if (typeof jid !== 'string') {
+                    jid = String(jid);
+                }
+                const cleanJid = jid.split('@')[0];
+                return cleanJid;
+            } catch (e) {
+                return "Unknown";
+            }
         }
 
         const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
@@ -286,15 +301,21 @@ setTimeout(() => {
         const { recupevents } = require('./bdd/welcome');
         
         zk.ev.on('group-participants.update', async (update) => {
-            console.log("📢 Group update detected");
+            console.log("📢 Group update detected:", JSON.stringify(update, null, 2));
             
             try {
                 const groupId = update.id;
                 const action = update.action;
                 const participants = update.participants;
                 
+                if (!groupId || !action) {
+                    console.log("Missing groupId or action");
+                    return;
+                }
+                
+                // Get group metadata
                 const groupMetadata = await zk.groupMetadata(groupId);
-                const groupName = groupMetadata.subject;
+                const groupName = groupMetadata.subject || "Unknown Group";
                 const groupDesc = groupMetadata.desc || "No description";
                 const participantCount = groupMetadata.participants.length;
                 
@@ -302,14 +323,20 @@ setTimeout(() => {
                 const joinTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const joinDate = currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
+                // WELCOME - When someone joins
                 if (action === 'add') {
                     const welcomeEnabled = await recupevents(groupId, "welcome");
-                    if (welcomeEnabled === 'on') {
+                    console.log(`Welcome status: ${welcomeEnabled}`);
+                    
+                    if (welcomeEnabled === 'on' && participants && participants.length > 0) {
                         for (const participant of participants) {
                             try {
-                                const memberJid = participant;
-                                const memberName = await zk.getName(memberJid) || memberJid.split('@')[0];
+                                const memberJid = typeof participant === 'string' ? participant : String(participant);
+                                const memberName = await getName(memberJid);
                                 const memberPP = await getProfilePic(memberJid);
+                                
+                                console.log(`👤 New member joined: ${memberName} (${memberJid})`);
+                                console.log(`📅 Join time: ${joinTime}, Date: ${joinDate}`);
                                 
                                 const welcomeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
 ┃     🎉 *WELCOME TO THE GROUP!* 🎉
@@ -322,6 +349,16 @@ setTimeout(() => {
 ┃ 🕐 *Joined at:* ${joinTime}
 ┃ 📅 *Date:* ${joinDate}
 ┃
+┃ 📝 *Description:* ${groupDesc.substring(0, 100)}${groupDesc.length > 100 ? '...' : ''}
+┃
+┃ 📜 *Quick Rules:*
+┃ • No spam
+┃ • No NSFW
+┃ • Respect members
+┃ • No links without permission
+┃
+┃ 🎯 *Type ${prefixe}help for commands*
+┃
 ┃ 💫 *Enjoy your stay!*
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
                                 
@@ -330,21 +367,38 @@ setTimeout(() => {
                                     caption: welcomeMsg,
                                     mentions: [memberJid]
                                 });
+                                
                                 console.log(`✅ Welcome message sent to ${memberName}`);
+                                
+                                // Send DM to new member
+                                try {
+                                    const dmMsg = `🎉 *Welcome to ${groupName}!* 🎉\n\nHi ${memberName}! We're excited to have you.\n\n📌 *Group Rules:*\n• Be respectful\n• No spam\n• No NSFW\n\nUse ${prefixe}help to see available commands.\n\nEnjoy your stay! 🚀`;
+                                    await zk.sendMessage(memberJid, { text: dmMsg });
+                                    console.log(`✅ DM welcome sent to ${memberName}`);
+                                } catch (dmErr) {
+                                    console.log("Could not send DM:", dmErr.message);
+                                }
+                                
                             } catch (memberError) {
-                                console.error(`Error:`, memberError);
+                                console.error(`Error processing member:`, memberError);
                             }
                         }
                     }
                 }
                 
+                // GOODBYE - When someone leaves
                 if (action === 'remove') {
                     const goodbyeEnabled = await recupevents(groupId, "goodbye");
-                    if (goodbyeEnabled === 'on') {
+                    console.log(`Goodbye status: ${goodbyeEnabled}`);
+                    
+                    if (goodbyeEnabled === 'on' && participants && participants.length > 0) {
                         for (const participant of participants) {
                             try {
-                                const memberJid = participant;
-                                const memberName = await zk.getName(memberJid) || memberJid.split('@')[0];
+                                const memberJid = typeof participant === 'string' ? participant : String(participant);
+                                const memberName = await getName(memberJid);
+                                
+                                console.log(`👋 Member left: ${memberName} (${memberJid})`);
+                                console.log(`📅 Leave time: ${joinTime}, Date: ${joinDate}`);
                                 
                                 const goodbyeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
 ┃        👋 *GOODBYE* 👋
@@ -352,10 +406,12 @@ setTimeout(() => {
 ┃ 😢 *${memberName}* has left the group
 ┃
 ┃ 📱 *Group:* ${groupName}
-┃ 👥 *Remaining:* ${participantCount - 1}
+┃ 👥 *Remaining members:* ${participantCount - 1}
 ┃
 ┃ 🕐 *Left at:* ${joinTime}
 ┃ 📅 *Date:* ${joinDate}
+┃
+┃ 🌟 *We hope to see you again soon!*
 ┃
 ┃ 💫 *You will be missed!*
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
@@ -364,13 +420,15 @@ setTimeout(() => {
                                     text: goodbyeMsg,
                                     mentions: [memberJid]
                                 });
+                                
                                 console.log(`✅ Goodbye message sent for ${memberName}`);
                             } catch (memberError) {
-                                console.error(`Error:`, memberError);
+                                console.error(`Error processing leaving member:`, memberError);
                             }
                         }
                     }
                 }
+                
             } catch (error) {
                 console.error("Group update error:", error);
             }
@@ -624,99 +682,6 @@ setTimeout(() => {
                 console.log("Anti-link error:", e);
             }
 
-            // ========== ANTI-BOT WITH STICKER AND BUTTONS ==========
-            try {
-                const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
-                const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
-                
-                if (botMsg || baileysMsg) {
-                    if (mtype === 'reactionMessage') {
-                        console.log('⏭️ Skipping reaction');
-                        return;
-                    }
-                    
-                    const antibotactiver = await atbverifierEtatJid(origineMessage);
-                    if (!antibotactiver) return;
-                    if (verifAdmin || auteurMessage === idBot) return;
-
-                    const key = {
-                        remoteJid: origineMessage,
-                        fromMe: false,
-                        id: ms.key.id,
-                        participant: auteurMessage
-                    };
-                    
-                    var txt = "🤖 *BOT DETECTED* 🤖\n";
-                    const gifLink = "https://raw.githubusercontent.com/NjabuloJ/fana-xmd/main/media/remover.gif";
-                    
-                    var sticker = new Sticker(gifLink, {
-                        pack: 'NJABULO-MD',
-                        author: conf.OWNER_NAME,
-                        type: StickerTypes.FULL,
-                        categories: ['🤩', '🎉'],
-                        id: '12345',
-                        quality: 50,
-                        background: '#000000'
-                    });
-                    
-                    await sticker.toFile("st1.webp");
-                    var action = await atbrecupererActionJid(origineMessage);
-
-                    if (action === 'remove') {
-                        txt += `🚫 Bot detected\n👤 @${auteurMessage.split("@")[0]} removed from group.`;
-                        
-                        await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
-                        await (0, baileys_1.delay)(800);
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
-                        
-                        try {
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        } catch (e) {
-                            console.log("Anti-bot remove error:", e);
-                        }
-                        await zk.sendMessage(origineMessage, { delete: key });
-                        await fs.unlink("st1.webp");
-                    } 
-                    else if (action === 'delete') {
-                        txt += `🚫 Bot message deleted\n👤 @${auteurMessage.split("@")[0]} avoid sending bot messages.`;
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
-                        await zk.sendMessage(origineMessage, { delete: key });
-                        await fs.unlink("st1.webp");
-                    } 
-                    else if (action === 'warn') {
-                        const { getWarnCountByJID, ajouterUtilisateurAvecWarnCount } = require('./bdd/warn');
-                        
-                        let warn = await getWarnCountByJID(auteurMessage);
-                        let warnlimit = conf.WARN_COUNT || 3;
-                        
-                        if (warn >= warnlimit) {
-                            var kikmsg = `🤖 Bot detected! You will be removed because of reaching warn limit (${warnlimit})`;
-                            await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                            await zk.sendMessage(origineMessage, { delete: key });
-                        } else {
-                            var rest = warnlimit - warn;
-                            var msg = `🤖 Bot detected! Warning ${warn + 1}/${warnlimit}\nRemaining: ${rest}`;
-                            
-                            await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                            
-                            await zk.sendMessage(origineMessage, {
-                                interactiveMessage: {
-                                    header: { text: msg },
-                                    mentions: [auteurMessage],
-                                    buttons: buttons,
-                                    headerType: 1
-                                }
-                            }, { quoted: ms });
-                            
-                            await zk.sendMessage(origineMessage, { delete: key });
-                        }
-                    }
-                }
-            } catch (er) {
-                console.log('Anti-bot error:', er);
-            }
-
             // ========== COMMAND EXECUTION ==========
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
@@ -837,15 +802,6 @@ setTimeout(() => {
             } catch (error) {
                 console.error("Media download error:", error.message);
                 return null;
-            }
-        };
-
-        zk.getName = async (jid) => {
-            try {
-                const contact = await zk.contactQuery(jid);
-                return contact?.name || jid.split('@')[0];
-            } catch {
-                return jid.split('@')[0];
             }
         };
 
