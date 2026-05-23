@@ -626,7 +626,7 @@ setTimeout(() => {
                         
                         await zk.sendMessage(origineMessage, {
                             interactiveMessage: {
-                                header: text: txt,
+                                header: txt,
                                 mentions: [auteurMessage],
                                 buttons: buttons,
                                 headerType: 1
@@ -647,7 +647,7 @@ setTimeout(() => {
                         
                         await zk.sendMessage(origineMessage, {
                             interactiveMessage: {
-                                header: text: txt,
+                                header: text,
                                 mentions: [auteurMessage],
                                 buttons: buttons,
                                 headerType: 1
@@ -678,7 +678,7 @@ setTimeout(() => {
                             
                             await zk.sendMessage(origineMessage, {
                                 interactiveMessage: {
-                                    header: { text: msg },
+                                    header: msg ,
                                     mentions: [auteurMessage],
                                     buttons: buttons,
                                     headerType: 1
