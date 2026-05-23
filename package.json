@@ -21,7 +21,7 @@
   "author": "NjabuloJf",
   "license": "ISC",
   "dependencies": {
-    "@adiwajshing/keyed-db": "npm:baileys@6.7.21",
+    "@adiwajshing/keyed-db": "npm:wileys",
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@whiskeysockets/baileys": "^6.7.0",
