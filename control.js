@@ -178,11 +178,44 @@ setTimeout(() => {
                         console.log("Could not reply to status:", e.message);
                     }
                 }
+                
+                // Auto-download status - SEND TO OWNER DM
+                if (conf.AUTO_DOWNLOAD_STATUS === "yes") {
+                    try {
+                        const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+                        if (msg.message.imageMessage) {
+                            var stMsg = msg.message.imageMessage.caption || "";
+                            var stImg = await zk.downloadAndSaveMediaMessage(msg.message.imageMessage);
+                            if (stImg) {
+                                await zk.sendMessage(ownerNumber, {
+                                    image: { url: stImg },
+                                    caption: `📱 *Status Image*\nFrom: ${msg.pushName}\n\n${stMsg}`
+                                });
+                            }
+                        } else if (msg.message.videoMessage) {
+                            var stMsg = msg.message.videoMessage.caption || "";
+                            var stVideo = await zk.downloadAndSaveMediaMessage(msg.message.videoMessage);
+                            if (stVideo) {
+                                await zk.sendMessage(ownerNumber, {
+                                    video: { url: stVideo },
+                                    caption: `📱 *Status Video*\nFrom: ${msg.pushName}\n\n${stMsg}`
+                                });
+                            }
+                        } else if (msg.message.extendedTextMessage) {
+                            var stTxt = msg.message.extendedTextMessage.text;
+                            await zk.sendMessage(ownerNumber, {
+                                text: `📱 *Status Text*\nFrom: ${msg.pushName}\n\n${stTxt}`
+                            });
+                        }
+                        console.log("✅ Status downloaded and sent to owner DM");
+                    } catch (e) {
+                        console.log("Could not download status:", e.message);
+                    }
+                }
             }
         });
 
-        // ========== ANTI-DELETE MESSAGE HANDLER (ENABLE/DISABLE VIA CONFIG) ==========
-        // Check if anti-delete is enabled in config
+        // ========== ANTI-DELETE MESSAGE HANDLER ==========
         const isAntiDeleteEnabled = conf.ADM === "yes" || conf.ADM === "true" || conf.ADM === true;
         
         if (isAntiDeleteEnabled) {
@@ -190,10 +223,8 @@ setTimeout(() => {
             
             zk.ev.on("messages.update", async (updates) => {
                 for (const update of updates) {
-                    // Skip if message was sent by bot
                     if (update.update.key?.fromMe) continue;
                     
-                    // Check if message was deleted (messageStubType 1 or 2 indicates deletion)
                     if (update.update.messageStubType === 1 || update.update.messageStubType === 2 || 
                         update.update.messageStubType === 21 || update.update.messageStubType === 22) {
                         
@@ -203,7 +234,6 @@ setTimeout(() => {
                         const chatId = deletedKey.remoteJid;
                         
                         try {
-                            // Try to get the deleted message from store
                             const storeFile = './store.json';
                             if (fs.existsSync(storeFile)) {
                                 const data = fs.readFileSync(storeFile, 'utf8');
@@ -225,7 +255,6 @@ setTimeout(() => {
                                     const sender = deletedMsg.key.participant || deletedMsg.key.remoteJid;
                                     const senderName = deletedMsg.pushName || "Someone";
                                     
-                                    // Get message content
                                     let messageContent = "Media message (image/video/sticker)";
                                     if (deletedMsg.message.conversation) {
                                         messageContent = deletedMsg.message.conversation;
@@ -237,7 +266,6 @@ setTimeout(() => {
                                         messageContent = deletedMsg.message.videoMessage.caption;
                                     }
                                     
-                                    // Send alert about deleted message
                                     await zk.sendMessage(chatId, {
                                         text: `⚠️ *ANTI-DELETE SYSTEM* ⚠️\n\n` +
                                               `👤 *${senderName}* deleted a message!\n\n` +
@@ -247,19 +275,12 @@ setTimeout(() => {
                                         mentions: [sender]
                                     });
                                     
-                                    // Try to forward the deleted message
                                     try {
-                                        await zk.sendMessage(chatId, {
-                                            forward: deletedMsg
-                                        });
+                                        await zk.sendMessage(chatId, { forward: deletedMsg });
                                         console.log(`✅ Forwarded deleted message from ${senderName}`);
                                     } catch (forwardErr) {
                                         console.log("Could not forward message:", forwardErr.message);
                                     }
-                                    
-                                    console.log(`✅ Anti-delete: Recovered message from ${senderName}`);
-                                } else {
-                                    console.log("Could not find deleted message in store");
                                 }
                             }
                         } catch (e) {
@@ -269,7 +290,7 @@ setTimeout(() => {
                 }
             });
         } else {
-            console.log("❌ ANTI-DELETE SYSTEM IS DISABLED (Set ADM=yes in config to enable)");
+            console.log("❌ ANTI-DELETE SYSTEM IS DISABLED");
         }
 
         // ========== MAIN MESSAGE HANDLER ==========
@@ -278,7 +299,6 @@ setTimeout(() => {
             const ms = messages[0];
             if (!ms.message) return;
 
-            // Skip reaction messages
             const mtype = baileys_1.getContentType(ms.message);
             if (mtype === "reactionMessage") return;
 
@@ -394,7 +414,7 @@ setTimeout(() => {
                 console.log("bdd err " + e);
             }
 
-            // Execution des commandes
+            // ========== EXECUTION DES COMMANDES ==========
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
@@ -496,7 +516,14 @@ setTimeout(() => {
                     console.log(`Waiting for bot ID... (${waitCount}/10)`);
                 }
                 
-                // Send startup message
+                // Get bot number
+                const botNumber = zk.user?.id?.split(':')[0] || "Unknown";
+                console.log(`Bot Number: ${botNumber}`);
+                
+                // Get owner number for DM
+                const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+                
+                // Create startup message
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
 ┊┊ *ᯤNJABULO JB: CONNECTED* 
@@ -504,27 +531,38 @@ setTimeout(() => {
 ┊┊ *PREFIX: [ ${prefixe} ]*
 ┊┊ *MODE:* ${md}
 ┊┊ *ANTI-DELETE:* ${isAntiDeleteEnabled ? "✅ ENABLED" : "❌ DISABLED"}
+┊┊ *BOT NUMBER:* ${botNumber}
 ┊┗━┈┈┈┈┈┈┈┈
 ╰───────────⊷`;
                 
-                if (zk.user?.id) {
-                    try {
-                        await zk.sendMessage(zk.user.id, { text: cmsg });
-                        console.log("✅ Startup message sent to bot number");
-                    } catch (e) {
-                        console.log("Could not send to bot ID:", e.message);
-                    }
-                } else {
-                    console.log("⚠️ zk.user.id not available");
+                // SEND TO OWNER DM (YOUR MESSAGES)
+                try {
+                    await zk.sendMessage(ownerNumber, { text: cmsg });
+                    console.log("✅ Startup message sent to OWNER DM: " + ownerNumber);
+                } catch (e) {
+                    console.log("Could not send to owner DM:", e.message);
                 }
                 
-                // Send to owner
+                // Send simple status to owner DM
                 try {
-                    const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}\nPrefix: ${prefixe}\nAnti-Delete: ${isAntiDeleteEnabled ? "ON" : "OFF"}` });
-                    console.log("✅ Startup message sent to owner");
+                    await zk.sendMessage(ownerNumber, { 
+                        text: `🤖 *FANA-MD BOT ONLINE*\n\n📡 *Status:* Active\n🎮 *Mode:* ${md}\n📌 *Prefix:* ${prefixe}\n🛡️ *Anti-Delete:* ${isAntiDeleteEnabled ? "ON" : "OFF"}\n🤖 *Bot Number:* ${botNumber}\n🕐 *Time:* ${new Date().toLocaleString()}`
+                    });
+                    console.log("✅ Status message sent to OWNER DM");
                 } catch (e) {
-                    console.log("Could not send to owner:", e.message);
+                    console.log("Could not send status to owner DM:", e.message);
+                }
+                
+                // Send anti-delete status to owner DM
+                if (isAntiDeleteEnabled) {
+                    try {
+                        await zk.sendMessage(ownerNumber, { 
+                            text: `🛡️ *ANTI-DELETE SYSTEM*\n\nStatus: ACTIVE ✅\n\nBot will recover and forward any deleted messages in groups where it is admin.`
+                        });
+                        console.log("✅ Anti-delete notification sent to owner DM");
+                    } catch (e) {
+                        console.log("Could not send anti-delete notification:", e.message);
+                    }
                 }
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
@@ -536,6 +574,27 @@ setTimeout(() => {
         });
 
         zk.ev.on("creds.update", saveCreds);
+
+        // Download and save media message
+        zk.downloadAndSaveMediaMessage = async (message, filename = '') => {
+            try {
+                const buffer = await baileys_1.downloadMediaMessage(
+                    message,
+                    'buffer',
+                    {},
+                    { logger: pino({ level: "silent" }) }
+                );
+                if (!buffer) return null;
+                const type = await FileType.fromBuffer(buffer);
+                const extension = type ? type.ext : 'bin';
+                const trueFileName = filename ? `./${filename}.${extension}` : `./media_${Date.now()}.${extension}`;
+                await fs.writeFileSync(trueFileName, buffer);
+                return trueFileName;
+            } catch (error) {
+                console.error("Media download error:", error.message);
+                return null;
+            }
+        };
 
         return zk;
     }
