@@ -64,26 +64,6 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-// Button handler
-let handleButtons = async (zk, msg) => {
-    console.log("Button handler triggered");
-    try {
-        if (msg.message?.buttonsResponseMessage) {
-            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
-            const from = msg.key.remoteJid;
-            console.log(`Button clicked: ${buttonId}`);
-            
-            if (buttonId === "view_rules") {
-                await zk.sendMessage(from, { 
-                    text: `📜 *GROUP RULES* 📜\n\n1. No spam\n2. No NSFW\n3. Respect members\n4. No links without permission` 
-                });
-            }
-        }
-    } catch (error) {
-        console.error("Button handler error:", error);
-    }
-};
-
 var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
 const prefixe = conf.PREFIXE;
 
@@ -149,24 +129,7 @@ setTimeout(() => {
             return jid;
         };
 
-        // ========== BUTTON HANDLER ==========
-        zk.ev.on("messages.upsert", async (m) => {
-            const msg = m.messages[0];
-            if (!msg.message) return;
-
-            const isButtonResponse = msg.message?.buttonsResponseMessage ||
-                msg.message?.listResponseMessage ||
-                msg.message?.templateButtonReplyMessage ||
-                msg.message?.interactiveResponseMessage;
-
-            if (isButtonResponse) {
-                console.log("🎯 Button interaction detected!");
-                await handleButtons(zk, msg);
-                return;
-            }
-        });
-
-        // ========== AUTO-STATUS HANDLER WITH REACT AND REPLY ==========
+        // ========== AUTO-STATUS HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
             if (!msg.message) return;
@@ -192,13 +155,12 @@ setTimeout(() => {
                 if (conf.AUTO_STATUS_REACT === "true") {
                     try {
                         const randomEmoji = statusEmojis[Math.floor(Math.random() * statusEmojis.length)];
-                        const botJid = decodeJid(zk.user.id);
                         await zk.sendMessage(msg.key.remoteJid, {
                             react: {
                                 text: randomEmoji,
                                 key: msg.key,
                             }
-                        }, { statusJidList: [msg.key.participant, botJid] });
+                        });
                         console.log(`✅ Reacted to status with ${randomEmoji}`);
                     } catch (e) {
                         console.log("Could not react to status:", e.message);
@@ -210,51 +172,105 @@ setTimeout(() => {
                     try {
                         const userJid = msg.key.participant || msg.key.remoteJid;
                         const replyText = conf.AUTO_STATUS_MSG || "Nice status! 👍";
-                        await zk.sendMessage(userJid, { 
-                            text: replyText,
-                            react: { text: '💜', key: msg.key }
-                        }, { quoted: msg });
+                        await zk.sendMessage(userJid, { text: replyText });
                         console.log("✅ Replied to status");
                     } catch (e) {
                         console.log("Could not reply to status:", e.message);
                     }
                 }
-                
-                // Auto-download status
-                if (conf.AUTO_DOWNLOAD_STATUS === "yes") {
-                    try {
-                        const botId = zk.user?.id || conf.NUMERO_OWNER + "@s.whatsapp.net";
-                        if (msg.message.imageMessage) {
-                            var stMsg = msg.message.imageMessage.caption || "";
-                            var stImg = await zk.downloadAndSaveMediaMessage(msg.message.imageMessage);
-                            if (stImg) {
-                                await zk.sendMessage(botId, {
-                                    image: { url: stImg },
-                                    caption: `📱 *Status Image*\nFrom: ${msg.pushName}\n\n${stMsg}`
-                                });
-                            }
-                        } else if (msg.message.videoMessage) {
-                            var stMsg = msg.message.videoMessage.caption || "";
-                            var stVideo = await zk.downloadAndSaveMediaMessage(msg.message.videoMessage);
-                            if (stVideo) {
-                                await zk.sendMessage(botId, {
-                                    video: { url: stVideo },
-                                    caption: `📱 *Status Video*\nFrom: ${msg.pushName}\n\n${stMsg}`
-                                });
-                            }
-                        } else if (msg.message.extendedTextMessage) {
-                            var stTxt = msg.message.extendedTextMessage.text;
-                            await zk.sendMessage(botId, {
-                                text: `📱 *Status Text*\nFrom: ${msg.pushName}\n\n${stTxt}`
-                            });
-                        }
-                        console.log("✅ Status downloaded");
-                    } catch (e) {
-                        console.log("Could not download status:", e.message);
-                    }
-                }
             }
         });
+
+        // ========== ANTI-DELETE MESSAGE HANDLER (ENABLE/DISABLE VIA CONFIG) ==========
+        // Check if anti-delete is enabled in config
+        const isAntiDeleteEnabled = conf.ADM === "yes" || conf.ADM === "true" || conf.ADM === true;
+        
+        if (isAntiDeleteEnabled) {
+            console.log("✅ ANTI-DELETE SYSTEM IS ENABLED");
+            
+            zk.ev.on("messages.update", async (updates) => {
+                for (const update of updates) {
+                    // Skip if message was sent by bot
+                    if (update.update.key?.fromMe) continue;
+                    
+                    // Check if message was deleted (messageStubType 1 or 2 indicates deletion)
+                    if (update.update.messageStubType === 1 || update.update.messageStubType === 2 || 
+                        update.update.messageStubType === 21 || update.update.messageStubType === 22) {
+                        
+                        console.log("🗑️ Message deletion detected!");
+                        
+                        const deletedKey = update.update.key;
+                        const chatId = deletedKey.remoteJid;
+                        
+                        try {
+                            // Try to get the deleted message from store
+                            const storeFile = './store.json';
+                            if (fs.existsSync(storeFile)) {
+                                const data = fs.readFileSync(storeFile, 'utf8');
+                                const jsonData = JSON.parse(data);
+                                
+                                const messages = jsonData.messages?.[chatId];
+                                let deletedMsg = null;
+                                
+                                if (messages) {
+                                    for (const msg of messages) {
+                                        if (msg.key.id === deletedKey.id) {
+                                            deletedMsg = msg;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (deletedMsg && deletedMsg.message) {
+                                    const sender = deletedMsg.key.participant || deletedMsg.key.remoteJid;
+                                    const senderName = deletedMsg.pushName || "Someone";
+                                    
+                                    // Get message content
+                                    let messageContent = "Media message (image/video/sticker)";
+                                    if (deletedMsg.message.conversation) {
+                                        messageContent = deletedMsg.message.conversation;
+                                    } else if (deletedMsg.message.extendedTextMessage?.text) {
+                                        messageContent = deletedMsg.message.extendedTextMessage.text;
+                                    } else if (deletedMsg.message.imageMessage?.caption) {
+                                        messageContent = deletedMsg.message.imageMessage.caption;
+                                    } else if (deletedMsg.message.videoMessage?.caption) {
+                                        messageContent = deletedMsg.message.videoMessage.caption;
+                                    }
+                                    
+                                    // Send alert about deleted message
+                                    await zk.sendMessage(chatId, {
+                                        text: `⚠️ *ANTI-DELETE SYSTEM* ⚠️\n\n` +
+                                              `👤 *${senderName}* deleted a message!\n\n` +
+                                              `📝 *Deleted Message:*\n${messageContent}\n\n` +
+                                              `🕐 *Time:* ${new Date().toLocaleString()}\n\n` +
+                                              `> Powered by Fana-MD Bot`,
+                                        mentions: [sender]
+                                    });
+                                    
+                                    // Try to forward the deleted message
+                                    try {
+                                        await zk.sendMessage(chatId, {
+                                            forward: deletedMsg
+                                        });
+                                        console.log(`✅ Forwarded deleted message from ${senderName}`);
+                                    } catch (forwardErr) {
+                                        console.log("Could not forward message:", forwardErr.message);
+                                    }
+                                    
+                                    console.log(`✅ Anti-delete: Recovered message from ${senderName}`);
+                                } else {
+                                    console.log("Could not find deleted message in store");
+                                }
+                            }
+                        } catch (e) {
+                            console.log("Anti-delete error:", e.message);
+                        }
+                    }
+                }
+            });
+        } else {
+            console.log("❌ ANTI-DELETE SYSTEM IS DISABLED (Set ADM=yes in config to enable)");
+        }
 
         // ========== MAIN MESSAGE HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
@@ -331,7 +347,7 @@ setTimeout(() => {
                 ms, mybotpic
             };
 
-            // ========== ANTI-LINK WITH BUTTONS ==========
+            // ========== ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 if (texte && (texte.includes('https://') || texte.includes('http://')) && verifGroupe && yes) {
@@ -349,31 +365,12 @@ setTimeout(() => {
                         participant: auteurMessage
                     };
                     
-                    // Buttons for anti-link
-                    const buttons = [
-                        {
-                            name: "cta_url",
-                            buttonParamsJson: JSON.stringify({
-                                display_text: "🌐 WA Channel",
-                                id: "backup channel",
-                                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-                            }),
-                        },
-                    ];
-                    
                     var txt = "⚠️ *LINK DETECTED* ⚠️\n";
                     var action = await recupererActionJid(origineMessage);
                     
-                    // Send interactive message with button
                     await zk.sendMessage(origineMessage, { 
-                        interactiveMessage: {
-                            header: { text: "🚫 ANTI-LINK SYSTEM" },
-                            body: { text: txt + `\n@${auteurMessage.split("@")[0]} please avoid sending links in this group!` },
-                            footer: { text: "Fana-MD Bot" },
-                            mentions: [auteurMessage],
-                            buttons: buttons,
-                            headerType: 1
-                        }
+                        text: txt + `\n@${auteurMessage.split("@")[0]} please avoid sending links in this group!`,
+                        mentions: [auteurMessage]
                     }, { quoted: ms });
                     
                     if (action === 'remove') {
@@ -446,29 +443,13 @@ setTimeout(() => {
                 const groupName = metadata.subject;
 
                 if (group.action == 'add' && (await recupevents(group.id, "welcome") == 'on')) {
-                    const buttons = [
-                        {
-                            name: "cta_url",
-                            buttonParamsJson: JSON.stringify({
-                                display_text: "🌐 Join Channel",
-                                id: "channel",
-                                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-                            }),
-                        },
-                    ];
-                    
                     let msg = `*✨ WELCOME TO ${groupName.toUpperCase()} ✨*\n\n👤 New Member Joined!\n\n🎉 Enjoy your stay!\n\nPowered by Fana-MD Bot`;
                     let membres = group.participants;
                     
                     await zk.sendMessage(group.id, { 
-                        interactiveMessage: {
-                            header: { text: "🎉 WELCOME!" },
-                            body: { text: msg },
-                            footer: { text: "Fana-MD Bot" },
-                            mentions: membres,
-                            buttons: buttons,
-                            headerType: 1
-                        }
+                        image: { url: ppgroup },
+                        caption: msg,
+                        mentions: membres
                     });
                 } else if (group.action == 'remove' && (await recupevents(group.id, "goodbye") == 'on')) {
                     let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by Fana-MD Bot`;
@@ -507,50 +488,44 @@ setTimeout(() => {
 
                 console.log("✅ Fana MD is Online!");
                 
-                // Send startup message with interactive button
-                const buttons = [
-                    {
-                        name: "cta_url",
-                        buttonParamsJson: JSON.stringify({
-                            display_text: "🌐 WA Channel",
-                            id: "backup channel",
-                            url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-                        }),
-                    },
-                ];
+                // Wait for zk.user.id to be available
+                let waitCount = 0;
+                while (!zk.user?.id && waitCount < 10) {
+                    await baileys_1.delay(1000);
+                    waitCount++;
+                    console.log(`Waiting for bot ID... (${waitCount}/10)`);
+                }
                 
-                const randomNjabulourl = "https://i.imgur.com/4M6Y6qT.png";
+                // Send startup message
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
 ┊┊ *ᯤNJABULO JB: CONNECTED* 
 ┊┊ *NAME: NJABULO JB*
 ┊┊ *PREFIX: [ ${prefixe} ]*
 ┊┊ *MODE:* ${md}
+┊┊ *ANTI-DELETE:* ${isAntiDeleteEnabled ? "✅ ENABLED" : "❌ DISABLED"}
 ┊┗━┈┈┈┈┈┈┈┈
 ╰───────────⊷`;
                 
-                try {
-                    // Try to send interactive message with image
-                    await zk.sendMessage(zk.user.id, { 
-                        interactiveMessage: {
-                            header: { title: "🤖 BOT ONLINE", hasMediaAttachment: true, imageMessage: null },
-                            body: { text: cmsg },
-                            footer: { text: "Fana-MD Bot" },
-                            buttons: buttons,
-                            headerType: 1
-                        }
-                    });
-                } catch (e) {
-                    // Fallback to simple text
-                    await zk.sendMessage(zk.user.id, { text: cmsg });
+                if (zk.user?.id) {
+                    try {
+                        await zk.sendMessage(zk.user.id, { text: cmsg });
+                        console.log("✅ Startup message sent to bot number");
+                    } catch (e) {
+                        console.log("Could not send to bot ID:", e.message);
+                    }
+                } else {
+                    console.log("⚠️ zk.user.id not available");
                 }
                 
-                // Send to owner as well
+                // Send to owner
                 try {
                     const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}\nPrefix: ${prefixe}` });
-                } catch (e) {}
-                
+                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}\nPrefix: ${prefixe}\nAnti-Delete: ${isAntiDeleteEnabled ? "ON" : "OFF"}` });
+                    console.log("✅ Startup message sent to owner");
+                } catch (e) {
+                    console.log("Could not send to owner:", e.message);
+                }
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
                 if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
@@ -561,27 +536,6 @@ setTimeout(() => {
         });
 
         zk.ev.on("creds.update", saveCreds);
-
-        // Download and save media message
-        zk.downloadAndSaveMediaMessage = async (message, filename = '') => {
-            try {
-                const buffer = await baileys_1.downloadMediaMessage(
-                    message,
-                    'buffer',
-                    {},
-                    { logger: pino({ level: "silent" }) }
-                );
-                if (!buffer) return null;
-                const type = await FileType.fromBuffer(buffer);
-                const extension = type ? type.ext : 'bin';
-                const trueFileName = filename ? `./${filename}.${extension}` : `./media_${Date.now()}.${extension}`;
-                await fs.writeFileSync(trueFileName, buffer);
-                return trueFileName;
-            } catch (error) {
-                console.error("Media download error:", error.message);
-                return null;
-            }
-        };
 
         return zk;
     }
