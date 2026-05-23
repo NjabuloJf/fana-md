@@ -1,5 +1,5 @@
 {
-  "name":"Njabulo-Jb",
+  "name":"ɳʝαႦυʅσ ʝႦ",
   "description":"Best whatsapp bot developed by ENZO",
   "keywords":["bot","node","baileys","whatsapp"],
   "logo":"https://i.ibb.co/hYF7XQw/IMG-20241019-WA0222.jpg",
@@ -35,14 +35,14 @@
     "BOT_NAME" : {
        
       "description":"put A name for your bot",
-      "value":"𝐄𝐍𝐙𝐎 𝐌𝐃",
+      "value":"ɳʝαႦυʅσ ʝႦ",
       "required":false
 
     } ,
      "BOT_MENU_LINKS" : {
     
       "description":"add one or many link for your bot menu  ; eg : url1,url2,url3.....",
-      "value":"https://i.ibb.co/qMvsxL8/1680858151-752-x-1584.jpg",
+      "value":"https://files.catbox.moe/mh36c7.jpg",
       "required":false
        
      },
@@ -74,14 +74,14 @@
     
     "desc": "Your Name",
     "required": false,
-    "value": "𝐄𝐍𝐙𝐎 𝐓𝐄𝐂𝐇"
+    "value": "ɳʝαႦυʅσ ʝႦ"
   },
     "NUMERO_OWNER":
   {
     
     "desc": "Your number , dont put '+' and put you area code(exemple of togo '228')",
     "required":false,
-    "value": "254784115308"
+    "value": "26777821911"
   },
     "WARN_COUNT":
   {
