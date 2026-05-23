@@ -13,7 +13,7 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
     PREFIXE: process.env.PREFIX || ".",
 
     //process.env.OWNER_NAME//
-    OWNER_NAME: process.env.OWNER_NAME || "Njabulo Jb",
+    OWNER_NAME: process.env.OWNER_NAME || "ɳʝαႦυʅσ ʝႦ",
    
     //process.env.NUMERO_OWNER//
     NUMERO_OWNER : process.env.NUMERO_OWNER || "26777821911",              
@@ -31,7 +31,7 @@ module.exports = { session: process.env.SESSION_ID || 'zokk',
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
     //process.env.BOT_NAME//            
-    BOT : process.env.BOT_NAME || 'Njabulo-Jb',
+    BOT : process.env.BOT_NAME || 'ɳʝαႦυʅσ ʝႦ',
     
     //process.env.BOT_MENU_LINKS//             
     URL : process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
