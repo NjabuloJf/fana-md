@@ -28,6 +28,7 @@
     "aptoide-scraper": "^1.0.1",
     "axios": "^1.4.0",
     "cache-manager": "^5.2.3",
+    "megajs": "^1.2.4",
     "canvacord": "^5.4.8",
     "chalk": "^5.3.0",
     "cheerio": "^1.0.0-rc.12",
