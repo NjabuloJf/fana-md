@@ -7,22 +7,21 @@ const logger = logger_1.default.child({});
 logger.level = 'silent';
 const pino = require("pino");
 const boom_1 = require("@hapi/boom");
+const { File } = require("megajs");
 
 console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 
 // ========== CREATE WRAPPER ==========
 const baileys_1 = { ...baileysOriginal };
 
-// Add polyfill to wrapper
 if (!baileys_1.makeInMemoryStore) {
-    console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
+    console.log("⚠️ makeInMemoryStore not found, adding polyfill...");
     baileys_1.makeInMemoryStore = function(options) {
-        console.log("Using polyfilled store");
         return {
             chats: new Map(),
             contacts: new Map(),
             messages: new Map(),
-            bind: function(ev) { console.log("Store bound to events"); },
+            bind: function(ev) { console.log("Store bound"); },
             writeToFile: function(filename) {
                 try {
                     const fs = require('fs-extra');
@@ -45,7 +44,6 @@ if (!baileys_1.makeInMemoryStore) {
             }
         };
     };
-    console.log("✅ Polyfill added to wrapper");
 }
 // ========== END OF WRAPPER ==========
 
@@ -64,103 +62,119 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-// ========== BASE64 SESSION HANDLER WITH fana~ PREFIX ==========
-let session = conf.session || 'zokk';
+const prefixe = conf.PREFIXE;
 
-// Function to clean and decode session
-function decodeSession(sessionStr) {
-    try {
-        let cleanSession = sessionStr;
-        
-        // Remove any wrapper/prefix like "fana~" or "Zokou-MD-WHATSAPP-BOT;;;=>"
-        if (cleanSession.includes('fana~')) {
-            cleanSession = cleanSession.split('fana~')[1];
-            console.log("✅ Removed 'fana~' prefix from session");
-        }
-        if (cleanSession.includes('Zokou-MD-WHATSAPP-BOT;;;=>')) {
-            cleanSession = cleanSession.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
-            console.log("✅ Removed Zokou-MD prefix from session");
-        }
-        
-        // Remove any whitespace
-        cleanSession = cleanSession.replace(/\s/g, '');
-        
-        // Try to decode base64
-        const decoded = Buffer.from(cleanSession, 'base64').toString('utf8');
-        
-        // Check if decoded is valid JSON
-        if (decoded.includes('creds') || decoded.includes('noiseKey')) {
-            console.log("✅ Successfully decoded base64 session");
-            return decoded;
-        } else {
-            // Try to parse as JSON
-            JSON.parse(decoded);
-            console.log("✅ Session is valid JSON");
-            return decoded;
-        }
-    } catch (e) {
-        console.log("Session decode error:", e.message);
-        return null;
-    }
+// ========== SESSION HANDLER - ONLY njabulo~ PREFIX ==========
+const sessionDir = __dirname + '/sessions';
+const credsPath = sessionDir + '/creds.json';
+
+if (!fs.existsSync(sessionDir)) {
+    fs.mkdirSync(sessionDir, { recursive: true });
+    console.log("📁 Created sessions directory");
 }
 
-async function authentification() {
+async function loadSession() {
     try {
-        const credsPath = __dirname + "/auth/creds.json";
-        const credsBackupPath = __dirname + "/auth/creds_backup.json";
+        const sessionId = conf.SESSION_ID || conf.session || 'zokk';
         
-        // If session is provided and not default
-        if (session && session !== 'zokk' && session.length > 10) {
-            console.log("📱 Processing session...");
-            
-            // Decode the session
-            const decodedSession = decodeSession(session);
-            
-            if (decodedSession) {
-                // Backup existing creds if exists
-                if (fs.existsSync(credsPath)) {
-                    fs.copySync(credsPath, credsBackupPath);
-                    console.log("📁 Existing session backed up");
-                }
-                
-                // Write decoded session
-                await fs.writeFileSync(credsPath, decodedSession, "utf8");
-                console.log("✅ Session saved successfully!");
-                
-                // Verify the saved session
-                const saved = fs.readFileSync(credsPath, 'utf8');
-                if (saved.includes('creds') || saved.includes('noiseKey')) {
-                    console.log("✅ Session verification passed!");
-                } else {
-                    console.log("⚠️ Session may be invalid, will generate new QR if needed");
-                }
-            } else {
-                console.log("❌ Failed to decode session, will generate new QR code");
-                // Remove invalid creds file
-                if (fs.existsSync(credsPath)) {
-                    fs.removeSync(credsPath);
-                }
-            }
-        } else {
+        if (!sessionId || sessionId === 'zokk') {
             console.log("📱 No session provided, will generate new QR code");
+            return;
         }
         
-        // Check if creds file exists and is valid
-        if (fs.existsSync(credsPath)) {
-            const credsContent = fs.readFileSync(credsPath, 'utf8');
-            if (credsContent && credsContent.length > 100) {
-                console.log("✅ Valid session file found!");
-            } else {
-                console.log("⚠️ Session file exists but may be invalid");
+        console.log("📱 Processing session...");
+        
+        // ========== ONLY njabulo~ PREFIX (BASE64) ==========
+        if (sessionId.startsWith('njabulo~')) {
+            const base64Session = sessionId.replace('njabulo~', '');
+            console.log("✅ Detected 'njabulo~' prefix, decoding base64...");
+            
+            try {
+                // Decode Base64 to JSON
+                const sessionJson = Buffer.from(base64Session, 'base64').toString('utf-8');
+                const sessionData = JSON.parse(sessionJson);
+                fs.writeFileSync(credsPath, JSON.stringify(sessionData, null, 2));
+                console.log("✅ Session loaded from Base64 successfully!");
+                return;
+            } catch (err) {
+                console.log("❌ Error decoding Base64 session:", err.message);
+                // Try atob method
+                try {
+                    const sessionJson = atob(base64Session);
+                    const sessionData = JSON.parse(sessionJson);
+                    fs.writeFileSync(credsPath, JSON.stringify(sessionData, null, 2));
+                    console.log("✅ Session loaded via atob successfully!");
+                    return;
+                } catch (err2) {
+                    console.log("❌ Alternative decode failed:", err2.message);
+                }
             }
         }
-    } catch (e) {
-        console.log("Session error: " + e.message);
+        
+        // ========== CHECK FOR MEGA.NZ SESSION ==========
+        if (sessionId.includes('mega') || sessionId.includes('#') || sessionId.length > 100) {
+            console.log("📁 Attempting to download session from Mega.nz...");
+            
+            try {
+                let megaFileId = sessionId;
+                
+                if (megaFileId.includes('njabulo-jb~')) {
+                    megaFileId = megaFileId.replace('njabulo-jb~', '');
+                }
+                if (megaFileId.includes('mega.nz')) {
+                    const megaMatch = megaFileId.match(/#!([a-zA-Z0-9_-]+)/);
+                    if (megaMatch) {
+                        megaFileId = megaMatch[1];
+                    }
+                }
+                
+                console.log("📁 Mega file ID:", megaFileId);
+                
+                const file = File.fromURL(`https://mega.nz/file/${megaFileId}`);
+                
+                file.download((err, data) => {
+                    if (err) {
+                        console.log("❌ Mega.nz download error:", err.message);
+                        return;
+                    }
+                    if (data) {
+                        fs.writeFileSync(credsPath, data);
+                        console.log("✅ Session downloaded from Mega.nz successfully!");
+                    }
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 100) {
+                    console.log("✅ Mega.nz session file saved!");
+                    return;
+                }
+            } catch (err) {
+                console.log("❌ Mega.nz download error:", err.message);
+            }
+        }
+        
+        // ========== CHECK FOR PLAIN BASE64 (no prefix) ==========
+        try {
+            const decoded = Buffer.from(sessionId, 'base64').toString('utf-8');
+            if (decoded.includes('creds') || decoded.includes('noiseKey')) {
+                const sessionData = JSON.parse(decoded);
+                fs.writeFileSync(credsPath, JSON.stringify(sessionData, null, 2));
+                console.log("✅ Session loaded from plain Base64!");
+                return;
+            }
+        } catch (e) {
+            // Not plain base64
+        }
+        
+        console.log("📱 No valid session format detected, will generate new QR code");
+        
+    } catch (error) {
+        console.log("❌ Session loading error:", error.message);
     }
 }
 
-// Run authentication
-authentification();
+loadSession();
 
 const store = baileys_1.makeInMemoryStore({
     logger: pino().child({ level: "silent", stream: "store" }),
@@ -169,7 +183,7 @@ const store = baileys_1.makeInMemoryStore({
 setTimeout(() => {
     async function main() {
         const { version } = await baileys_1.fetchLatestBaileysVersion();
-        const { state, saveCreds } = await baileys_1.useMultiFileAuthState(__dirname + "/auth");
+        const { state, saveCreds } = await baileys_1.useMultiFileAuthState(sessionDir);
 
         const sockOptions = {
             version,
@@ -186,7 +200,7 @@ setTimeout(() => {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg?.message || undefined;
                 }
-                return { conversation: 'An Error Occurred, Repeat Command!' };
+                return { conversation: 'An Error Occurred!' };
             }
         };
 
@@ -196,7 +210,6 @@ setTimeout(() => {
             store.bind(zk.ev);
         }
 
-        // Decode JID function
         const decodeJid = (jid) => {
             if (!jid) return jid;
             if (/:\d+@/gi.test(jid)) {
@@ -206,7 +219,6 @@ setTimeout(() => {
             return jid;
         };
 
-        // Status emojis array
         const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
 
         // ========== AUTO-STATUS HANDLER ==========
@@ -214,112 +226,68 @@ setTimeout(() => {
             const msg = m.messages[0];
             if (!msg.message) return;
 
-            // Handle status messages
             if (msg.key && msg.key.remoteJid === "status@broadcast") {
-                
-                // Get bot JID
                 const botJid = decodeJid(zk.user.id);
                 const senderJid = msg.key.participant || msg.key.remoteJid;
                 
-                // Skip if sender is null, unknown, or bot itself
                 if (!msg.pushName || msg.pushName === "null" || msg.key.fromMe || senderJid === botJid) {
-                    console.log("⏭️ Skipping status from unknown/null sender or own status");
                     return;
                 }
 
-                console.log("📱 Status received from:", msg.pushName);
-                console.log("📱 Status sender JID:", senderJid);
+                console.log("📱 Status from:", msg.pushName);
                 
-                // Auto-read status
                 if (conf.AUTO_READ_STATUS === "yes") {
                     await zk.readMessages([msg.key]);
-                    console.log("✅ Status marked as read");
                 }
                 
-                // Auto-react to status with random emoji
                 if (conf.AUTO_STATUS_REACT === "true") {
                     try {
                         const randomEmoji = statusEmojis[Math.floor(Math.random() * statusEmojis.length)];
                         await zk.sendMessage(msg.key.remoteJid, {
-                            react: {
-                                text: randomEmoji,
-                                key: msg.key,
-                            }
+                            react: { text: randomEmoji, key: msg.key }
                         });
-                        console.log(`✅ Reacted to status from ${msg.pushName} with ${randomEmoji}`);
-                    } catch (e) {
-                        console.log("Could not react to status:", e.message);
-                    }
+                        console.log(`✅ Reacted with ${randomEmoji}`);
+                    } catch (e) {}
                 }
             }
         });
 
-        // ========== ANTI-DELETE MESSAGE HANDLER ==========
-        const isAntiDeleteEnabled = conf.ADM === "yes" || conf.ADM === "true" || conf.ADM === true;
+        // ========== ANTI-DELETE HANDLER ==========
+        const isAntiDeleteEnabled = conf.ADM === "yes" || conf.ADM === "true";
         
         if (isAntiDeleteEnabled) {
-            console.log("✅ ANTI-DELETE SYSTEM IS ENABLED");
+            console.log("✅ ANTI-DELETE ENABLED");
             
             zk.ev.on("messages.update", async (updates) => {
                 for (const update of updates) {
                     if (update.update.key?.fromMe) continue;
                     
-                    if (update.update.messageStubType === 1 || update.update.messageStubType === 2 || 
-                        update.update.messageStubType === 21 || update.update.messageStubType === 22) {
-                        
+                    if (update.update.messageStubType === 1 || update.update.messageStubType === 2) {
                         console.log("🗑️ Message deletion detected!");
-                        
-                        const deletedKey = update.update.key;
-                        const chatId = deletedKey.remoteJid;
                         
                         try {
                             const storeFile = './store.json';
                             if (fs.existsSync(storeFile)) {
                                 const data = fs.readFileSync(storeFile, 'utf8');
                                 const jsonData = JSON.parse(data);
-                                
-                                const messages = jsonData.messages?.[chatId];
+                                const messages = jsonData.messages?.[update.update.key.remoteJid];
                                 let deletedMsg = null;
                                 
                                 if (messages) {
                                     for (const msg of messages) {
-                                        if (msg.key.id === deletedKey.id) {
+                                        if (msg.key.id === update.update.key.id) {
                                             deletedMsg = msg;
                                             break;
                                         }
                                     }
                                 }
                                 
-                                if (deletedMsg && deletedMsg.message) {
-                                    const sender = deletedMsg.key.participant || deletedMsg.key.remoteJid;
+                                if (deletedMsg?.message) {
                                     const senderName = deletedMsg.pushName || "Someone";
-                                    
-                                    let messageContent = "Media message (image/video/sticker)";
-                                    if (deletedMsg.message.conversation) {
-                                        messageContent = deletedMsg.message.conversation;
-                                    } else if (deletedMsg.message.extendedTextMessage?.text) {
-                                        messageContent = deletedMsg.message.extendedTextMessage.text;
-                                    } else if (deletedMsg.message.imageMessage?.caption) {
-                                        messageContent = deletedMsg.message.imageMessage.caption;
-                                    } else if (deletedMsg.message.videoMessage?.caption) {
-                                        messageContent = deletedMsg.message.videoMessage.caption;
-                                    }
-                                    
-                                    await zk.sendMessage(chatId, {
-                                        text: `⚠️ *ANTI-DELETE SYSTEM* ⚠️\n\n` +
-                                              `👤 *${senderName}* deleted a message!\n\n` +
-                                              `📝 *Deleted Message:*\n${messageContent}\n\n` +
-                                              `🕐 *Time:* ${new Date().toLocaleString()}\n\n` +
-                                              `> Powered by NJABULO-MD`,
-                                        mentions: [sender]
+                                    await zk.sendMessage(update.update.key.remoteJid, {
+                                        text: `⚠️ *ANTI-DELETE* ⚠️\n\n👤 ${senderName} deleted a message!\n\n> NJABULO-MD`
                                     });
-                                    
-                                    try {
-                                        await zk.sendMessage(chatId, { forward: deletedMsg });
-                                        console.log(`✅ Forwarded deleted message from ${senderName}`);
-                                    } catch (forwardErr) {
-                                        console.log("Could not forward message:", forwardErr.message);
-                                    }
+                                    await zk.sendMessage(update.update.key.remoteJid, { forward: deletedMsg });
                                 }
                             }
                         } catch (e) {
@@ -328,8 +296,6 @@ setTimeout(() => {
                     }
                 }
             });
-        } else {
-            console.log("❌ ANTI-DELETE SYSTEM IS DISABLED");
         }
 
         // ========== MAIN MESSAGE HANDLER ==========
@@ -342,9 +308,7 @@ setTimeout(() => {
             if (mtype === "reactionMessage") return;
 
             var texte = mtype == "conversation" ? ms.message.conversation :
-                mtype == "imageMessage" ? ms.message.imageMessage?.caption :
-                    mtype == "videoMessage" ? ms.message.videoMessage?.caption :
-                        mtype == "extendedTextMessage" ? ms.message?.extendedTextMessage?.text : "";
+                mtype == "extendedTextMessage" ? ms.message?.extendedTextMessage?.text : "";
 
             var origineMessage = ms.key.remoteJid;
             var idBot = decodeJid(zk.user?.id);
@@ -367,11 +331,9 @@ setTimeout(() => {
 
             console.log("\tNJABULO MD ONLINE");
             console.log("=========== written message===========");
-            if (verifGroupe) console.log("message provenant du groupe : " + (nomGroupe || "unknown"));
-            console.log("message envoyé par : " + "[" + (nomAuteurMessage || "unknown") + " : " + (auteurMessage?.split("@s.whatsapp.net")[0] || "unknown") + " ]");
-            console.log("type de message : " + (mtype || "unknown"));
-            console.log("------ contenu du message ------");
-            console.log(texte || "[No text content]");
+            console.log("From: " + "[" + (nomAuteurMessage || "unknown") + " : " + (auteurMessage?.split("@s.whatsapp.net")[0] || "unknown") + " ]");
+            console.log("Type: " + (mtype || "unknown"));
+            console.log("Content: " + (texte || "[No text]"));
 
             function groupeAdmin(membreGroupe) {
                 let admin = [];
@@ -391,69 +353,13 @@ setTimeout(() => {
             const verifCom = texte ? texte.startsWith(prefixe) : false;
             const com = verifCom ? texte.slice(1).trim().split(/ +/).shift().toLowerCase() : false;
 
-            const lien = conf.URL ? conf.URL.split(',') : [];
-
-            function mybotpic() {
-                if (!lien.length) return "";
-                const indiceAleatoire = Math.floor(Math.random() * lien.length);
-                return lien[indiceAleatoire];
-            }
-
             var commandeOptions = {
                 superUser, verifGroupe, mbre, verifAdmin,
                 infosGroupe, nomGroupe, auteurMessage, nomAuteurMessage, idBot,
-                verifZokouAdmin, prefixe, arg, repondre, mtype, groupeAdmin,
-                ms, mybotpic
+                verifZokouAdmin, prefixe, arg, repondre, mtype, groupeAdmin, ms
             };
 
-            // ========== ANTI-LINK ==========
-            try {
-                const yes = await verifierEtatJid(origineMessage);
-                if (texte && (texte.includes('https://') || texte.includes('http://')) && verifGroupe && yes) {
-                    console.log("lien detecté");
-                    var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
-                    if (superUser || verifAdmin || !verifZokAdmin) {
-                        console.log('je fais rien');
-                        return;
-                    }
-                    
-                    const key = {
-                        remoteJid: origineMessage,
-                        fromMe: false,
-                        id: ms.key.id,
-                        participant: auteurMessage
-                    };
-                    
-                    var txt = "⚠️ *LINK DETECTED* ⚠️\n";
-                    var action = await recupererActionJid(origineMessage);
-                    
-                    await zk.sendMessage(origineMessage, { 
-                        text: txt + `\n@${auteurMessage.split("@")[0]} please avoid sending links in this group!`,
-                        mentions: [auteurMessage]
-                    }, { quoted: ms });
-                    
-                    if (action === 'remove') {
-                        await zk.sendMessage(origineMessage, { delete: key });
-                        await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                    } else if (action === 'delete') {
-                        await zk.sendMessage(origineMessage, { delete: key });
-                    } else if (action === 'warn') {
-                        const { getWarnCountByJID, ajouterUtilisateurAvecWarnCount } = require('./bdd/warn');
-                        let warn = await getWarnCountByJID(auteurMessage);
-                        let warnlimit = conf.WARN_COUNT || 3;
-                        if (warn >= warnlimit) {
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        } else {
-                            await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                        }
-                        await zk.sendMessage(origineMessage, { delete: key });
-                    }
-                }
-            } catch (e) {
-                console.log("bdd err " + e);
-            }
-
-            // ========== EXECUTION DES COMMANDES ==========
+            // ========== COMMAND EXECUTION ==========
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
@@ -481,8 +387,8 @@ setTimeout(() => {
                         if (cd.reaction) reagir(origineMessage, zk, ms, cd.reaction);
                         cd.fonction(origineMessage, zk, commandeOptions);
                     } catch (e) {
-                        console.log("😡😡 " + e);
-                        zk.sendMessage(origineMessage, { text: "😡😡 " + e }, { quoted: ms });
+                        console.log("Error:", e);
+                        zk.sendMessage(origineMessage, { text: "Error: " + e.message }, { quoted: ms });
                     }
                 }
             }
@@ -514,9 +420,7 @@ setTimeout(() => {
                     let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by NJABULO-MD`;
                     await zk.sendMessage(group.id, { text: msg });
                 }
-            } catch (e) {
-                console.error("Group update error:", e);
-            }
+            } catch (e) {}
         });
 
         // ========== CONNECTION UPDATE ==========
@@ -524,21 +428,18 @@ setTimeout(() => {
             const { lastDisconnect, connection, qr } = con;
             
             if (qr) {
-                console.log("📱 Scan this QR code with WhatsApp:");
+                console.log("📱 SCAN THIS QR CODE WITH WHATSAPP:");
                 console.log(qr);
             }
             
             if (connection === "connecting") {
                 console.log("ℹ️ NJABULO MD is connecting...");
             } else if (connection === 'open') {
-                console.log("✅ NJABULO MD Connected to WhatsApp! ☺️");
-                console.log("NJABULO MD is Online 🕸\n\n");
+                console.log("✅ NJABULO MD Connected!");
+                console.log("NJABULO MD is Online 🕸\n");
 
                 var md = (conf.MODE || "").toLocaleLowerCase() === "yes" ? "public" : "private";
-                console.log("Bot Mode: " + md);
-                console.log("Bot Name: NJABULO MD");
-                console.log("Loading Commands...");
-
+                
                 if (fs.existsSync(__dirname + "/src")) {
                     fs.readdirSync(__dirname + "/src").forEach((fichier) => {
                         if (path.extname(fichier).toLowerCase() == ".js") {
@@ -552,82 +453,43 @@ setTimeout(() => {
                     });
                 }
 
-                console.log("✅ NJABULO MD is Online!");
+                console.log("✅ NJABULO MD READY!");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                console.log("📌 BOT IS READY TO USE");
-                console.log("📌 Prefix: " + prefixe);
-                console.log("📌 Mode: " + md);
-                console.log("📌 Owner: " + conf.NUMERO_OWNER);
+                console.log("📌 BOT: NJABULO MD");
+                console.log("📌 PREFIX: " + prefixe);
+                console.log("📌 MODE: " + md);
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
-                // Get bot number
-                const botNumber = zk.user?.id?.split(':')[0] || "Unknown";
-                console.log(`🤖 Bot Number: ${botNumber}`);
-                
-                // Get owner number for DM
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                
-                // Create startup message
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
-┊┊ *ᯤNJABULO MD: CONNECTED* 
-┊┊ *NAME: NJABULO MD*
+┊┊ *ᯤNJABULO MD: ONLINE* 
 ┊┊ *PREFIX: [ ${prefixe} ]*
 ┊┊ *MODE:* ${md}
-┊┊ *ANTI-DELETE:* ${isAntiDeleteEnabled ? "✅ ENABLED" : "❌ DISABLED"}
-┊┊ *BOT NUMBER:* ${botNumber}
+┊┊ *ANTI-DELETE:* ${isAntiDeleteEnabled ? "✅ ON" : "❌ OFF"}
 ┊┗━┈┈┈┈┈┈┈┈
 ╰───────────⊷`;
                 
-                // SEND TO OWNER DM
                 try {
                     await zk.sendMessage(ownerNumber, { text: cmsg });
-                    console.log("✅ Startup message sent to OWNER DM: " + ownerNumber);
-                } catch (e) {
-                    console.log("Could not send to owner DM:", e.message);
-                }
+                    console.log("✅ Startup message sent to owner DM");
+                } catch (e) {}
+                
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
                 if (reason === baileys_1.DisconnectReason.badSession) {
-                    console.log("Bad session, deleting auth folder...");
-                    if (fs.existsSync(__dirname + "/auth")) {
-                        fs.removeSync(__dirname + "/auth");
+                    console.log("❌ Bad session! Delete sessions folder and restart");
+                    if (fs.existsSync(sessionDir)) {
+                        fs.removeSync(sessionDir);
                     }
-                    console.log("Please restart the bot to get new QR code");
                 } else if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
                     console.log("Restarting bot...");
                     main();
-                } else if (reason === baileys_1.DisconnectReason.loggedOut) {
-                    console.log("Logged out, deleting session...");
-                    if (fs.existsSync(__dirname + "/auth")) {
-                        fs.removeSync(__dirname + "/auth");
-                    }
                 }
             }
         });
 
         zk.ev.on("creds.update", saveCreds);
-
-        // Download and save media message
-        zk.downloadAndSaveMediaMessage = async (message, filename = '') => {
-            try {
-                const buffer = await baileys_1.downloadMediaMessage(
-                    message,
-                    'buffer',
-                    {},
-                    { logger: pino({ level: "silent" }) }
-                );
-                if (!buffer) return null;
-                const type = await FileType.fromBuffer(buffer);
-                const extension = type ? type.ext : 'bin';
-                const trueFileName = filename ? `./${filename}.${extension}` : `./media_${Date.now()}.${extension}`;
-                await fs.writeFileSync(trueFileName, buffer);
-                return trueFileName;
-            } catch (error) {
-                console.error("Media download error:", error.message);
-                return null;
-            }
-        };
 
         return zk;
     }
