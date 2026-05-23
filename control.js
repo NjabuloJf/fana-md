@@ -10,11 +10,10 @@ const boom_1 = require("@hapi/boom");
 
 console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 
-// ========== CREATE WRAPPER INSTEAD OF MODIFYING ORIGINAL ==========
-// Create a wrapper object that extends the original
+// ========== CREATE WRAPPER ==========
 const baileys_1 = { ...baileysOriginal };
 
-// Add polyfill to the wrapper (not the original)
+// Add polyfill to wrapper
 if (!baileys_1.makeInMemoryStore) {
     console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
     baileys_1.makeInMemoryStore = function(options) {
@@ -23,9 +22,7 @@ if (!baileys_1.makeInMemoryStore) {
             chats: new Map(),
             contacts: new Map(),
             messages: new Map(),
-            bind: function(ev) {
-                console.log("Store bound to events");
-            },
+            bind: function(ev) { console.log("Store bound to events"); },
             writeToFile: function(filename) {
                 try {
                     const fs = require('fs-extra');
@@ -49,17 +46,6 @@ if (!baileys_1.makeInMemoryStore) {
         };
     };
     console.log("✅ Polyfill added to wrapper");
-}
-
-// Also add any other missing functions to wrapper
-if (!baileys_1.downloadMediaMessage && baileysOriginal.downloadMediaMessage) {
-    baileys_1.downloadMediaMessage = baileysOriginal.downloadMediaMessage;
-}
-if (!baileys_1.downloadContentFromMessage && baileysOriginal.downloadContentFromMessage) {
-    baileys_1.downloadContentFromMessage = baileysOriginal.downloadContentFromMessage;
-}
-if (!baileys_1.makeCacheableSignalKeyStore && baileysOriginal.makeCacheableSignalKeyStore) {
-    baileys_1.makeCacheableSignalKeyStore = baileysOriginal.makeCacheableSignalKeyStore;
 }
 // ========== END OF WRAPPER ==========
 
@@ -100,6 +86,9 @@ let handleButtons = async (zk, msg) => {
 
 var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g, "");
 const prefixe = conf.PREFIXE;
+
+// Status reaction emojis
+const statusEmojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '💜', '💙', '🌝', '💚'];
 
 async function authentification() {
     try {
@@ -150,6 +139,16 @@ setTimeout(() => {
             store.bind(zk.ev);
         }
 
+        // Decode JID function
+        const decodeJid = (jid) => {
+            if (!jid) return jid;
+            if (/:\d+@/gi.test(jid)) {
+                let decode = baileys_1.jidDecode(jid) || {};
+                return decode.user && decode.server && decode.user + '@' + decode.server || jid;
+            }
+            return jid;
+        };
+
         // ========== BUTTON HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
@@ -167,6 +166,96 @@ setTimeout(() => {
             }
         });
 
+        // ========== AUTO-STATUS HANDLER WITH REACT AND REPLY ==========
+        zk.ev.on("messages.upsert", async (m) => {
+            const msg = m.messages[0];
+            if (!msg.message) return;
+
+            // Handle status messages
+            if (msg.key && msg.key.remoteJid === "status@broadcast") {
+                
+                // Skip if sender is null or unknown
+                if (!msg.pushName || msg.pushName === "null" || msg.key.fromMe) {
+                    console.log("⏭️ Skipping status from unknown/null sender");
+                    return;
+                }
+
+                console.log("📱 Status received from:", msg.pushName);
+                
+                // Auto-read status
+                if (conf.AUTO_READ_STATUS === "yes") {
+                    await zk.readMessages([msg.key]);
+                    console.log("✅ Status marked as read");
+                }
+                
+                // Auto-react to status with random emoji
+                if (conf.AUTO_STATUS_REACT === "true") {
+                    try {
+                        const randomEmoji = statusEmojis[Math.floor(Math.random() * statusEmojis.length)];
+                        const botJid = decodeJid(zk.user.id);
+                        await zk.sendMessage(msg.key.remoteJid, {
+                            react: {
+                                text: randomEmoji,
+                                key: msg.key,
+                            }
+                        }, { statusJidList: [msg.key.participant, botJid] });
+                        console.log(`✅ Reacted to status with ${randomEmoji}`);
+                    } catch (e) {
+                        console.log("Could not react to status:", e.message);
+                    }
+                }
+                
+                // Auto-reply to status
+                if (conf.AUTO_STATUS_REPLY === "true") {
+                    try {
+                        const userJid = msg.key.participant || msg.key.remoteJid;
+                        const replyText = conf.AUTO_STATUS_MSG || "Nice status! 👍";
+                        await zk.sendMessage(userJid, { 
+                            text: replyText,
+                            react: { text: '💜', key: msg.key }
+                        }, { quoted: msg });
+                        console.log("✅ Replied to status");
+                    } catch (e) {
+                        console.log("Could not reply to status:", e.message);
+                    }
+                }
+                
+                // Auto-download status
+                if (conf.AUTO_DOWNLOAD_STATUS === "yes") {
+                    try {
+                        const botId = zk.user?.id || conf.NUMERO_OWNER + "@s.whatsapp.net";
+                        if (msg.message.imageMessage) {
+                            var stMsg = msg.message.imageMessage.caption || "";
+                            var stImg = await zk.downloadAndSaveMediaMessage(msg.message.imageMessage);
+                            if (stImg) {
+                                await zk.sendMessage(botId, {
+                                    image: { url: stImg },
+                                    caption: `📱 *Status Image*\nFrom: ${msg.pushName}\n\n${stMsg}`
+                                });
+                            }
+                        } else if (msg.message.videoMessage) {
+                            var stMsg = msg.message.videoMessage.caption || "";
+                            var stVideo = await zk.downloadAndSaveMediaMessage(msg.message.videoMessage);
+                            if (stVideo) {
+                                await zk.sendMessage(botId, {
+                                    video: { url: stVideo },
+                                    caption: `📱 *Status Video*\nFrom: ${msg.pushName}\n\n${stMsg}`
+                                });
+                            }
+                        } else if (msg.message.extendedTextMessage) {
+                            var stTxt = msg.message.extendedTextMessage.text;
+                            await zk.sendMessage(botId, {
+                                text: `📱 *Status Text*\nFrom: ${msg.pushName}\n\n${stTxt}`
+                            });
+                        }
+                        console.log("✅ Status downloaded");
+                    } catch (e) {
+                        console.log("Could not download status:", e.message);
+                    }
+                }
+            }
+        });
+
         // ========== MAIN MESSAGE HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
             const { messages } = m;
@@ -176,15 +265,6 @@ setTimeout(() => {
             // Skip reaction messages
             const mtype = baileys_1.getContentType(ms.message);
             if (mtype === "reactionMessage") return;
-
-            const decodeJid = (jid) => {
-                if (!jid) return jid;
-                if (/:\d+@/gi.test(jid)) {
-                    let decode = baileys_1.jidDecode(jid) || {};
-                    return decode.user && decode.server && decode.user + '@' + decode.server || jid;
-                }
-                return jid;
-            };
 
             var texte = mtype == "conversation" ? ms.message.conversation :
                 mtype == "imageMessage" ? ms.message.imageMessage?.caption :
@@ -251,6 +331,72 @@ setTimeout(() => {
                 ms, mybotpic
             };
 
+            // ========== ANTI-LINK WITH BUTTONS ==========
+            try {
+                const yes = await verifierEtatJid(origineMessage);
+                if (texte && (texte.includes('https://') || texte.includes('http://')) && verifGroupe && yes) {
+                    console.log("lien detecté");
+                    var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
+                    if (superUser || verifAdmin || !verifZokAdmin) {
+                        console.log('je fais rien');
+                        return;
+                    }
+                    
+                    const key = {
+                        remoteJid: origineMessage,
+                        fromMe: false,
+                        id: ms.key.id,
+                        participant: auteurMessage
+                    };
+                    
+                    // Buttons for anti-link
+                    const buttons = [
+                        {
+                            name: "cta_url",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: "🌐 WA Channel",
+                                id: "backup channel",
+                                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+                            }),
+                        },
+                    ];
+                    
+                    var txt = "⚠️ *LINK DETECTED* ⚠️\n";
+                    var action = await recupererActionJid(origineMessage);
+                    
+                    // Send interactive message with button
+                    await zk.sendMessage(origineMessage, { 
+                        interactiveMessage: {
+                            header: { text: "🚫 ANTI-LINK SYSTEM" },
+                            body: { text: txt + `\n@${auteurMessage.split("@")[0]} please avoid sending links in this group!` },
+                            footer: { text: "Fana-MD Bot" },
+                            mentions: [auteurMessage],
+                            buttons: buttons,
+                            headerType: 1
+                        }
+                    }, { quoted: ms });
+                    
+                    if (action === 'remove') {
+                        await zk.sendMessage(origineMessage, { delete: key });
+                        await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                    } else if (action === 'delete') {
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    } else if (action === 'warn') {
+                        const { getWarnCountByJID, ajouterUtilisateurAvecWarnCount } = require('./bdd/warn');
+                        let warn = await getWarnCountByJID(auteurMessage);
+                        let warnlimit = conf.WARN_COUNT || 3;
+                        if (warn >= warnlimit) {
+                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
+                        } else {
+                            await ajouterUtilisateurAvecWarnCount(auteurMessage);
+                        }
+                        await zk.sendMessage(origineMessage, { delete: key });
+                    }
+                }
+            } catch (e) {
+                console.log("bdd err " + e);
+            }
+
             // Execution des commandes
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
@@ -300,9 +446,30 @@ setTimeout(() => {
                 const groupName = metadata.subject;
 
                 if (group.action == 'add' && (await recupevents(group.id, "welcome") == 'on')) {
+                    const buttons = [
+                        {
+                            name: "cta_url",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: "🌐 Join Channel",
+                                id: "channel",
+                                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+                            }),
+                        },
+                    ];
+                    
                     let msg = `*✨ WELCOME TO ${groupName.toUpperCase()} ✨*\n\n👤 New Member Joined!\n\n🎉 Enjoy your stay!\n\nPowered by Fana-MD Bot`;
                     let membres = group.participants;
-                    await zk.sendMessage(group.id, { image: { url: ppgroup }, caption: msg, mentions: membres });
+                    
+                    await zk.sendMessage(group.id, { 
+                        interactiveMessage: {
+                            header: { text: "🎉 WELCOME!" },
+                            body: { text: msg },
+                            footer: { text: "Fana-MD Bot" },
+                            mentions: membres,
+                            buttons: buttons,
+                            headerType: 1
+                        }
+                    });
                 } else if (group.action == 'remove' && (await recupevents(group.id, "goodbye") == 'on')) {
                     let msg = `👋 GOODBYE!\n\n📱 Group: ${groupName}\n\nWe hope to see you again!\n\nPowered by Fana-MD Bot`;
                     await zk.sendMessage(group.id, { text: msg });
@@ -340,11 +507,50 @@ setTimeout(() => {
 
                 console.log("✅ Fana MD is Online!");
                 
-                // Send startup message to owner
+                // Send startup message with interactive button
+                const buttons = [
+                    {
+                        name: "cta_url",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "🌐 WA Channel",
+                            id: "backup channel",
+                            url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+                        }),
+                    },
+                ];
+                
+                const randomNjabulourl = "https://i.imgur.com/4M6Y6qT.png";
+                const cmsg = `╭──────────⊷
+┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
+┊┊ *ᯤNJABULO JB: CONNECTED* 
+┊┊ *NAME: NJABULO JB*
+┊┊ *PREFIX: [ ${prefixe} ]*
+┊┊ *MODE:* ${md}
+┊┗━┈┈┈┈┈┈┈┈
+╰───────────⊷`;
+                
+                try {
+                    // Try to send interactive message with image
+                    await zk.sendMessage(zk.user.id, { 
+                        interactiveMessage: {
+                            header: { title: "🤖 BOT ONLINE", hasMediaAttachment: true, imageMessage: null },
+                            body: { text: cmsg },
+                            footer: { text: "Fana-MD Bot" },
+                            buttons: buttons,
+                            headerType: 1
+                        }
+                    });
+                } catch (e) {
+                    // Fallback to simple text
+                    await zk.sendMessage(zk.user.id, { text: cmsg });
+                }
+                
+                // Send to owner as well
                 try {
                     const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}` });
+                    await zk.sendMessage(ownerNumber, { text: `🤖 FANA-MD BOT ONLINE\n\nStatus: Active\nMode: ${md}\nPrefix: ${prefixe}` });
                 } catch (e) {}
+                
             } else if (connection == "close") {
                 let reason = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
                 if (reason === baileys_1.DisconnectReason.restartRequired || reason === baileys_1.DisconnectReason.connectionLost) {
