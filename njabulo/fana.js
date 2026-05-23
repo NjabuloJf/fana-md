@@ -1,6 +1,6 @@
 var tabCmds = [];
 let cm = [];
-function zokou(obj, fonctions) {
+function fana(obj, fonctions) {
     let infoComs = obj;
     if (!obj.categorie) {
         infoComs.categorie = "General";
@@ -13,5 +13,5 @@ function zokou(obj, fonctions) {
     // console.log('chargement...')
     return infoComs;
 }
-module.exports = { zokou, Module: zokou, cm };
+module.exports = { fana, Module: fana, cm };
 
