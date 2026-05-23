@@ -103,9 +103,9 @@ const reactionEmoji = emojis[Math.floor(Math.random() * emojis.length)];
   
   try {
     const njabulox = [
-      "https://files.catbox.moe/xjeyjh.jpg",
-      "https://files.catbox.moe/mh36c7.jpg",
-      "https://files.catbox.moe/bnb3vx.jpg"
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png"
     ];
 
     const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
