@@ -1,5 +1,3 @@
-
-
 const axios = require('axios');
 const fs = require("fs-extra");
 const { execSync } = require("child_process");
@@ -13,70 +11,78 @@ const GIFBufferToVideoBuffer = async (image) => {
   const filename = `${Math.random().toString(36)}`;
   try {
     await fs.writeFileSync(`./${filename}.gif`, image);
-    execSync(`ffmpeg -i ./${filename}.gif -movflags faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ./${filename}.mp4`);
-    await sleep(4000);
+    execSync(`ffmpeg -i ./${filename}.gif -movflags faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" ./${filename}.mp4`, { stdio: 'ignore' });
+    await sleep(2000);
     const buffer5 = await fs.readFileSync(`./${filename}.mp4`);
-    await Promise.all([unlink(`./${filename}.mp4`), unlink(`./${filename}.gif`)]); 
+    await Promise.all([unlink(`./${filename}.mp4`).catch(() => {}), unlink(`./${filename}.gif`).catch(() => {})]); 
     return buffer5;
   } catch (e) {
-    console.error(e);
+    console.error("GIF conversion error:", e.message);
+    return null;
   }
 };
+
 const buttons = [
   {
     name: "cta_url",
     buttonParamsJson: JSON.stringify({
-      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
+      display_text: "🌐 WA Channel",
       id: "backup channel",
-      url: config.GURL
+      url: config.GURL || "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
     }),
   },
-  ];
-
-
+];
 
 const generateReactionCommand = (reactionName, reactionEmoji) => {
   fana({
     nomCom: reactionName,
     categorie: "Reaction",
-    reaction: reactionEmoji,
+    reaction: reactionEmoji || "😊",
   }, async (origineMessage, zk, commandeOptions) => {
     const { auteurMessage, auteurMsgRepondu, repondre, ms, msgRepondu } = commandeOptions;
     const url = `https://api.waifu.pics/sfw/${reactionName}`;
+    
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { timeout: 10000 });
       const imageUrl = response.data.url;
-      const gifBufferResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      
+      const gifBufferResponse = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
       const gifBuffer = gifBufferResponse.data;
+      
       const videoBuffer = await GIFBufferToVideoBuffer(gifBuffer);
-      if (msgRepondu) {
+      
+      if (!videoBuffer) {
+        throw new Error("Failed to convert GIF to video");
+      }
+      
+      if (msgRepondu && auteurMsgRepondu) {
         const txt = `@${auteurMessage.split("@")[0]} ${reactionName} @${auteurMsgRepondu.split("@")[0]}`;
         await zk.sendMessage(origineMessage, {
           interactiveMessage: {
           video: videoBuffer,
           gifPlayback: true,
-         header: txt,
-           headerType: 1,
-           mentions: [auteurMessage, auteurMsgRepondu],
-           buttons
+          header: text,
+          mentions: [auteurMessage, auteurMsgRepondu],
+           buttons,
+          headerType: 1,
           }
         }, { quoted: ms });
       } else {
-        const txt = `@${auteurMessage.split("@")[0]} ${reactionName} everyone`;
+        const txt = `@${auteurMessage.split("@")[0]} ${reactionName}`;
         await zk.sendMessage(origineMessage, {
           interactiveMessage: {
           video: videoBuffer,
           gifPlayback: true,
-           header: txt,
+          header: text,
+         mentions: [auteurMessage], 
+        buttons,
         headerType: 1,
-          mentions: [auteurMessage],
-          buttons
           }
         }, { quoted: ms });
       }
     } catch (error) {
-      repondre('Error occurred: ' + error);
-      console.log(error);
+      console.error(`Error in ${reactionName}:`, error.message);
+      repondre(`❌ Error: ${error.message}`);
     }
   });
 };
@@ -96,9 +102,9 @@ generateReactionCommand("yeet", "🚀");
 generateReactionCommand("blush", "😊");
 generateReactionCommand("smile", "😄");
 generateReactionCommand("wave", "👋");
-generateReactionCommand("highfive");
-generateReactionCommand("handhold");
-generateReactionCommand("nom","👅" );
+generateReactionCommand("highfive", "🖐️");
+generateReactionCommand("handhold", "🤝");
+generateReactionCommand("nom", "👅");
 generateReactionCommand("bite", "🦷");
 generateReactionCommand("glomp", "🤗");
 generateReactionCommand("slap", "👋");
@@ -109,5 +115,3 @@ generateReactionCommand("wink", "😉");
 generateReactionCommand("poke", "👉");
 generateReactionCommand("dance", "💃");
 generateReactionCommand("cringe", "😬");
-
-
