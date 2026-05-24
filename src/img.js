@@ -21,7 +21,7 @@ const njabulox = [
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
 // ── Base button definition (same as in other modules) ─────
-const baseButtons = [
+const buttons = [
   {
     name: "cta_url",
     buttonParamsJson: JSON.stringify({
