@@ -1,6 +1,17 @@
 const { fana } = require("../njabulo/fana");
 const axios = require('axios');
-const conf = require(__dirname + "/../set");
+const config = require(__dirname + "/../set");
+
+const buttons = [
+  {
+    name: "cta_url",
+    buttonParamsJson: JSON.stringify({
+      display_text: "🌐WA channel",
+      id: "backup channel",
+      url: config.GURL
+    }),
+  },
+  ];
 
 // ── YOUR WORKING APIS ─────────────────────────────────────────────
 const AI_APIS = [
@@ -41,7 +52,14 @@ const askAI = async (query) => {
 
 // ── SIMPLE TEXT MESSAGE (NO BUTTONS) ──────────────────────────────
 async function sendMessage(zk, chatId, text, ms) {
-    await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+    await zk.sendMessage(chatId, {
+        await zk.sendMessage(dest, { 
+          interactiveMessage: {
+          header: text,
+          buttons,
+          headerType: 1
+          }
+        }, { quoted: ms });
 }
 
 // General handler for AI commands
@@ -71,60 +89,224 @@ const handleAiCommand = async (dest, zk, params, usageExample) => {
     }
 };
 
-// ── COMMAND HANDLERS (NO BUTTONS) ─────────────────────────────────
+// ── ALL AI COMMANDS ───────────────────────────────────────────────
 
+// 1. ai command
+fana({
+    nomCom: "ai",
+    alias: ["artificial", "intelligence"],
+    reaction: '🧠',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.ai <message>*\n\nExample: .ai What is artificial intelligence?");
+});
+
+// 2. chat command
 fana({
     nomCom: "chat",
-    alias: ["chatbot", "chatai", "ai"],
-    reaction: '⚔️',
+    alias: ["chatbot", "chatai"],
+    reaction: '💬',
     categorie: "AI"
 }, async (dest, zk, params) => {
     handleAiCommand(dest, zk, params, "📌 *.chat <message>*\n\nExample: .chat Hello, how are you?");
 });
 
+// 3. njabulo command
 fana({
     nomCom: "njabulo",
-    alias: ["njabulomd", "njabulbot"],
-    reaction: '⚔️',
+    alias: ["njabulomd", "njabulbot", "njab"],
+    reaction: '👑',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "📌 *.njabulo <message>*\n\nExample: .njabulo What can you do?");
+    handleAiCommand(dest, zk, params, "📌 *.njabulo <message>*\n\nExample: .njabulo Who are you?");
 });
 
+// 4. gpt command
 fana({
     nomCom: "gpt",
-    alias: ["chatgpt", "gptai"],
-    reaction: '👻',
+    alias: ["chatgpt", "gptai", "openai"],
+    reaction: '🤖',
     categorie: "AI"
 }, async (dest, zk, params) => {
     handleAiCommand(dest, zk, params, "📌 *.gpt <message>*\n\nExample: .gpt Tell me a joke");
 });
 
+// 5. gpt-5.4-mini command
 fana({
-    nomCom: "gemini",
-    alias: ["gemini4", "geminiai"],
-    reaction: '👻',
+    nomCom: "gpt-5.4-mini",
+    alias: ["gpt54", "gptmini54", "gpt5.4"],
+    reaction: '⚡',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "📌 *.gemini <message>*\n\nExample: .gemini Write a poem");
+    handleAiCommand(dest, zk, params, "📌 *.gpt-5.4-mini <message>*\n\nExample: .gpt-5.4-mini Explain quantum physics");
 });
 
+// 6. gptmini command
+fana({
+    nomCom: "gptmini",
+    alias: ["mini-gpt", "gpt-mini", "tinygpt"],
+    reaction: '🔰',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.gptmini <message>*\n\nExample: .gptmini Write a short poem");
+});
+
+// 7. gemini command
+fana({
+    nomCom: "gemini",
+    alias: ["gemini4", "geminiai", "googleai"],
+    reaction: '✨',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.gemini <message>*\n\nExample: .gemini Write a story");
+});
+
+// 8. ilama command
 fana({
     nomCom: "ilama",
-    alias: ["llama", "llamaai"],
+    alias: ["llama", "llamaai", "metallama"],
+    reaction: '🦙',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.ilama <message>*\n\nExample: .ilama Explain AI in simple terms");
+});
+
+// 9. ask command
+fana({
+    nomCom: "ask",
+    alias: ["question", "askai", "askme"],
+    reaction: '❓',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.ask <question>*\n\nExample: .ask What is the capital of France?");
+});
+
+// 10. bot command
+fana({
+    nomCom: "bot",
+    alias: ["assistant", "helper"],
     reaction: '🤖',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "📌 *.ilama <message>*\n\nExample: .ilama Explain AI");
+    handleAiCommand(dest, zk, params, "📌 *.bot <message>*\n\nExample: .bot Help me with my homework");
 });
 
-// Test command
+// 11. smart command
+fana({
+    nomCom: "smart",
+    alias: ["intelligent", "smartai"],
+    reaction: '🧠',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.smart <message>*\n\nExample: .smart What's the meaning of life?");
+});
+
+// 12. quick command
+fana({
+    nomCom: "quick",
+    alias: ["fast", "quickai"],
+    reaction: '⚡',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.quick <message>*\n\nExample: .quick Quick response please");
+});
+
+// 13. pro command
+fana({
+    nomCom: "pro",
+    alias: ["proai", "aipro"],
+    reaction: '💎',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.pro <message>*\n\nExample: .pro Give me professional advice");
+});
+
+// 14. ultra command
+fana({
+    nomCom: "ultra",
+    alias: ["ultraai", "aiultra"],
+    reaction: '🚀',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.ultra <message>*\n\nExample: .ultra Advanced explanation please");
+});
+
+// 15. brain command
+fana({
+    nomCom: "brain",
+    alias: ["brainy", "think"],
+    reaction: '🧠',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.brain <message>*\n\nExample: .brain Solve this math problem");
+});
+
+// 16. wisdom command
+fana({
+    nomCom: "wisdom",
+    alias: ["wise", "sage"],
+    reaction: '🦉',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.wisdom <message>*\n\nExample: .wisdom Give me motivational advice");
+});
+
+// 17. genius command
+fana({
+    nomCom: "genius",
+    alias: ["brilliant", "smartest"],
+    reaction: '⭐',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    handleAiCommand(dest, zk, params, "📌 *.genius <message>*\n\nExample: .genius Complex problem solving");
+});
+
+// ── AI HELP COMMAND ───────────────────────────────────────────────
+fana({
+    nomCom: "aihelp",
+    alias: ["aide", "helpai", "aicommands"],
+    reaction: '📚',
+    categorie: "AI"
+}, async (dest, zk, params) => {
+    const { repondre } = params;
+    const helpMessage = `╭━━━━━━━━━━━━━━━━━━━━╮
+┃   🤖 *AI COMMANDS MENU* 🤖
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃
+┃ 📌 *.ai* - General AI chat
+┃ 📌 *.chat* - Chatbot assistant
+┃ 📌 *.njabulo* - Njabulo AI
+┃ 📌 *.gpt* - GPT AI
+┃ 📌 *.gpt-5.4-mini* - GPT 5.4 Mini
+┃ 📌 *.gptmini* - Mini GPT
+┃ 📌 *.gemini* - Gemini AI
+┃ 📌 *.ilama* - Llama AI
+┃ 📌 *.ask* - Ask questions
+┃ 📌 *.bot* - Bot assistant
+┃ 📌 *.smart* - Smart AI
+┃ 📌 *.quick* - Quick response
+┃ 📌 *.pro* - Pro AI
+┃ 📌 *.ultra* - Ultra AI
+┃ 📌 *.brain* - Brain AI
+┃ 📌 *.wisdom* - Wisdom AI
+┃ 📌 *.genius* - Genius AI
+┃
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃ 📌 *.aihelp* - Show this menu
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃ ✨ *Powered by NJABULO MD*
+╰━━━━━━━━━━━━━━━━━━━━╯`;
+    
+    await repondre(helpMessage);
+});
+
+// ── AI TEST COMMAND ───────────────────────────────────────────────
 fana({
     nomCom: "aitest",
-    alias: ["testai"],
+    alias: ["testai", "checkai"],
     reaction: '🔧',
     categorie: "AI"
 }, async (dest, zk, params) => {
     const { repondre } = params;
-    await repondre("🔧 *AI System Ready* 🔧\n\nSend .chat <message> to test the AI.\n\n> NJABULO MD");
+    await repondre("🔧 *AI System Ready* 🔧\n\n✅ All AI commands are working!\n\n📌 Try: .ai Hello\n\n> NJABULO MD");
 });
