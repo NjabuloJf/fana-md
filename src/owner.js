@@ -2,178 +2,150 @@ const { fana } = require("../njabulo/fana");
 const { getAllSudoNumbers, isSudoTableNotEmpty } = require("../bdd/sudo");
 const conf = require("../set");
 const moment = require("moment-timezone");
+const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
+const axios = require("axios");
 
 // ── Random image list ─────────────────────────────────────────────
 const njabulox = [
-  "", // keep the empty entry if you want a chance of no image
-  "https://files.catbox.moe/xjeyjh.jpg",
-  "https://files.catbox.moe/mh36c7.jpg",
-  "https://files.catbox.moe/u6v5ir.jpg",
-  "https://files.catbox.moe/bnb3vx.jpg",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Standard button set (used by all modules) ────────────────────────
-const baseButtons = [
-  {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "Visit Website",
-      id: "backup channel",
-      url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u",
-    }),
-  },
-  {
-    name: "cta_copy",
-    buttonParamsJson: JSON.stringify({
-      display_text: "Copy",
-      id: "copy",
-      copy_code: "", // will be filled dynamically
-    }),
-  },
-];
-
-// ── Helper that sends an *interactive* message with image + buttons ─────
-async function sendFormattedMessage(zk, chatId, text, ms) {
-  const buttons = JSON.parse(JSON.stringify(baseButtons));
-  buttons[1].buttonParamsJson = JSON.stringify({
-    display_text: "Copy",
-    id: "copy",
-    copy_code: text,
-  });
-
-  await zk.sendMessage(
-    chatId,
-    {
-      interactiveMessage: {
-        image: { url: randomNjabulourl },
-        header: text,
-        buttons,
-        headerType: 1,
-        contextInfo: {
-          mentionedJid: [ms?.sender?.jid || ""],
-          externalAdReply: {
-            title: "❣️ Owner Info",
-            mediaType: 1,
-            previewType: 0,
-            thumbnailUrl: randomNjabulourl,
-            renderLargerThumbnail: false,
-          },
-        },
-      },
-    },
-    {
-      quoted: {
-        key: {
-          fromMe: false,
-          participant: "0@s.whatsapp.net",
-          remoteJid: "status@broadcast",
-        },
-        message: {
-          contactMessage: {
-            displayName: "njᥲbᥙᥣo",
-            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Njabulo-Jb;BOT;;;\nFN:Njabulo-Jb\nitem1.TEL;waid=26777821911:+26777821911\nitem1.X-ABLabel:Bot\nEND:VCARD`,
-          },
-        },
-      },
-    }
-  );
-}
-
-// ── Owner command ─────────────────────────────────────────────
+// ── Owner command with cards (like img command) ─────────────────────────────
 fana(
-  {
-    nomCom: "owner",
-    categorie: "General",
-    reaction: "❣️",
-  },
-  async (dest, zk, commandeOptions) => {
-    const { ms, mybotpic } = commandeOptions;
+    {
+        nomCom: "owner",
+        alias: ["creator", "dev", "support"],
+        categorie: "General",
+        reaction: "👑",
+    },
+    async (dest, zk, commandeOptions) => {
+        const { ms } = commandeOptions;
 
-    // 1️⃣ Show a loading indicator
-    await zk.sendMessage(dest, { text: "⏳ loading…" });
+        // Send typing indicator
+        await zk.sendPresenceUpdate('composing', dest);
 
-    // 2️⃣ Build the info text (same template you provided)
-    const now = moment().tz("Africa/Garissa"); // Botswana is UTC+2
-    const infoText = `
-📛 Name      : ${conf.BOT_NAME || "Njabulo Jb"}
-🤖 Bot name  : ${conf.BOT_NAME || "Njabulo Jb"}
-🛠️ Used      : 0 times (placeholder)
-🗓️ Create    : 2024‑01‑01 (placeholder)
-👤 Owner     : @${conf.NUMERO_OWNER}
-⏰ Data time : ${now.format("YYYY‑MM‑DD HH:mm:ss")}
-`;
-
-    const thsudo = await isSudoTableNotEmpty();
-
-    if (thsudo) {
-      let msg = `*My Super-User*\n*Owner Number*\n:- 🌟 @${conf.NUMERO_OWNER}\n\n------ *other sudos* -----\n`;
-
-      const sudos = await getAllSudoNumbers();
-
-      for (const sudo of sudos) {
-        if (sudo) {
-          const sudonumero = sudo.replace(/[^0-9]/g, "");
-          msg += `- 💼 @${sudonumero}\n`;
+        // Get current time
+        const now = moment().tz("Africa/Garissa");
+        
+        // Get image buffer for card
+        let imageBuffer = null;
+        try {
+            const imgRes = await axios.get(randomNjabulourl, { responseType: 'arraybuffer', timeout: 10000 });
+            imageBuffer = imgRes.data;
+        } catch (err) {
+            console.error("Failed to download image:", err.message);
         }
-      }
-
-      const ownerjid = conf.NUMERO_OWNER.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
-      const mentionedJid = [...sudos, ownerjid];
-
-      // Send the image with the caption and buttons
-      await zk.sendMessage(dest, {
-        interactiveMessage: {
-          image: { url: mybotpic() },
-          header: msg,
-          buttons: baseButtons,
-          headerType: 1,
-          contextInfo: {
-            mentionedJid,
-            externalAdReply: {
-              title: "❣️ Owner Info",
-              mediaType: 1,
-              previewType: 0,
-              thumbnailUrl: randomNjabulourl,
-              renderLargerThumbnail: false,
+        
+        const imageMessage = imageBuffer ? (await generateWAMessageContent({ image: imageBuffer }, { upload: zk.waUploadToServer })).imageMessage : null;
+        
+        // Check if there are sudo users
+        const thsudo = await isSudoTableNotEmpty();
+        
+        let cards = [];
+        
+        // Card 1: Owner Info
+        const ownerCard = {
+            header: {
+                title: `👑 OWNER INFO`,
+                hasMediaAttachment: true,
+                imageMessage: imageMessage,
             },
-          },
-        },
-      });
-    } else {
-      const vcard =
-        "BEGIN:VCARD\n" +
-        "VERSION:3.0\n" +
-        "FN:" + conf.OWNER_NAME + "\n" +
-        "ORG:undefined;\n" +
-        "TEL;type=CELL;type=VOICE;waid=" + conf.NUMERO_OWNER + ":+" + conf.NUMERO_OWNER + "\n" +
-        "END:VCARD";
+            body: {
+                text: `📛 *Name:* ${conf.OWNER_NAME || "Njabulo JB"}
+🤖 *Bot:* ${conf.BOT_NAME || "NJABULO MD"}
+📱 *Number:* wa.me/${conf.NUMERO_OWNER}
 
-      await zk.sendMessage(
-        dest,
-        {
-          contacts: {
-            displayName: conf.OWNER_NAME,
-            contacts: [{ vcard }],
-          },
-        },
-        { quoted: ms }
-      );
+🗓️ *Created:* 2024
+🕐 *Time:* ${now.format("YYYY-MM-DD HH:mm:ss")}
 
-      // Send the audio as a voice note
-      const audioUrl = "https://files.catbox.moe/4ufunx.mp3";
-      await zk.sendMessage(
-        dest,
-        {
-          audio: { url: audioUrl },
-          mimetype: "audio/mp4",
-          ptt: true,
-        },
-        { quoted: ms }
-      );
+💫 *Powered by NJABULO MD*`
+            },
+            footer: {
+                text: ""
+            }
+        };
+        cards.push(ownerCard);
+        
+        if (thsudo) {
+            const sudos = await getAllSudoNumbers();
+            
+            let sudoText = `🌟 *Owner:* @${conf.NUMERO_OWNER}\n\n📋 *Sudo Users:*\n`;
+            const mentionedJid = [conf.NUMERO_OWNER + "@s.whatsapp.net"];
+            
+            for (const sudo of sudos) {
+                if (sudo) {
+                    const sudoNumber = sudo.number || sudo;
+                    const sudoNum = sudoNumber.replace(/[^0-9]/g, "");
+                    sudoText += `💼 @${sudoNum}\n`;
+                    mentionedJid.push(sudoNum + "@s.whatsapp.net");
+                }
+            }
+            
+            sudoText += `\n📊 *Total:* ${sudos.length + 1} users`;
+            
+            // Card 2: Sudo Users List
+            const sudoCard = {
+                header: {
+                    title: `👑 SUDO USERS`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: sudoText
+                },
+                footer: {
+                    text: ""
+                }
+            };
+            cards.push(sudoCard);
+        } else {
+            // Card 2: No Sudo Users
+            const noSudoCard = {
+                header: {
+                    title: `👑 SUDO USERS`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: `🌟 *Owner:* @${conf.NUMERO_OWNER}
+
+📋 *Sudo Users:* None
+
+📊 *Total:* 1 user`
+                },
+                footer: {
+                    text: ""
+                }
+            };
+            cards.push(noSudoCard);
+        }
+        
+        // Send the carousel message with cards (like img command)
+        const message = generateWAMessageFromContent(
+            dest,
+            {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: {
+                            deviceListMetadata: {},
+                            deviceListMetadataVersion: 2
+                        },
+                        interactiveMessage: {
+                            body: { text: `🔍 Owner Information` },
+                            footer: { text: `📂 Found ${cards.length} cards` },
+                            carouselMessage: { cards },
+                        },
+                    },
+                },
+            },
+            { quoted: ms }
+        );
+        
+        await zk.relayMessage(dest, message.message, { messageId: message.key.id });
     }
-
-    // 3️⃣ Finally, send the info text with buttons
-    sendFormattedMessage(zk, dest, infoText, ms);
-  }
 );
