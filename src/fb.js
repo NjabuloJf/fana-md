@@ -57,10 +57,15 @@ fana({
     // Send thumbnail first
     if (result.thumbnail) {
       await zk.sendMessage(dest, {
+        interactiveMessage: {
         image: { url: result.thumbnail },
-        caption: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`
+        header: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`,
+        buttons,
+        headerType: 1      
+        }
       }, { quoted: ms });
     }
+
     
     // Send the HD video
     await zk.sendMessage(dest, {
@@ -103,8 +108,12 @@ fana({
     // Send thumbnail first
     if (result.thumbnail) {
       await zk.sendMessage(dest, {
+         interactiveMessage: {
         image: { url: result.thumbnail },
-        caption: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* SD`
+        caption: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* SD`,
+        buttons,
+        headerType: 1
+         }
       }, { quoted: ms });
     }
     
@@ -121,39 +130,4 @@ fana({
     console.error("Error:", error);
     await sendFormattedMessage(zk, dest, "❌ *Error downloading video*\n\nPlease check the link and try again.", ms);
   }
-});
-
-// ---------- Help command ----------
-fana({
-  nomCom: "fbhelp",
-  alias: ["facebookhelp", "fbguide"],
-  categorie: "Download",
-  reaction: "📚"
-}, async (dest, zk, commandeOptions) => {
-  const { ms } = commandeOptions;
-  
-  const helpMessage = `╭━━━━━━━━━━━━━━━━━━━━╮
-┃   📥 *FACEBOOK DOWNLOADER* 📥
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃ 📌 *.facebook <link>*
-┃    Download HD quality video
-┃
-┃ 📌 *.fb <link>*
-┃    Download SD quality video
-┃
-┃ 📌 *.fbhelp*
-┃    Show this menu
-┃
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃ 📝 *How to use:*
-┃ 1. Get a public Facebook video link
-┃ 2. Send: .facebook [link]
-┃ 3. Wait for the video
-┃
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃ ✨ *Powered by NJABULO MD*
-╰━━━━━━━━━━━━━━━━━━━━╯`;
-  
-  await sendFormattedMessage(zk, dest, helpMessage, ms);
 });
