@@ -58,26 +58,18 @@ const generateReactionCommand = (reactionName, reactionEmoji) => {
       if (msgRepondu && auteurMsgRepondu) {
         const txt = `@${auteurMessage.split("@")[0]} ${reactionName} @${auteurMsgRepondu.split("@")[0]}`;
         await zk.sendMessage(origineMessage, {
-          interactiveMessage: {
           video: videoBuffer,
           gifPlayback: true,
-          header: text,
-          mentions: [auteurMessage, auteurMsgRepondu],
-           buttons,
-          headerType: 1,
-          }
+          caption: txt,
+          mentions: [auteurMessage, auteurMsgRepondu]
         }, { quoted: ms });
       } else {
         const txt = `@${auteurMessage.split("@")[0]} ${reactionName}`;
         await zk.sendMessage(origineMessage, {
-          interactiveMessage: {
           video: videoBuffer,
           gifPlayback: true,
-          header: text,
-         mentions: [auteurMessage], 
-        buttons,
-        headerType: 1,
-          }
+          caption: txt,
+          mentions: [auteurMessage]
         }, { quoted: ms });
       }
     } catch (error) {
