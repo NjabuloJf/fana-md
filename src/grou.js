@@ -35,8 +35,8 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
         chatId,
         {
             interactiveMessage: {
-                header: { title: "NJABULO MD", hasMediaAttachment: true, imageMessage: { url: randomNjabulourl } },
-                body: text,
+                image: { url: randomNjabulourl },
+                header: text,
                 buttons,
                 headerType: 1
             }
