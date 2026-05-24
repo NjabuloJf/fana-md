@@ -15,43 +15,14 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
-// ---------- Buttons (FIXED: removed semicolon inside object) ----------
-const buttons = [
-  {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
-      id: "back channel",
-      url: config.GURL
-    })
-  }
-];
-
-// ---------- Random image (FIXED: added missing commas) ----------
-const njabulox = [
-  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
-  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
-  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
-  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png"
-];
-const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
-
-// ---------- Helper to send the formatted message (FIXED: proper structure) ----------
-async function sendFormattedMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(
-    chatId,
-    {
-      text: text,
-      buttons: buttons.map(btn => ({
-        buttonId: btn.name === "cta_url" ? "url" : btn.name,
-        buttonText: { displayText: JSON.parse(btn.buttonParamsJson).display_text },
-        type: btn.name === "cta_url" ? 2 : 1
-      })),
-      viewOnce: false
-    },
-    { quoted: ms }
-  );
+// ---------- Simple text message (NO BUTTONS) ----------
+async function sendMessage(zk, chatId, text, ms) {
+  await zk.sendMessage(chatId, {
+          interactiveMessage: {
+          header: text,
+          buttons,
+          headerType: 1
+          }
 }
 
 // ---------- Delete command ----------
@@ -70,7 +41,7 @@ fana(
     } = commandeOptions;
 
     if (!msgRepondu) {
-      return await sendFormattedMessage(
+      return await sendMessage(
         zk,
         dest,
         "⚠️ *Please reply to the message you want to delete.*",
@@ -86,7 +57,7 @@ fana(
         id: ms.message.extendedTextMessage.contextInfo.stanzaId,
       };
       await zk.sendMessage(dest, { delete: key });
-      await sendFormattedMessage(
+      await sendMessage(
         zk,
         dest,
         "✅ *Message deleted successfully.*",
@@ -106,14 +77,14 @@ fana(
             participant: ms.message.extendedTextMessage.contextInfo.participant,
           };
           await zk.sendMessage(dest, { delete: key });
-          await sendFormattedMessage(
+          await sendMessage(
             zk,
             dest,
             "✅ *Message deleted successfully.*",
             ms
           );
         } catch (e) {
-          await sendFormattedMessage(
+          await sendMessage(
             zk,
             dest,
             "❌ *I need admin rights to delete messages.*",
@@ -121,7 +92,7 @@ fana(
           );
         }
       } else {
-        await sendFormattedMessage(
+        await sendMessage(
           zk,
           dest,
           "❌ *Sorry, only group admins can delete messages.*",
