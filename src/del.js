@@ -15,9 +15,26 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
+const buttons = [
+  {
+    name: "cta_url",
+    buttonParamsJson: JSON.stringify({
+      display_text: "🌐WA channel",
+      id: "backup channel",
+      url: config.GURL
+    }),
+  },
+  ];
+
 // ---------- Simple text message (NO BUTTONS) ----------
 async function sendMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+  await zk.sendMessage(chatId, {
+         interactiveMessage: {
+          header: 'on for active and off for desactive',
+          buttons,
+          headerType: 1
+          }
+        }, { quoted: ms });
 }
 
 // ---------- Delete command ----------
