@@ -12,111 +12,91 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Base button definition (same as in other modules) ─────
-const baseButtons = [
-  {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
-      id: "backup channel",
-      url: config.GURL
-    }),
-  },
-];
-
+// ── Base button definition (only Copy button) ────────────────────────
 const buttons = [
-  {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
-      id: "backup channel",
-      url: config.GURL
-    }),
-  },
+    {
+        name: "cta_copy",
+        buttonParamsJson: JSON.stringify({
+            display_text: "📋 Copy Code",
+            id: "copy",
+            copy_code: "",
+        }),
+    },
 ];
 
 // ── Helper that sends an interactive message with image + buttons ─────
 async function sendFormattedMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(
-    chatId,
-    {
-      interactiveMessage: {
-        image: { url: randomNjabulourl },
-        header: text,
-        buttons,
-        headerType: 1,
-      }
-         },{quoted:ms});
+    const buttonsCopy = JSON.parse(JSON.stringify(buttons));
+    buttonsCopy[0].buttonParamsJson = JSON.stringify({
+        display_text: "📋 Copy Code",
+        id: "copy",
+        copy_code: text,
+    });
+    
+    await zk.sendMessage(
+        chatId,
+        {
+            interactiveMessage: {
+                header: text,             
+                buttons: buttonsCopy,
+                headerType: 1
+            }
+        },
+        { quoted: ms }
+    );
 }
 
 // ── Obfuscate command ─────────────────────────────────────────────
 fana(
-  {
-    nomCom: "obt",
-    categorie: "General",
-  },
-  async (chatId, zk, commandeOptions) => {
-    const {
-      ms,
-      arg,
-      repondre,
-      auteurMessage,
-      nomAuteurMessage,
-      msgRepondu,
-      auteurMsgRepondu,
-    } = commandeOptions;
+    {
+        nomCom: "obt",
+        alias: ["obfuscate", "encrypt"],
+        categorie: "General",
+        reaction: "🔒",
+    },
+    async (chatId, zk, commandeOptions) => {
+        const { ms, arg, repondre } = commandeOptions;
 
-    if (!arg[0]) {
-      sendFormattedMessage(
-        zk,
-        chatId,
-        "*Aftᥱr thᥱ ᥴommᥲnd, ρrovιdᥱ ᥲ vᥲᥣιd JᥲvᥲSᥴrιρt ᥴodᥱ for ᥱnᥴrყρtιon*",
-        ms
-      );
-      return;
+        if (!arg[0]) {
+            return sendFormattedMessage(
+                zk,
+                chatId,
+                "📌 *JavaScript Obfuscator*\n\nAfter the command, provide a valid JavaScript code for encryption.\n\n📝 *Example:* `.obt console.log('Hello World')`",
+                ms
+            );
+        }
+
+        try {
+            const code = arg.join(" ");
+            const obfuscated = JavaScriptObfuscator.obfuscate(code, {
+                compact: true,
+                controlFlowFlattening: true,
+                controlFlowFlatteningThreshold: 1,
+                numbersToExpressions: true,
+                simplify: true,
+                stringArrayShuffle: true,
+                splitStrings: true,
+                stringArrayThreshold: 1,
+            });
+
+            const obfText = obfuscated.getObfuscatedCode();
+            
+            // Truncate if too long
+            let finalText = obfText;
+            if (finalText.length > 3000) {
+                finalText = finalText.substring(0, 2970) + "\n\n...*[Code truncated due to length]*";
+            }
+            
+            await sendFormattedMessage(zk, chatId, finalText, ms);
+            
+        } catch (error) {
+            console.error("Obfuscation error:", error);
+            sendFormattedMessage(
+                zk,
+                chatId,
+                "❌ *Error*\n\nSomething went wrong. Check if your code is logical and has the correct syntax.\n\nMake sure you entered valid JavaScript code.",
+                ms
+            );
+        }
     }
-
-    try {
-      const code = arg.join(" ");
-      const obfuscated = JavaScriptObfuscator.obfuscate(code, {
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 1,
-        numbersToExpressions: true,
-        simplify: true,
-        stringArrayShuffle: true,
-        splitStrings: true,
-        stringArrayThreshold: 1,
-      });
-
-      const obfText = obfuscated.getObfuscatedCode();
-
-      // send the obfuscated code with copy button
-      const copyButtons = JSON.parse(JSON.stringify(baseButtons));
-      copyButtons[1].buttonParamsJson = JSON.stringify({
-        display_text: "Copy",
-        id: "copy",
-        copy_code: obfText,
-      });
-
-      await zk.sendMessage(
-        chatId,
-        {
-          interactiveMessage: {
-            image: { url: randomNjabulourl },
-            header: obfText,
-            buttons: copyButtons,
-            headerType: 1,
-          },{quoted:ms});
-
-    } catch (error) {
-      console.error("Obfuscation error:", error);
-      sendFormattedMessage(
-        zk,
-        chatId,
-        "*Somᥱthιng ιs ᥕrong, ᥴhᥱᥴk ιf ყoᥙr ᥴodᥱ ιs ᥣogιᥴᥲᥣ ᥲnd hᥲs thᥱ ᥴorrᥱᥴt sყntᥲx*",
-        ms
-      );
-    }
-  }
 );
