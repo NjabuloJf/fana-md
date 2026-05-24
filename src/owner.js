@@ -24,7 +24,7 @@ function formatRuntime(seconds) {
   return `${days > 0 ? days + "d " : ""}${hours > 0 ? hours + "h " : ""}${minutes > 0 ? minutes + "m " : ""}${secs}s`;
 }
 
-// ── Owner command with cards ─────────────────────────────────────────────
+// ── Owner command with cards and contact card ─────────────────────────────
 fana(
   {
     nomCom: "owner",
@@ -37,6 +37,25 @@ fana(
 
     // Send typing indicator
     await zk.sendPresenceUpdate('composing', dest);
+
+    // Send contact card first
+    const vcard = "BEGIN:VCARD\n" +
+      "VERSION:3.0\n" +
+      "FN:" + (conf.OWNER_NAME || "Njabulo JB") + "\n" +
+      "ORG:NJABULO MD;\n" +
+      "TEL;type=CELL;type=VOICE;waid=" + conf.NUMERO_OWNER + ":+" + conf.NUMERO_OWNER + "\n" +
+      "END:VCARD";
+
+    await zk.sendMessage(
+      dest,
+      {
+        contacts: {
+          displayName: conf.OWNER_NAME || "Njabulo JB",
+          contacts: [{ vcard }],
+        },
+      },
+      { quoted: ms }
+    );
 
     // Get current time
     const now = moment().tz("Africa/Garissa");
@@ -182,21 +201,7 @@ fana(
           },
         },
       },
-      { 
-        quoted: {
-          key: {
-            fromMe: false,
-            participant: `0@s.whatsapp.net`,
-            remoteJid: "status@broadcast"
-          },
-          message: {
-            contactMessage: {
-              displayName: "NJABULO MD",
-              vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Njabulo-Jb;BOT;;;\nFN:Njabulo-Jb\nitem1.TEL;waid=${conf.NUMERO_OWNER}:+${conf.NUMERO_OWNER}\nitem1.X-ABLabel:Bot\nEND:VCARD`
-            }
-          }
-        }
-      }
+      { quoted: ms }
     );
     
     await zk.relayMessage(dest, message.message, { messageId: message.key.id });
