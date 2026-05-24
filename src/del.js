@@ -15,6 +15,17 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
+const njabulox = [
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+
+];
+const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
+
 // ---------- Buttons ----------
 const buttons = [
   {
@@ -34,18 +45,14 @@ async function sendMessageWithButtons(zk, chatId, text, ms) {
       chatId,
       {
         interactiveMessage: {
-          header: { text: text },
+          image: { url: randomNjabulourl },
+          header: text,
           buttons: buttons,
           headerType: 1
         }
       },
-      { quoted: ms }
-    );
-  } catch (error) {
-    // Fallback to simple text if buttons fail
-    await zk.sendMessage(chatId, { text: text });
-  }
-}
+      });
+    }
 
 // ---------- Simple text message (fallback) ----------
 async function sendMessage(zk, chatId, text) {
