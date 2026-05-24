@@ -1,3 +1,4 @@
+
 const { fana } = require("../njabulo/fana");
 const config = require("../set");
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
@@ -15,48 +16,58 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
-const njabulox = [
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-
-];
-const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
-
 // ---------- Buttons ----------
 const buttons = [
   {
     name: "cta_url",
     buttonParamsJson: JSON.stringify({
-      display_text: "🌐 WA Channel",
-      id: "backup channel",
+      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
+      id: "back channel",
       url: config.GURL
-    }),
+
+    });
   },
 ];
 
-// ---------- Send message with buttons ----------
-async function sendMessageWithButtons(zk, chatId, text, ms) {
-  try {
-    await zk.sendMessage(
-      chatId,
-      {
-        interactiveMessage: {
-          image: { url: randomNjabulourl },
-          header: text,
-          buttons: buttons,
-          headerType: 1
-        }
-      },
-      });
-    }
+// ---------- Random image ----------
+const njabulox = [
+"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+];
+const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ---------- Simple text message (fallback) ----------
-async function sendMessage(zk, chatId, text) {
-  await zk.sendMessage(chatId, { text: text });
+// ---------- Helper to send the formatted message ----------
+async function sendFormattedMessage(zk, chatId, text, ms) {
+  await zk.sendMessage(
+    chatId,
+    {
+      interactiveMessage: {
+        image: { url: randomNjabulourl },
+        header: text,
+        buttons: buttons,
+        mentionedJid: [ms?.sender?.jid || ""],
+        headerType: 1,
+    },
+    {
+      quoted: {
+        key: {
+          fromMe: false,
+          participant: "0@s.whatsapp.net",
+          remoteJid: "status@broadcast",
+        },
+        message: {
+          contactMessage: {
+            displayName: "🟢online njᥲbᥙᥣo🍥",
+            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Njabulo-Jb;BOT;;;\nFN:Njabulo-Jb\nitem1.TEL;waid=26777821911:+26777821911\nitem1.X-ABLabel:Bot\nEND:VCARD`,
+          },
+        },
+      },
+    }
+  );
 }
 
 // ---------- Delete command ----------
@@ -75,10 +86,10 @@ fana(
     } = commandeOptions;
 
     if (!msgRepondu) {
-      return await sendMessageWithButtons(
+      return await sendFormattedMessage(
         zk,
         dest,
-        "⚠️ *Please reply to the message you want to delete.*",
+        "*Please mention the message to delete.*",
         ms
       );
     }
@@ -91,13 +102,12 @@ fana(
         id: ms.message.extendedTextMessage.contextInfo.stanzaId,
       };
       await zk.sendMessage(dest, { delete: key });
-      await sendMessageWithButtons(
+      await sendFormattedMessage(
         zk,
         dest,
-        "✅ *Message deleted successfully.*",
+        "*Message deleted successfully.*",
         ms
       );
-      return;
     }
 
     // Group delete (admin or super user)
@@ -111,25 +121,25 @@ fana(
             participant: ms.message.extendedTextMessage.contextInfo.participant,
           };
           await zk.sendMessage(dest, { delete: key });
-          await sendMessageWithButtons(
+          await sendFormattedMessage(
             zk,
             dest,
-            "✅ *Message deleted successfully.*",
+            "*Message deleted successfully.*",
             ms
           );
         } catch (e) {
-          await sendMessageWithButtons(
+          await sendFormattedMessage(
             zk,
             dest,
-            "❌ *I need admin rights to delete messages.*",
+            "*I need admin rights.*",
             ms
           );
         }
       } else {
-        await sendMessageWithButtons(
+        await sendFormattedMessage(
           zk,
           dest,
-          "❌ *Sorry, only group admins can delete messages.*",
+          "*Sorry, you are not an administrator of the group.*",
           ms
         );
       }
