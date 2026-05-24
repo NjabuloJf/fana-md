@@ -16,15 +16,37 @@ const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 // ── Helper function to fetch random Bible verse ────────────────────
 async function getRandomBibleVerse() {
   try {
-    const response = await axios.get('https://bible-api.deno.dev/api/verses/random', { timeout: 10000 });
-    const data = response.data;
+    const response = await axios.get('https://labs.bible.org/api/?passage=random&type=json', { timeout: 10000 });
+    const data = response.data[0];
     return {
       text: data.text,
-      reference: data.reference,
-      version: data.version || 'NIV'
+      reference: `${data.bookname} ${data.chapter}:${data.verse}`,
+      version: 'WEB'
     };
   } catch (error) {
     console.error("Bible API error:", error.message);
+    return null;
+  }
+}
+
+// ── Helper function to fetch specific Bible verse ────────────────────
+async function getSpecificBibleVerse(reference) {
+  try {
+    const response = await axios.get(`https://labs.bible.org/api/?passage=${encodeURIComponent(reference)}&type=json`, { timeout: 10000 });
+    const data = response.data;
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+    
+    const verse = data[0];
+    return {
+      text: verse.text,
+      reference: `${verse.bookname} ${verse.chapter}:${verse.verse}`,
+      version: 'WEB'
+    };
+  } catch (error) {
+    console.error("Specific verse error:", error.message);
     return null;
   }
 }
@@ -47,16 +69,9 @@ fana(
     // Check if user provided a specific verse reference
     if (arg && arg[0]) {
       const reference = arg.join(" ");
-      try {
-        const response = await axios.get(`https://bible-api.deno.dev/api/verses/${encodeURIComponent(reference)}`, { timeout: 10000 });
-        const data = response.data;
-        verse = {
-          text: data.text,
-          reference: data.reference,
-          version: data.version || 'NIV'
-        };
-      } catch (error) {
-        return repondre(`❌ *Verse not found*\n\nCould not find "${reference}". Please check the reference and try again.\n\nExample: \`.bible John 3:16\``);
+      verse = await getSpecificBibleVerse(reference);
+      if (!verse) {
+        return repondre(`❌ *Verse not found*\n\nCould not find "${reference}". Please check the reference and try again.\n\n📌 *Example:* \`.bible John 3:16\`\n\n📌 *Formats:*\n• John 3:16\n• Genesis 1:1\n• Psalm 23\n• Proverbs 3:5-6`);
       }
     } else {
       // Get random verse
@@ -155,10 +170,10 @@ fana(
         nativeFlowMessage: {
           buttons: [
             {
-              name: "cta_url",
+              name: "cta_copy",
               buttonParamsJson: JSON.stringify({
-                display_text: "🌐 More Verses",
-                url: "https://www.bible.com"
+                display_text: "📋 Copy Blessing",
+                copy_code: `May this verse bless your day!\n\n${verse.reference}\n"${verse.text}"\n\nShare this verse with others!`,
               }),
             },
           ],
