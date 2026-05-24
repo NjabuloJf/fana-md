@@ -17,12 +17,13 @@ const { default: axios } = require("axios");
 
 // ---------- Simple text message (NO BUTTONS) ----------
 async function sendMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, {
+  await zk.sendMessage(chatId, { 
           interactiveMessage: {
           header: text,
           buttons,
           headerType: 1
           }
+        }, { quoted: ms });
 }
 
 // ---------- Delete command ----------
