@@ -15,15 +15,41 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
-// ---------- Simple text message (NO BUTTONS) ----------
-async function sendMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, { 
-          interactiveMessage: {
-          header: text,
-          buttons,
+// ---------- Buttons ----------
+const buttons = [
+  {
+    name: "cta_url",
+    buttonParamsJson: JSON.stringify({
+      display_text: "🌐 WA Channel",
+      id: "backup channel",
+      url: config.GURL
+    }),
+  },
+];
+
+// ---------- Send message with buttons ----------
+async function sendMessageWithButtons(zk, chatId, text, ms) {
+  try {
+    await zk.sendMessage(
+      chatId,
+      {
+        interactiveMessage: {
+          header: { text: text },
+          buttons: buttons,
           headerType: 1
-          }
-        }, { quoted: ms });
+        }
+      },
+      { quoted: ms }
+    );
+  } catch (error) {
+    // Fallback to simple text if buttons fail
+    await zk.sendMessage(chatId, { text: text });
+  }
+}
+
+// ---------- Simple text message (fallback) ----------
+async function sendMessage(zk, chatId, text) {
+  await zk.sendMessage(chatId, { text: text });
 }
 
 // ---------- Delete command ----------
@@ -42,7 +68,7 @@ fana(
     } = commandeOptions;
 
     if (!msgRepondu) {
-      return await sendMessage(
+      return await sendMessageWithButtons(
         zk,
         dest,
         "⚠️ *Please reply to the message you want to delete.*",
@@ -58,7 +84,7 @@ fana(
         id: ms.message.extendedTextMessage.contextInfo.stanzaId,
       };
       await zk.sendMessage(dest, { delete: key });
-      await sendMessage(
+      await sendMessageWithButtons(
         zk,
         dest,
         "✅ *Message deleted successfully.*",
@@ -78,14 +104,14 @@ fana(
             participant: ms.message.extendedTextMessage.contextInfo.participant,
           };
           await zk.sendMessage(dest, { delete: key });
-          await sendMessage(
+          await sendMessageWithButtons(
             zk,
             dest,
             "✅ *Message deleted successfully.*",
             ms
           );
         } catch (e) {
-          await sendMessage(
+          await sendMessageWithButtons(
             zk,
             dest,
             "❌ *I need admin rights to delete messages.*",
@@ -93,7 +119,7 @@ fana(
           );
         }
       } else {
-        await sendMessage(
+        await sendMessageWithButtons(
           zk,
           dest,
           "❌ *Sorry, only group admins can delete messages.*",
