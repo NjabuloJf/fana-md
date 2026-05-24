@@ -1,602 +1,515 @@
 const { fana } = require('../njabulo/fana');
-const axios = require("axios")
+const axios = require("axios");
 let { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter');
-const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("../bdd/banUser");
-const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("../bdd/banGroup");
-const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("../bdd/onlyAdmin");
-const {removeSudoNumber,addSudoNumber,issudo} = require("../bdd/sudo");
-//const conf = require("../set");
-//const fs = require('fs');
-const sleep =  (ms) =>{
-  return new Promise((resolve) =>{ setTimeout (resolve, ms)})
-  
-  } ;
+const { isUserBanned, addUserToBanList, removeUserFromBanList } = require("../bdd/banUser");
+const { addGroupToBanList, isGroupBanned, removeGroupFromBanList } = require("../bdd/banGroup");
+const { isGroupOnlyAdmin, addGroupToOnlyAdminList, removeGroupFromOnlyAdminList } = require("../bdd/onlyAdmin");
+const { removeSudoNumber, addSudoNumber, issudo } = require("../bdd/sudo");
+const config = require("../set");
 
+// ── Random image list ─────────────────────────────────────────────
+const njabulox = [
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+];
+const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-  fana({ nomCom: "telesticker", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-    const { ms, repondre, arg, nomAuteurMessage, superUser } = commandeOptions;
-  
-    if (!superUser) {
-      repondre('Only Mods can use this command'); return;
-    }
-    //const apikey = conf.APILOLHUMAIN
-  
-   // if (apikey === null || apikey === 'null') { repondre('Veillez vérifier votre apikey ou si vous en avez pas , veiller crée un compte sur api.lolhuman.xyz et vous en procurer une.'); return; };
-  
-    if (!arg[0]) {
-      repondre("put a telegram sticker link ");
-      return;
-    }
-  
-    let lien = arg.join(' ');
-  
-    let name = lien.split('/addstickers/')[1] ;
-  
-    let api = 'https://api.telegram.org/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/getStickerSet?name=' + encodeURIComponent(packname) ;
-  
-    try {
-  
-      let stickers = await axios.get(api) ;
-  
-      let type = null ;
-  
-      if (stickers.data.result.is_animated === true ||stickers.data.result.is_video === true  ) {
-  
-          type = 'animated sticker'
-      } else {
-        type = 'not animated sticker'
-      }
-  
-      let msg = `   Popkid-stickers-dl
-      
-  *Name :* ${stickers.data.result.name}
-  *Type :* ${type} 
-  *Length :* ${(stickers.data.result.stickers).length}
-  
-      Downloading...`
-  
-      await  repondre(msg) ;
-  
-       for ( let i = 0 ; i < (stickers.data.result.stickers).length ; i++ ) {
-  
-          let file = await axios.get(`https://api.telegram.org/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/getFile?file_id=${stickers.data.result.stickers[i].file_id}`) ;
-  
-          let buffer = await axios({
-            method: 'get',  // Utilisez 'get' pour télécharger le fichier
-            url:`https://api.telegram.org/file/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/${file.data.result.file_path}` ,
-            responseType: 'arraybuffer',  // Définissez le type de réponse sur 'stream' pour gérer un flux de données
-          })
-  
-  
-          const sticker = new Sticker(buffer.data, {
-            pack: nomAuteurMessage,
-            author: "Rahmani",
-            type: StickerTypes.FULL,
-            categories: ['🤩', '🎉'],
-            id: '12345',
-            quality: 50,
-            background: '#000000'
-          });
-    
-          const stickerBuffer = await sticker.toBuffer(); // Convertit l'autocollant en tampon (Buffer)
-    
-          await zk.sendMessage(
-            dest,
-            {
-              sticker: stickerBuffer, // Utilisez le tampon (Buffer) directement dans l'objet de message
-            },
-            { quoted: ms }
-          ); 
-       }
-  
-    } catch (e) {
-      repondre("we got an error \n", e);
-    }
-  });
+// ── Base button definition ────────────────────────────────────────
+const buttons = [
+    {
+        name: "cta_url",
+        buttonParamsJson: JSON.stringify({
+            display_text: "🌐 WA Channel",
+            id: "backup channel",
+            url: config.GURL,
+        }),
+    },
+];
 
-fana({ nomCom: "crew", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-  const { ms, repondre, arg, auteurMessage, superUser, auteurMsgRepondu, msgRepondu } = commandeOptions;
-
-  if (!superUser) { repondre("only modds can use this command"); return };
-
-  if (!arg[0]) { repondre('Please enter the name of the group to create'); return };
-  if (!msgRepondu) { repondre('Please mention a member added '); return; }
-
-  const name = arg.join(" ")
-
-  const group = await zk.groupCreate(name, [auteurMessage, auteurMsgRepondu])
-  console.log("created group with id: " + group.gid)
-  zk.sendMessage(group.id, { text: `Bienvenue dans ${name}` })
-
-});
-
-fana({ nomCom: "leave", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { ms, repondre, verifGroupe, msgRepondu, verifAdmin, superUser, auteurMessage } = commandeOptions;
-  if (!verifGroupe) { repondre("group only"); return };
-  if (!superUser) {
-    repondre("order reserved for the owner");
-    return;
-  }
-
-  await zk.groupLeave(dest)
-});
-
-fana({ nomCom: "join", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { arg, ms, repondre, verifGroupe, msgRepondu, verifAdmin, superUser, auteurMessage } = commandeOptions;
-
-  if (!superUser) {
-    repondre("command reserved for the bot owner");
-    return;
-  }
-  let result = arg[0].split('https://chat.whatsapp.com/')[1] ;
- await zk.groupAcceptInvite(result) ;
-  
-      repondre(`Succes`).catch((e)=>{
-  repondre('Unknown error')
-})
-
-})
-
-
-fana({ nomCom: "jid", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { arg, ms, repondre, verifGroupe, msgRepondu, verifAdmin, superUser, auteurMessage,auteurMsgRepondu } = commandeOptions;
-
-         if (!superUser) {
-    repondre("command reserved for the bot owner");
-    return;
-  }
-              if(!msgRepondu) {
-                jid = dest
-              } else {
-                jid = auteurMsgRepondu
-              } ;
-   zk.sendMessage(dest,{text : jid },{quoted:ms});
-
-        }) ;
-
-  
-
-fana({ nomCom: "block", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { arg, ms, repondre, verifGroupe, msgRepondu, verifAdmin, superUser, auteurMessage,auteurMsgRepondu } = commandeOptions;
-
-         if (!superUser) {
-    repondre("command reserved for the bot owner");
-    return;
-  }
-             
-              if(!msgRepondu) { 
-                if(verifGroupe) {
-                  repondre('Be sure to mention the person to block'); return
-                } ;
-                jid = dest
-
-                 await zk.updateBlockStatus(jid, "block")
-    .then( repondre('succes')) 
-              } else {
-                jid = auteurMsgRepondu
-             await zk.updateBlockStatus(jid, "block")
-    .then( repondre('succes'))   } ;
-
-  });
-
-fana({ nomCom: "unblock", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { arg, ms, repondre, verifGroupe, msgRepondu, verifAdmin, superUser, auteurMessage,auteurMsgRepondu } = commandeOptions;
-
-         if (!superUser) {
-    repondre("command reserved for the bot owner");
-    return;
-  }
-              if(!msgRepondu) { 
-                if(verifGroupe) {
-                  repondre('Please mention the person to be unlocked'); return
-                } ;
-                jid = dest
-
-                 await zk.updateBlockStatus(jid, "unblock")
-    .then( repondre('succes')) 
-              } else {
-                jid = auteurMsgRepondu
-             await zk.updateBlockStatus(jid, "unblock")
-    .then( repondre('succes'))   } ;
-  
-    });
-
-fana({ nomCom: "autoll", categorie: 'Group', reaction: "📣" }, async (dest, zk, commandeOptions) => {
-
-  const { auteurMessage ,ms, repondre, arg, verifGroupe, nomGroupe, infosGroupe, nomAuteurMessage, verifAdmin, superUser,prefixe } = commandeOptions
-
-  const metadata = await zk.groupMetadata(dest) ;
- 
-
-  if (!verifGroupe) { repondre("✋🏿 ✋🏿this command is reserved for groups ❌"); return; }
-  if (superUser || auteurMessage == metadata.owner) { 
-  
-   repondre('No_admin members will be removed from the group. You have 5 seconds to reclaim your choice by restarting the bot.') ;
-   await sleep(5000)
-  let membresGroupe = verifGroupe ? await infosGroupe.participants : "";
-try {
-  let users = membresGroupe.filter((member) => !member.admin)
-
-  for (const membre of users) {
-
-    
-
-   
-    
-await zk.groupParticipantsUpdate(
-        dest, 
-        [membre.id],
-        "remove" 
-    ) 
-    await sleep(500)
-    
-  }  
-} catch (e) {repondre("I need administration rights")} } else {
-  repondre("Order reserved for the group owner for security reasons"); return
+// ── Helper that sends an interactive message with buttons ─────
+async function sendFormattedMessage(zk, chatId, text, ms) {
+    await zk.sendMessage(
+        chatId,
+        {
+            interactiveMessage: {
+                header: text,
+                buttons: buttons,
+                headerType: 1
+            }
+        },
+        { quoted: ms }
+    );
 }
+
+const sleep = (ms) => {
+    return new Promise((resolve) => { setTimeout(resolve, ms) });
+};
+
+// ── Telesticker command ─────────────────────────────────────────────
+fana({ nomCom: "telesticker", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, arg, nomAuteurMessage, superUser } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Only Mods can use this command", ms);
+    }
+
+    if (!arg[0]) {
+        return sendFormattedMessage(zk, dest, "📌 Put a telegram sticker link", ms);
+    }
+
+    let lien = arg.join(' ');
+    let name = lien.split('/addstickers/')[1];
+
+    let api = 'https://api.telegram.org/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/getStickerSet?name=' + encodeURIComponent(name);
+
+    try {
+        let stickers = await axios.get(api);
+
+        let type = null;
+        if (stickers.data.result.is_animated === true || stickers.data.result.is_video === true) {
+            type = 'animated sticker';
+        } else {
+            type = 'not animated sticker';
+        }
+
+        let msg = `🎨 *Telegram Sticker Downloader*
+        
+📛 *Name:* ${stickers.data.result.name}
+📌 *Type:* ${type}
+📊 *Length:* ${(stickers.data.result.stickers).length}
+
+⏳ Downloading...`;
+
+        await sendFormattedMessage(zk, dest, msg, ms);
+
+        for (let i = 0; i < (stickers.data.result.stickers).length; i++) {
+            let file = await axios.get(`https://api.telegram.org/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/getFile?file_id=${stickers.data.result.stickers[i].file_id}`);
+
+            let buffer = await axios({
+                method: 'get',
+                url: `https://api.telegram.org/file/bot891038791:AAHWB1dQd-vi0IbH2NjKYUk-hqQ8rQuzPD4/${file.data.result.file_path}`,
+                responseType: 'arraybuffer',
+            });
+
+            const sticker = new Sticker(buffer.data, {
+                pack: nomAuteurMessage,
+                author: "NJABULO",
+                type: StickerTypes.FULL,
+                categories: ['🤩', '🎉'],
+                id: '12345',
+                quality: 50,
+                background: '#000000'
+            });
+
+            const stickerBuffer = await sticker.toBuffer();
+            await zk.sendMessage(dest, { sticker: stickerBuffer }, { quoted: ms });
+        }
+    } catch (e) {
+        console.error(e);
+        await sendFormattedMessage(zk, dest, "❌ Error downloading stickers", ms);
+    }
 });
 
+// ── Crew command ─────────────────────────────────────────────
+fana({ nomCom: "crew", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, arg, auteurMessage, superUser, auteurMsgRepondu, msgRepondu } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Only mods can use this command", ms);
+    }
+    if (!arg[0]) {
+        return sendFormattedMessage(zk, dest, "📌 Please enter the name of the group to create", ms);
+    }
+    if (!msgRepondu) {
+        return sendFormattedMessage(zk, dest, "📌 Please mention a member to add", ms);
+    }
+
+    const name = arg.join(" ");
+    const group = await zk.groupCreate(name, [auteurMessage, auteurMsgRepondu]);
+    console.log("created group with id: " + group.gid);
+    await sendFormattedMessage(zk, group.id, `🎉 Welcome to ${name}`, ms);
+});
+
+// ── Leave command ─────────────────────────────────────────────
+fana({ nomCom: "leave", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, verifGroupe, superUser } = commandeOptions;
+    
+    if (!verifGroupe) {
+        return sendFormattedMessage(zk, dest, "❌ Group only", ms);
+    }
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Command reserved for the owner", ms);
+    }
+    await zk.groupLeave(dest);
+    await sendFormattedMessage(zk, dest, "👋 Goodbye!", ms);
+});
+
+// ── Join command ─────────────────────────────────────────────
+fana({ nomCom: "join", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { arg, ms, repondre, superUser } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Command reserved for the bot owner", ms);
+    }
+    let result = arg[0].split('https://chat.whatsapp.com/')[1];
+    await zk.groupAcceptInvite(result);
+    await sendFormattedMessage(zk, dest, "✅ Successfully joined the group", ms);
+});
+
+// ── Jid command ─────────────────────────────────────────────
+fana({ nomCom: "jid", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, msgRepondu, superUser, auteurMsgRepondu } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Command reserved for the bot owner", ms);
+    }
+    let jid = msgRepondu ? auteurMsgRepondu : dest;
+    await sendFormattedMessage(zk, dest, `📌 JID: ${jid}`, ms);
+});
+
+// ── Block command ─────────────────────────────────────────────
+fana({ nomCom: "block", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, verifGroupe, msgRepondu, superUser, auteurMsgRepondu } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Command reserved for the bot owner", ms);
+    }
+    let jid = msgRepondu ? auteurMsgRepondu : dest;
+    if (!msgRepondu && verifGroupe) {
+        return sendFormattedMessage(zk, dest, "📌 Be sure to mention the person to block", ms);
+    }
+    await zk.updateBlockStatus(jid, "block");
+    await sendFormattedMessage(zk, dest, "✅ User blocked successfully", ms);
+});
+
+// ── Unblock command ─────────────────────────────────────────────
+fana({ nomCom: "unblock", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, verifGroupe, msgRepondu, superUser, auteurMsgRepondu } = commandeOptions;
+
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ Command reserved for the bot owner", ms);
+    }
+    let jid = msgRepondu ? auteurMsgRepondu : dest;
+    if (!msgRepondu && verifGroupe) {
+        return sendFormattedMessage(zk, dest, "📌 Please mention the person to unblock", ms);
+    }
+    await zk.updateBlockStatus(jid, "unblock");
+    await sendFormattedMessage(zk, dest, "✅ User unblocked successfully", ms);
+});
+
+// ── Autoll command (Remove non-admin members) ─────────────────────────────
+fana({ nomCom: "autoll", categorie: 'Group', reaction: "📣" }, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, verifGroupe, infosGroupe, superUser } = commandeOptions;
+    const metadata = await zk.groupMetadata(dest);
+
+    if (!verifGroupe) {
+        return sendFormattedMessage(zk, dest, "❌ This command is reserved for groups", ms);
+    }
+    if (superUser || auteurMessage == metadata.owner) {
+        await sendFormattedMessage(zk, dest, "⚠️ Non-admin members will be removed from the group. You have 5 seconds to cancel.", ms);
+        await sleep(5000);
+        let membresGroupe = verifGroupe ? await infosGroupe.participants : "";
+        try {
+            let users = membresGroupe.filter((member) => !member.admin);
+            for (const membre of users) {
+                await zk.groupParticipantsUpdate(dest, [membre.id], "remove");
+                await sleep(500);
+            }
+            await sendFormattedMessage(zk, dest, "✅ All non-admin members have been removed", ms);
+        } catch (e) {
+            await sendFormattedMessage(zk, dest, "❌ I need administration rights", ms);
+        }
+    } else {
+        await sendFormattedMessage(zk, dest, "❌ Order reserved for the group owner", ms);
+    }
+});
+
+// ── Ban command ─────────────────────────────────────────────
 fana({
     nomCom: 'ban',
     categorie: 'Mods',
 }, async (dest, zk, commandeOptions) => {
+    const { ms, arg, auteurMsgRepondu, msgRepondu, repondre, prefixe, superUser } = commandeOptions;
 
-    const { ms, arg, auteurMsgRepondu, msgRepondu , repondre,prefixe,superUser } = commandeOptions;
-
-    
-  if (!superUser) {repondre('This command is only allowed to the bot owner') ; return}
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ This command is only allowed to the bot owner", ms);
+    }
     if (!arg[0]) {
-        // Function 'reply' must be defined to send a response.
-        repondre(`mention the victim by typing ${prefixe}ban add/del to ban/unban the victim`);
-        return;
-    };
+        return sendFormattedMessage(zk, dest, `📌 Mention the victim by typing ${prefixe}ban add/del to ban/unban`, ms);
+    }
 
     if (msgRepondu) {
         switch (arg.join(' ')) {
             case 'add':
-
-           
-   let youareban = await isUserBanned(auteurMsgRepondu)
-           if(youareban) {repondre('This user is already banned') ; return}
-               
-           addUserToBanList(auteurMsgRepondu)
+                let youareban = await isUserBanned(auteurMsgRepondu);
+                if (youareban) {
+                    return sendFormattedMessage(zk, dest, "❌ This user is already banned", ms);
+                }
+                addUserToBanList(auteurMsgRepondu);
+                await sendFormattedMessage(zk, dest, "✅ User has been banned", ms);
                 break;
-                case 'del':
-                  let estbanni = await isUserBanned(auteurMsgRepondu)
-    if (estbanni) {
-        
-        removeUserFromBanList(auteurMsgRepondu);
-        repondre('This user is now free.');
-    } else {
-      repondre('This user is not banned.');
-    }
-    break;
-
-
+            case 'del':
+                let estbanni = await isUserBanned(auteurMsgRepondu);
+                if (estbanni) {
+                    removeUserFromBanList(auteurMsgRepondu);
+                    await sendFormattedMessage(zk, dest, "✅ User has been unbanned", ms);
+                } else {
+                    await sendFormattedMessage(zk, dest, "❌ This user is not banned", ms);
+                }
+                break;
             default:
-                repondre('bad option');
+                await sendFormattedMessage(zk, dest, "❌ Bad option. Use 'add' or 'del'", ms);
                 break;
         }
     } else {
-        repondre('mention the victim')
-        return;
+        await sendFormattedMessage(zk, dest, "📌 Mention the victim", ms);
     }
 });
 
-
-
+// ── Bangroup command ─────────────────────────────────────────────
 fana({
     nomCom: 'bangroup',
     categorie: 'Mods',
 }, async (dest, zk, commandeOptions) => {
+    const { ms, arg, repondre, prefixe, superUser, verifGroupe } = commandeOptions;
 
-    const { ms, arg, auteurMsgRepondu, msgRepondu , repondre,prefixe,superUser,verifGroupe } = commandeOptions;
-
-    
-  if (!superUser) {repondre('This command is only allowed to the bot owner') ; return};
-  if(!verifGroupe) {repondre('order reservation for groups' ) ; return };
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ This command is only allowed to the bot owner", ms);
+    }
+    if (!verifGroupe) {
+        return sendFormattedMessage(zk, dest, "❌ This command is for groups only", ms);
+    }
     if (!arg[0]) {
-        // Function 'reply' must be defined to send a response.
-        repondre(`type ${prefix}bangroup add/del to ban/unban the group`);
-        return;
-    };
-    const groupalreadyBan = await isGroupBanned(dest)
+        return sendFormattedMessage(zk, dest, `📌 Type ${prefixe}bangroup add/del to ban/unban the group`, ms);
+    }
+
+    const groupalreadyBan = await isGroupBanned(dest);
+
+    switch (arg.join(' ')) {
+        case 'add':
+            if (groupalreadyBan) {
+                return sendFormattedMessage(zk, dest, "❌ This group is already banned", ms);
+            }
+            addGroupToBanList(dest);
+            await sendFormattedMessage(zk, dest, "✅ Group has been banned", ms);
+            break;
+        case 'del':
+            if (groupalreadyBan) {
+                removeGroupFromBanList(dest);
+                await sendFormattedMessage(zk, dest, "✅ Group has been unbanned", ms);
+            } else {
+                await sendFormattedMessage(zk, dest, "❌ This group is not banned", ms);
+            }
+            break;
+        default:
+            await sendFormattedMessage(zk, dest, "❌ Bad option. Use 'add' or 'del'", ms);
+            break;
+    }
+});
+
+// ── Onlyadmin command ─────────────────────────────────────────────
+fana({
+    nomCom: 'onlyadmin',
+    categorie: 'Group',
+}, async (dest, zk, commandeOptions) => {
+    const { ms, arg, repondre, prefixe, superUser, verifGroupe, verifAdmin } = commandeOptions;
+
+    if (superUser || verifAdmin) {
+        if (!verifGroupe) {
+            return sendFormattedMessage(zk, dest, "❌ This command is for groups only", ms);
+        }
+        if (!arg[0]) {
+            return sendFormattedMessage(zk, dest, `📌 Type ${prefixe}onlyadmin add/del to activate/deactivate`, ms);
+        }
+
+        const groupalreadyBan = await isGroupOnlyAdmin(dest);
 
         switch (arg.join(' ')) {
             case 'add':
-
-           
-
-            if(groupalreadyBan) {repondre('This group is already banned') ; return}
-               
-            addGroupToBanList(dest)
-
+                if (groupalreadyBan) {
+                    return sendFormattedMessage(zk, dest, "❌ This group is already in onlyadmin mode", ms);
+                }
+                addGroupToOnlyAdminList(dest);
+                await sendFormattedMessage(zk, dest, "✅ Onlyadmin mode activated", ms);
                 break;
-                case 'del':
-                      
-    if (groupalreadyBan) {
-      removeGroupFromBanList(dest)
-      repondre('This group is now free.');
-        
-    } else {
-       
-      repondre('This group is not banned.');
-    }
-    break;
-
-
+            case 'del':
+                if (groupalreadyBan) {
+                    removeGroupFromOnlyAdminList(dest);
+                    await sendFormattedMessage(zk, dest, "✅ Onlyadmin mode deactivated", ms);
+                } else {
+                    await sendFormattedMessage(zk, dest, "❌ This group is not in onlyadmin mode", ms);
+                }
+                break;
             default:
-                repondre('bad option');
+                await sendFormattedMessage(zk, dest, "❌ Bad option. Use 'add' or 'del'", ms);
                 break;
         }
-    
+    } else {
+        await sendFormattedMessage(zk, dest, "❌ You are not entitled to this order", ms);
+    }
 });
 
-
+// ── Sudo command ─────────────────────────────────────────────
 fana({
-  nomCom: 'onlyadmin',
-  categorie: 'Group',
+    nomCom: 'sudo',
+    categorie: 'Mods',
 }, async (dest, zk, commandeOptions) => {
+    const { ms, arg, auteurMsgRepondu, msgRepondu, repondre, prefixe, superUser } = commandeOptions;
 
-  const { ms, arg, auteurMsgRepondu, msgRepondu , repondre,prefixe,superUser,verifGroupe , verifAdmin } = commandeOptions;
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ This command is only allowed to the bot owner", ms);
+    }
+    if (!arg[0]) {
+        return sendFormattedMessage(zk, dest, `📌 Mention the person by typing ${prefixe}sudo add/del`, ms);
+    }
 
-  
-if (superUser || verifAdmin) { 
-if(!verifGroupe) {repondre('order reservation for groups' ) ; return };
-  if (!arg[0]) {
-      // Function 'reply' must be defined to send a response.
-      repondre(`type ${prefix}onlyadmin add/del to ban/unban the group`);
-      return;
-  };
-  const groupalreadyBan = await isGroupOnlyAdmin(dest)
-
-      switch (arg.join(' ')) {
-          case 'add':
-
-         
-
-          if(groupalreadyBan) {repondre('This group is already in onlyadmin mode') ; return}
-             
-          addGroupToOnlyAdminList(dest)
-
-              break;
-              case 'del':
-                    
-  if (groupalreadyBan) {
-    removeGroupFromOnlyAdminList(dest)
-    repondre('This group is now free.');
-      
-  } else {
-     
-    repondre('This group is not in onlyadmin mode.');
-  }
-  break;
-
-
-          default:
-              repondre('bad option');
-              break;
-      }
-} else { repondre('You are not entitled to this order')}
-});
-
-fana({
-  nomCom: 'sudo',
-  categorie: 'Mods',
-}, async (dest, zk, commandeOptions) => {
-
-  const { ms, arg, auteurMsgRepondu, msgRepondu , repondre,prefixe,superUser } = commandeOptions;
-
-  
-if (!superUser) {repondre('This command is only allowed to the bot owner') ; return}
-  if (!arg[0]) {
-      // Function 'reply' must be defined to send a response.
-      repondre(`mention the person by typing ${prefix}sudo add/del`);
-      return;
-  };
-
-  if (msgRepondu) {
-      switch (arg.join(' ')) {
-          case 'add':
-
-         
- let youaresudo = await issudo(auteurMsgRepondu)
-         if(youaresudo) {repondre('This user is already sudo') ; return}
-             
-         addSudoNumber(auteurMsgRepondu)
-         repondre('succes')
-              break;
-              case 'del':
-                let estsudo = await issudo(auteurMsgRepondu)
-  if (estsudo) {
-      
-      removeSudoNumber(auteurMsgRepondu);
-      repondre('This user is now non-sudo.');
-  } else {
-    repondre('This user is not sudo.');
-  }
-  break;
-
-
-          default:
-              repondre('bad option');
-              break;
-      }
-  } else {
-      repondre('mention the victim')
-      return;
-  }
-});
-
-
-fana({ nomCom: "save", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
-
-  const { repondre , msgRepondu , superUser, auteurMessage } = commandeOptions;
-  
-    if ( superUser) { 
-  
-      if(msgRepondu) {
-
-        console.log(msgRepondu) ;
-
-        let msg ;
-  
-        if (msgRepondu.imageMessage) {
-  
-          
-  
-       let media  = await zk.downloadAndSaveMediaMessage(msgRepondu.imageMessage) ;
-       // console.log(msgRepondu) ;
-       msg = {
-  
-         image : { url : media } ,
-         caption : msgRepondu.imageMessage.caption,
-         
-       }
-      
-  
-        } else if (msgRepondu.videoMessage) {
-  
-          let media  = await zk.downloadAndSaveMediaMessage(msgRepondu.videoMessage) ;
-  
-          msg = {
-  
-            video : { url : media } ,
-            caption : msgRepondu.videoMessage.caption,
-            
-          }
-  
-        } else if (msgRepondu.audioMessage) {
-      
-          let media  = await zk.downloadAndSaveMediaMessage(msgRepondu.audioMessage) ;
-         
-          msg = {
-     
-            audio : { url : media } ,
-            mimetype:'audio/mp4',
-             }     
-          
-        } else if (msgRepondu.stickerMessage) {
-  
-      
-          let media  = await zk.downloadAndSaveMediaMessage(msgRepondu.stickerMessage)
-  
-          let stickerMess = new Sticker(media, {
-            pack: 'RAHMANI-MD',
-            type: StickerTypes.CROPPED,
-            categories: ["🤩", "🎉"],
-            id: "12345",
-            quality: 70,
-            background: "transparent",
-          });
-          const stickerBuffer2 = await stickerMess.toBuffer();
-         
-          msg = { sticker: stickerBuffer2}
-  
-  
-        }  else {
-            msg = {
-               text : msgRepondu.conversation,
-            }
+    if (msgRepondu) {
+        switch (arg.join(' ')) {
+            case 'add':
+                let youaresudo = await issudo(auteurMsgRepondu);
+                if (youaresudo) {
+                    return sendFormattedMessage(zk, dest, "❌ This user is already sudo", ms);
+                }
+                addSudoNumber(auteurMsgRepondu);
+                await sendFormattedMessage(zk, dest, "✅ User has been added to sudo list", ms);
+                break;
+            case 'del':
+                let estsudo = await issudo(auteurMsgRepondu);
+                if (estsudo) {
+                    removeSudoNumber(auteurMsgRepondu);
+                    await sendFormattedMessage(zk, dest, "✅ User has been removed from sudo list", ms);
+                } else {
+                    await sendFormattedMessage(zk, dest, "❌ This user is not sudo", ms);
+                }
+                break;
+            default:
+                await sendFormattedMessage(zk, dest, "❌ Bad option. Use 'add' or 'del'", ms);
+                break;
         }
-  
-      zk.sendMessage(auteurMessage,msg)
-  
-      } else { repondre('Mention the message that you want to save') }
-  
-  } else {
-    repondre('only mods can use this command')
-  }
-  
+    } else {
+        await sendFormattedMessage(zk, dest, "📌 Mention the victim", ms);
+    }
+});
 
-  })
-;
+// ── Save command ─────────────────────────────────────────────
+fana({ nomCom: "save", categorie: "Mods" }, async (dest, zk, commandeOptions) => {
+    const { repondre, msgRepondu, superUser, auteurMessage, ms } = commandeOptions;
 
+    if (superUser) {
+        if (msgRepondu) {
+            console.log(msgRepondu);
+            let msg;
 
+            if (msgRepondu.imageMessage) {
+                let media = await zk.downloadAndSaveMediaMessage(msgRepondu.imageMessage);
+                msg = {
+                    image: { url: media },
+                    caption: msgRepondu.imageMessage.caption,
+                }
+            } else if (msgRepondu.videoMessage) {
+                let media = await zk.downloadAndSaveMediaMessage(msgRepondu.videoMessage);
+                msg = {
+                    video: { url: media },
+                    caption: msgRepondu.videoMessage.caption,
+                }
+            } else if (msgRepondu.audioMessage) {
+                let media = await zk.downloadAndSaveMediaMessage(msgRepondu.audioMessage);
+                msg = {
+                    audio: { url: media },
+                    mimetype: 'audio/mp4',
+                }
+            } else if (msgRepondu.stickerMessage) {
+                let media = await zk.downloadAndSaveMediaMessage(msgRepondu.stickerMessage);
+                let stickerMess = new Sticker(media, {
+                    pack: 'NJABULO-MD',
+                    type: StickerTypes.CROPPED,
+                    categories: ["🤩", "🎉"],
+                    id: "12345",
+                    quality: 70,
+                    background: "transparent",
+                });
+                const stickerBuffer2 = await stickerMess.toBuffer();
+                msg = { sticker: stickerBuffer2 }
+            } else {
+                msg = { text: msgRepondu.conversation }
+            }
+            await zk.sendMessage(auteurMessage, msg);
+            await sendFormattedMessage(zk, dest, "✅ Message saved successfully", ms);
+        } else {
+            await sendFormattedMessage(zk, dest, "📌 Mention the message that you want to save", ms);
+        }
+    } else {
+        await sendFormattedMessage(zk, dest, "❌ Only mods can use this command", ms);
+    }
+});
+
+// ── Mention command ─────────────────────────────────────────────
 fana({
-  nomCom : 'mention',
-  categorie : 'Mods',
-} , async (dest,zk,commandeOptions) => {
+    nomCom: 'mention',
+    categorie: 'Mods',
+}, async (dest, zk, commandeOptions) => {
+    const { ms, repondre, superUser, arg } = commandeOptions;
 
- const {ms , repondre ,superUser , arg} = commandeOptions ;
+    if (!superUser) {
+        return sendFormattedMessage(zk, dest, "❌ You do not have the rights for this command", ms);
+    }
 
- if (!superUser) {repondre('you do not have the rights for this command') ; return}
+    const mbdd = require('../bdd/mention');
+    let alldata = await mbdd.recupererToutesLesValeurs();
+    data = alldata[0];
 
- const mbdd = require('../bdd/mention') ;
+    if (!arg || arg.length < 1) {
+        let etat;
+        if (alldata.length === 0) {
+            return sendFormattedMessage(zk, dest, `📌 To activate or modify the mention; follow this syntax: mention link type message
+The different types are audio, video, image, and sticker.
+Example: mention https://static.animecorner.me/2023/08/op2.jpg image Hi, my name is popkid`, ms);
+        }
+        if (data.status == 'non') {
+            etat = 'Deactivated';
+        } else {
+            etat = 'Activated';
+        }
+        mtype = data.type || 'no data';
+        url = data.url || 'no data';
 
- let alldata = await  mbdd.recupererToutesLesValeurs() ;
-  data = alldata[0] ;
-    
-
- if(!arg || arg.length < 1) { 
-
-  let etat ;
-
-  if (alldata.length === 0 ) { repondre(`To activate or modify the mention; follow this syntax: mention link type message
-  The different types are audio, video, image, and sticker.
-  Example: mention https://static.animecorner.me/2023/08/op2.jpg image Hi, my name is popkid`) ; return}
-
-      if(data.status == 'non') {
-          etat = 'Desactived'
-      } else {
-        etat = 'Actived' ;
-      }
-      
-      mtype = data.type || 'no data' ;
-
-      url = data.url || 'no data' ;
-
-
-      let msg = `Status: ${etat}
+        let msg = `📌 *Mention Settings*
+        
+Status: ${etat}
 Type: ${mtype}
 Link: ${url}
 
 *Instructions:*
-
 To activate or modify the mention, follow this syntax: mention link type message
 The different types are audio, video, image, and sticker.
 Example: mention https://static.animecorner.me/2023/08/op2.jpg image Hi, my name is popkid
 
 To stop the mention, use mention stop`;
 
-    repondre(msg) ;
+        await sendFormattedMessage(zk, dest, msg, ms);
+        return;
+    }
 
-    return ;
-          }
-
- if(arg.length >= 2) {
-   
-      if(arg[0].startsWith('http') && (arg[1] == 'image' || arg[1] == 'audio' || arg[1] == 'video' || arg[1] == 'sticker')) {
-
-            let args = [] ;
-              for (i = 2 ; i < arg.length ; i++) {
-                  args.push(arg[i]) ;
-              }
-          let message = args.join(' ') || '' ;
-
-              await mbdd.addOrUpdateDataInMention(arg[0],arg[1],message);
-              await mbdd.modifierStatusId1('oui')
-              .then(() =>{
-                  repondre('mention updated') ;
-              })
+    if (arg.length >= 2) {
+        if (arg[0].startsWith('http') && (arg[1] == 'image' || arg[1] == 'audio' || arg[1] == 'video' || arg[1] == 'sticker')) {
+            let args = [];
+            for (i = 2; i < arg.length; i++) {
+                args.push(arg[i]);
+            }
+            let message = args.join(' ') || '';
+            await mbdd.addOrUpdateDataInMention(arg[0], arg[1], message);
+            await mbdd.modifierStatusId1('oui');
+            await sendFormattedMessage(zk, dest, "✅ Mention updated successfully", ms);
         } else {
-          repondre(`*Instructions:*
-          To activate or modify the mention, follow this syntax: mention link type message. The different types are audio, video, image, and sticker.`)
-     } 
-    
-    } else if ( arg.length === 1 && arg[0] == 'stop') {
-
-        await mbdd.modifierStatusId1('non')
-        .then(() =>{
-              repondre(' mention stopped ') ;
-        })
+            await sendFormattedMessage(zk, dest, `📌 *Instructions:* To activate or modify the mention, follow this syntax: mention link type message. The different types are audio, video, image, and sticker.`, ms);
+        }
+    } else if (arg.length === 1 && arg[0] == 'stop') {
+        await mbdd.modifierStatusId1('non');
+        await sendFormattedMessage(zk, dest, "✅ Mention stopped", ms);
+    } else {
+        await sendFormattedMessage(zk, dest, "📌 Please make sure to follow the instructions", ms);
     }
-    else {
-        repondre(`Please make sure to follow the instructions`) ;
-    }
-})
+});
