@@ -6,24 +6,17 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
 
 // ── Random image for the header (used only for error messages) ─────
 const njabulox = [
-  "",
-  "https://files.catbox.moe/xjeyjh.jpg",
-  "https://files.catbox.moe/mh36c7.jpg",
-  "https://files.catbox.moe/u6v5ir.jpg",
-  "https://files.catbox.moe/bnb3vx.jpg",
+"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
 // ── Base button definition ─────────────────────────────────
 const baseButtons = [
-  {
-    name: "cta_url",
-    buttonParamsJson: JSON.stringify({
-      display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
-      id: "backup channel",
-      url: config.GURL
-    }),
-  },
   {
     name: "cta_copy",
     buttonParamsJson: JSON.stringify({
@@ -51,23 +44,6 @@ async function sendImageWithCopy(zk, chatId, imageUrl, ms) {
         header: "📸 Image",
         buttons,
         headerType: 1,
-        contextInfo: {
-          mentionedJid: [ms?.sender?.jid || ""],
-          externalAdReply: {
-            title: "👥 message settings owner control",
-            mediaType: 1,
-            previewType: 0,
-            thumbnailUrl: imageUrl,
-            renderLargerThumbnail: false,
-          },
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363399999197102@newsletter",
-            newsletterName: "╭••➤®Njabulo Jb",
-            serverMessageId: 143,
-          },
-          forwardingScore: 999,
-        },
       },
     },
     { quoted: ms }
