@@ -22,7 +22,6 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
     chatId,
     {
       interactiveMessage: {
-        header: { title: "📥 Facebook donlowad", hasMediaAttachment: false },
         body: text,
         buttons: buttons,
         headerType: 1
@@ -58,8 +57,11 @@ fana({
     // Send thumbnail first
     if (result.thumbnail) {
       await zk.sendMessage(dest, {
-        image: { url: result.thumbnail },
-        caption: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`
+      image: { url: result.thumbnail },
+       interactiveMessage: {
+        header:  `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`,
+        buttons: buttons,
+        headerType: 1
       }, { quoted: ms });
     }
     
