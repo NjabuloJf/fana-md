@@ -1,7 +1,7 @@
 const { fana } = require("../njabulo/fana");
 const gis = require("g-i-s");
 const axios = require("axios");
-const conf = require(__dirname + "/../set");
+const config = require(__dirname + "/../set");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
 // Google Custom Search API credentials
@@ -11,10 +11,12 @@ const GCSE_CX = 'baf9bdb0c631236e5';
 // ── Random image list ─────────────────────────────────────────────
 const njabulox = [
   "", 
-  "https://files.catbox.moe/xjeyjh.jpg",
-  "https://files.catbox.moe/mh36c7.jpg",
-  "https://files.catbox.moe/u6v5ir.jpg",
-  "https://files.catbox.moe/bnb3vx.jpg",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
@@ -25,27 +27,14 @@ const baseButtons = [
     buttonParamsJson: JSON.stringify({
       display_text: "Visit Website",
       id: "backup channel",
-      url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u",
-    }),
-  },
-  {
-    name: "cta_copy",
-    buttonParamsJson: JSON.stringify({
-      display_text: "Copy",
-      id: "copy",
-      copy_code: "", // will be filled dynamically
-    }),
+      url: config.GURL,
+      }),
   },
 ];
 
 // ── Helper that sends an interactive message with image + buttons ─────
 async function sendFormattedMessage(zk, chatId, text, ms) {
-  const buttons = JSON.parse(JSON.stringify(baseButtons));
-  buttons[1].buttonParamsJson = JSON.stringify({
-    display_text: "Copy",
-    id: "copy",
-    copy_code: text,
-  });
+ 
   await zk.sendMessage(
     chatId,
     {
@@ -53,19 +42,8 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
         image: { url: randomNjabulourl },
         header: text,
         buttons,
-        headerType: 1,
-        contextInfo: {
-          mentionedJid: [ms?.sender?.jid || ""],
-          externalAdReply: {
-            title: "☘️ Image search",
-            mediaType: 1,
-            previewType: 0,
-            thumbnailUrl: randomNjabulourl,
-            renderLargerThumbnail: false,
-          },
-        },
+        headerType: 1,        
       },
-    },
     { quoted: ms }
   );
 }
