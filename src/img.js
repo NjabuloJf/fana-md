@@ -1,7 +1,7 @@
 const { fana } = require("../njabulo/fana");
 const gis = require("g-i-s");
 const axios = require("axios");
-const config = require(__dirname + "/../set");
+const conf = require(__dirname + "/../set");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
 // Google Custom Search API credentials
@@ -10,42 +10,49 @@ const GCSE_CX = 'baf9bdb0c631236e5';
 
 // ── Random image list ─────────────────────────────────────────────
 const njabulox = [
-  "", 
-    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
-    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
-    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
-    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
-
+"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
+      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Base button definition (same as in other modules) ─────
-const buttons = [
+// ── Base button definition ────────────────────────────────────────
+const baseButtons = [
   {
     name: "cta_url",
     buttonParamsJson: JSON.stringify({
-      display_text: "Visit Website",
+      display_text: "🌐 View Original",
       id: "backup channel",
-      url: config.GURL,
-      }),
+      url: "",
+    }),
   },
 ];
 
 // ── Helper that sends an interactive message with image + buttons ─────
-async function sendFormattedMessage(zk, chatId, text, ms) {
- 
-  await zk.sendMessage(
-    chatId,
-    {
+async function sendFormattedMessage(zk, chatId, text, ms, isLoading = false) {
+  const buttons = JSON.parse(JSON.stringify(baseButtons));
+  
+  let messageContent;
+  
+  if (isLoading) {
+    messageContent = {
+      text: text,
+    };
+  } else {
+    messageContent = {
       interactiveMessage: {
         image: { url: randomNjabulourl },
         header: text,
         buttons,
-        headerType: 1,        
+        headerType: 1,
       },
-    { quoted: ms }
-  );
+    };
+  }
+  
+  await zk.sendMessage(chatId, messageContent, { quoted: ms });
 }
 
 // ── Image search using Google Custom Search API ────────────────────
@@ -78,7 +85,7 @@ async function searchImages(query) {
   }
 }
 
-// ── Image search command ─────────────────────────────────────────────
+// ── Image search command (.img) ─────────────────────────────────────────────
 fana(
   {
     nomCom: "img",
@@ -87,20 +94,23 @@ fana(
     reaction: "☘️",
   },
   async (dest, zk, commandeOptions) => {
-    const { repondre, ms, arg } = commandeOptions;
+    const { ms, arg } = commandeOptions;
+    
     if (!arg[0]) {
       return sendFormattedMessage(zk, dest, "Which image?", ms);
     }
 
     const q = arg.join(" ");
-    const loadingMessage = await repondre(`*⏳ Searching for ${q} images...*`);
+    
+    // Send loading message
+    const loadingMsg = await sendFormattedMessage(zk, dest, `*⏳ Searching for ${q} images...*`, ms, true);
 
     try {
       const images = await searchImages(q);
 
       if (!images || images.length === 0) {
-        await zk.sendMessage(dest, { text: "No images found." }, { quoted: ms });
-        if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+        await sendFormattedMessage(zk, dest, "No images found.", ms);
+        if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
         return;
       }
 
@@ -119,8 +129,8 @@ fana(
 
       const validImages = picked.filter(Boolean);
       if (validImages.length === 0) {
-        await zk.sendMessage(dest, { text: "No images found." }, { quoted: ms });
-        if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+        await sendFormattedMessage(zk, dest, "No images found.", ms);
+        if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
         return;
       }
 
@@ -137,7 +147,7 @@ fana(
             buttons: [
               {
                 name: "cta_url",
-                buttonParamsJson: JSON.stringify({ display_text: "𝗩𝗶𝗲𝘄 𝗢𝗿𝗶𝗴𝗶𝗻𝗮𝗹", url: item.directLink }),
+                buttonParamsJson: JSON.stringify({ display_text: "🌐 View Original", url: item.directLink }),
               },
             ],
           },
@@ -162,38 +172,42 @@ fana(
       );
 
       await zk.relayMessage(dest, message.message, { messageId: message.key.id });
-      if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+      if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
+      
     } catch (error) {
       console.error("Error searching images:", error.response ? error.response.data : error.message);
-      await zk.sendMessage(dest, { text: `Error: ${error.message}` }, { quoted: ms });
-      if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+      await sendFormattedMessage(zk, dest, `❌ Error: ${error.message}`, ms);
+      if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
     }
   }
 );
 
-// ── Image search command 2 ─────────────────────────────────────────────
+// ── Image search command 2 (.image) ─────────────────────────────────────────────
 fana(
   {
     nomCom: "image",
-    aliases: ["image", "images"],
+    aliases: ["img", "images"],
     categorie: "Images",
     reaction: "☘️",
   },
   async (dest, zk, commandeOptions) => {
-    const { repondre, ms, arg } = commandeOptions;
+    const { ms, arg } = commandeOptions;
+    
     if (!arg[0]) {
       return sendFormattedMessage(zk, dest, "Which image?", ms);
     }
 
     const q = arg.join(" ");
-    const loadingMessage = await repondre(`*⏳ Searching for ${q} images...*`);
+    
+    // Send loading message
+    const loadingMsg = await sendFormattedMessage(zk, dest, `*⏳ Searching for ${q} images...*`, ms, true);
 
     try {
       const images = await searchImages(q);
 
       if (!images || images.length === 0) {
-        await zk.sendMessage(dest, { text: "No images found." }, { quoted: ms });
-        if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+        await sendFormattedMessage(zk, dest, "No images found.", ms);
+        if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
         return;
       }
 
@@ -212,8 +226,8 @@ fana(
 
       const validImages = picked.filter(Boolean);
       if (validImages.length === 0) {
-        await zk.sendMessage(dest, { text: "No images found." }, { quoted: ms });
-        if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+        await sendFormattedMessage(zk, dest, "No images found.", ms);
+        if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
         return;
       }
 
@@ -232,10 +246,6 @@ fana(
                 name: "cta_url",
                 buttonParamsJson: JSON.stringify({ display_text: "🌐 View Original", url: item.directLink }),
               },
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({ display_text: "📋 Copy Link", copy_code: item.directLink }),
-              },
             ],
           },
         }))
@@ -259,11 +269,12 @@ fana(
       );
 
       await zk.relayMessage(dest, message.message, { messageId: message.key.id });
-      if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+      if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
+      
     } catch (error) {
       console.error("Error searching images:", error.response ? error.response.data : error.message);
-      await zk.sendMessage(dest, { text: `Error: ${error.message}` }, { quoted: ms });
-      if (loadingMessage) await zk.deleteMessage(dest, loadingMessage.key);
+      await sendFormattedMessage(zk, dest, `❌ Error: ${error.message}`, ms);
+      if (loadingMsg) await zk.deleteMessage(dest, loadingMsg.key);
     }
   }
 );
