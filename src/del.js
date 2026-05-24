@@ -1,7 +1,10 @@
 
+
 const { fana } = require("../njabulo/fana");
 const config = require("../set");
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
+
 const {
   ajouterOuMettreAJourJid,
   mettreAJourAction,
@@ -31,12 +34,11 @@ const buttons = [
 
 // ---------- Random image ----------
 const njabulox = [
-"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+  "https://files.catbox.moe/iii5jv.jpg",
+  "https://files.catbox.moe/xjeyjh.jpg",
+  "https://files.catbox.moe/mh36c7.jpg",
+  "https://files.catbox.moe/u6v5ir.jpg",
+  "https://files.catbox.moe/bnb3vx.jpg",
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
@@ -49,8 +51,19 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
         image: { url: randomNjabulourl },
         header: text,
         buttons: buttons,
-        mentionedJid: [ms?.sender?.jid || ""],
         headerType: 1,
+        contextInfo: {
+          mentionedJid: [ms?.sender?.jid || ""],
+          externalAdReply: {
+            title: "📝messages menu cmd",
+            mediaType: 1,
+            previewType: 0,
+            thumbnailUrl: randomNjabulourl,
+            sourceUrl: "https://www.instagram.com/njabulojb871",
+            renderLargerThumbnail: false,
+          },
+        },
+      },
     },
     {
       quoted: {
