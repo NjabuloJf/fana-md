@@ -52,9 +52,9 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
         header: text,
         buttons: buttons,
         headerType: 1,
+        
     }
-    }
-  );
+   }, { quoted: ms });
 }
 
 // ---------- Delete command ----------
