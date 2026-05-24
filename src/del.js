@@ -1,5 +1,3 @@
-
-
 const { fana } = require("../njabulo/fana");
 const config = require("../set");
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
@@ -17,7 +15,7 @@ const fs = require("fs-extra");
 const conf = require("../set");
 const { default: axios } = require("axios");
 
-// ---------- Buttons ----------
+// ---------- Buttons (FIXED: removed semicolon inside object) ----------
 const buttons = [
   {
     name: "cta_url",
@@ -25,36 +23,35 @@ const buttons = [
       display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
       id: "back channel",
       url: config.GURL
-
-    });
-  },
+    })
+  }
 ];
 
-// ---------- Random image ----------
+// ---------- Random image (FIXED: added missing commas) ----------
 const njabulox = [
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png"
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png"
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png"
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png"
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png"
-
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png"
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ---------- Helper to send the formatted message ----------
+// ---------- Helper to send the formatted message (FIXED: proper structure) ----------
 async function sendFormattedMessage(zk, chatId, text, ms) {
   await zk.sendMessage(
     chatId,
     {
-      interactiveMessage: {
-        image: { url: randomNjabulourl },
-        header: text,
-        buttons: buttons,
-        headerType: 1,
-        
-    }
-   }, { quoted: ms });
+      text: text,
+      buttons: buttons.map(btn => ({
+        buttonId: btn.name === "cta_url" ? "url" : btn.name,
+        buttonText: { displayText: JSON.parse(btn.buttonParamsJson).display_text },
+        type: btn.name === "cta_url" ? 2 : 1
+      })),
+      viewOnce: false
+    },
+    { quoted: ms }
+  );
 }
 
 // ---------- Delete command ----------
@@ -76,7 +73,7 @@ fana(
       return await sendFormattedMessage(
         zk,
         dest,
-        "*Please mention the message to delete.*",
+        "⚠️ *Please reply to the message you want to delete.*",
         ms
       );
     }
@@ -92,9 +89,10 @@ fana(
       await sendFormattedMessage(
         zk,
         dest,
-        "*Message deleted successfully.*",
+        "✅ *Message deleted successfully.*",
         ms
       );
+      return;
     }
 
     // Group delete (admin or super user)
@@ -111,14 +109,14 @@ fana(
           await sendFormattedMessage(
             zk,
             dest,
-            "*Message deleted successfully.*",
+            "✅ *Message deleted successfully.*",
             ms
           );
         } catch (e) {
           await sendFormattedMessage(
             zk,
             dest,
-            "*I need admin rights.*",
+            "❌ *I need admin rights to delete messages.*",
             ms
           );
         }
@@ -126,7 +124,7 @@ fana(
         await sendFormattedMessage(
           zk,
           dest,
-          "*Sorry, you are not an administrator of the group.*",
+          "❌ *Sorry, only group admins can delete messages.*",
           ms
         );
       }
