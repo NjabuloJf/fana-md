@@ -21,12 +21,14 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
   await zk.sendMessage(
     chatId,
     {
-  interactiveMessage: {
-          header: text,
-          buttons,
-          headerType: 1
-          }
-        }, { quoted: ms });
+      interactiveMessage: {
+        header: text,
+        buttons,
+        headerType: 1
+      }
+    },
+    { quoted: ms }
+  );
 }
 
 // ---------- Facebook Video Downloader (HD) ----------
@@ -55,11 +57,8 @@ fana({
     // Send thumbnail first
     if (result.thumbnail) {
       await zk.sendMessage(dest, {
-      image: { url: result.thumbnail },
-       interactiveMessage: {
-        header:  `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`,
-        buttons,
-        headerType: 1
+        image: { url: result.thumbnail },
+        caption: `📥 *FACEBOOK VIDEO*\n\n📹 *Title:* ${result.title || "Unknown"}\n📎 *Quality:* HD`
       }, { quoted: ms });
     }
     
