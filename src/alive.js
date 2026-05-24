@@ -8,7 +8,7 @@ const s = require(__dirname + "/../set");
 
 fana(
     {
-        nomCom : 'alive',
+        nomCom : ' ',
         categorie : 'General'
         
     },async (dest,zk,commandeOptions) => {
@@ -46,7 +46,7 @@ const date = moment().format('DD/MM/YYYY');
  ${message}
  
  
- *ENZO-MD-WABOT*`
+ *`
 
  if (lien.match(/\.(mp4|gif)$/i)) {
     try {
@@ -74,10 +74,10 @@ else {
 }
 
     } else {
-        if(!superUser) { repondre("ATI ALIVE MKUU😂") ; return};
+        if(!superUser) { repondre("✅ ") ; return};
 
-      await   repondre("SI ATA WE UNAJUA ENZO MD HAIEZI LALA NO MATTER WHAT");
-         repondre("EBU MAINTAIN HIVO HIVO :)")
+      await   repondre("what");
+         repondre("done:)")
      }
  } else {
 
