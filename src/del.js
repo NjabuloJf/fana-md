@@ -30,7 +30,7 @@ const buttons = [
 async function sendMessage(zk, chatId, text, ms) {
   await zk.sendMessage(chatId, {
          interactiveMessage: {
-          header: 'on for active and off for desactive',
+          header: text,
           buttons,
           headerType: 1
           }
