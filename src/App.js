@@ -1,6 +1,7 @@
 const { fana } = require("../njabulo/fana");
 const axios = require("axios");
 const config = require("../set");
+const fs = require("fs-extra");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
 // ── Random image list ─────────────────────────────────────────────
@@ -13,50 +14,39 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-function formatFileSize(bytes) {
-  if (!bytes) return "Unknown";
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+// ── Helper function to send formatted message ─────────────────────
+async function sendFormattedMessage(zk, chatId, text, ms) {
+  const buttons = [
+    {
+      name: "cta_copy",
+      buttonParamsJson: JSON.stringify({
+        display_text: "📋 Copy",
+        id: "copy",
+        copy_code: text,
+      }),
+    },
+  ];
+
+  await zk.sendMessage(
+    chatId,
+    {
+      interactiveMessage: {
+        header: { title: "📦 NJABULO MD APK", hasMediaAttachment: true, imageMessage: { url: randomNjabulourl } },
+        body: { text: text },
+        footer: { text: "💫 Powered by NJABULO MD" },
+         buttons,
+        headerType: 1
+      }
+    },
+    { quoted: ms }
+  );
 }
 
-async function searchApk(query) {
-  try {
-    const response = await axios.get(`https://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(query)}/limit=5`, {
-      timeout: 15000,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    
-    const data = response.data;
-    
-    if (!data || !data.datalist || !data.datalist.list || data.datalist.list.length === 0) {
-      return null;
-    }
-    
-    const app = data.datalist.list[0];
-    const appSize = formatFileSize(app.file?.filesize || app.size);
-    
-    return {
-      name: app.name || query,
-      package: app.package || "Unknown",
-      size: appSize,
-      updated: app.updated || app.modified || "Unknown",
-      developer: app.developer?.name || "Unknown",
-      icon: app.icon || app.media?.icon || randomNjabulourl,
-      version: app.version_name || app.version || "Unknown",
-      rating: app.stats?.rating?.avg || app.rating || "N/A",
-      downloads: app.stats?.downloads || "Unknown"
-    };
-  } catch (error) {
-    console.error("APK search error:", error.message);
-    return null;
-  }
-}
-
+// ── APK command with download ─────────────────────────────────────────
 fana(
   {
     nomCom: "apk",
-    alias: ["app", "apksearch"],
+    alias: ["app", "apkdownload", "downloadapk"],
     categorie: "Tools",
     reaction: "📦",
   },
@@ -64,115 +54,74 @@ fana(
     const { ms, repondre, arg } = commandeOptions;
 
     if (!arg || !arg[0]) {
-      return repondre("📌 *Please provide an app name*\n\n📝 *Example:* `.apk whatsapp`\n`.apk instagram`");
+      return sendFormattedMessage(zk, chatId, "📌 *Please provide an app name*\n\n📝 *Example:* `.apk whatsapp`\n`.apk instagram`\n`.apk spotify`", ms);
     }
 
     await zk.sendPresenceUpdate('composing', chatId);
 
     const query = arg.join(" ");
-    const loadingMsg = await repondre(`🔍 *Searching for ${query} APK...*`);
+    
+    // Send loading reaction
+    await zk.sendMessage(chatId, { react: { text: "🔍", key: ms.key } });
 
     try {
-      const app = await searchApk(query);
-      
-      if (!app) {
-        await zk.deleteMessage(chatId, loadingMsg.key);
-        return repondre(`❌ *No APK found*\n\nCould not find "${query}". Please try a different app name.`);
+      const apiUrl = `http://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(query)}/limit=1`;
+      const response = await axios.get(apiUrl, { timeout: 15000 });
+      const data = response.data;
+
+      if (!data || !data.datalist || !data.datalist.list || data.datalist.list.length === 0) {
+        await zk.sendMessage(chatId, { react: { text: "❌", key: ms.key } });
+        return sendFormattedMessage(zk, chatId, `⚠️ *No results found for:* "${query}"\n\nPlease try a different app name.`, ms);
       }
 
-      let imageBuffer = null;
-      try {
-        const imgRes = await axios.get(app.icon, { responseType: 'arraybuffer', timeout: 10000 });
-        imageBuffer = imgRes.data;
-      } catch (err) {}
-      
-      const imageMessage = imageBuffer ? (await generateWAMessageContent({ image: imageBuffer }, { upload: zk.waUploadToServer })).imageMessage : null;
-      
-      const cards = [
-        {
-          header: {
-            title: `📦 APP INFO`,
-            hasMediaAttachment: true,
-            imageMessage: imageMessage,
-          },
-          body: {
-            text: `📱 *Name:* ${app.name}
+      const app = data.datalist.list[0];
+      const appSize = (app.file?.filesize / 1048576).toFixed(2);
+      const downloadUrl = app.file?.path_alt || app.file?.path || app.obb?.main?.path;
+
+      if (!downloadUrl) {
+        await zk.sendMessage(chatId, { react: { text: "❌", key: ms.key } });
+        return sendFormattedMessage(zk, chatId, `⚠️ *Download link not available for:* "${app.name}"\n\nPlease try another app.`, ms);
+      }
+
+      // Send uploading reaction
+      await zk.sendMessage(chatId, { react: { text: "⬆️", key: ms.key } });
+
+      // Download APK
+      const apkResponse = await axios({
+        method: 'GET',
+        url: downloadUrl,
+        responseType: 'arraybuffer',
+        timeout: 60000
+      });
+
+      const apkBuffer = Buffer.from(apkResponse.data);
+
+      // Send APK as document
+      await zk.sendMessage(chatId, {
+        document: apkBuffer,
+        fileName: `${app.name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`,
+        mimetype: "application/vnd.android.package-archive",
+        caption: `📦 *APK Downloader*
+
+📱 *Name:* ${app.name}
+🏋️ *Size:* ${appSize} MB
 📦 *Package:* ${app.package}
-🏋️ *Size:* ${app.size}
-📅 *Updated:* ${app.updated}
-👨‍💻 *Developer:* ${app.developer}
-📊 *Version:* ${app.version}
-⭐ *Rating:* ${app.rating}
-📥 *Downloads:* ${app.downloads}`,
-          },
-          footer: { text: "" },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "📋 Copy Package",
-                  copy_code: app.package,
-                }),
-              },
-            ],
-          },
-        },
-        {
-          header: {
-            title: `📥 DOWNLOAD INFO`,
-            hasMediaAttachment: true,
-            imageMessage: imageMessage,
-          },
-          body: {
-            text: `📱 *App:* ${app.name}
-🏋️ *Size:* ${app.size}
-📊 *Version:* ${app.version}
+📅 *Updated:* ${app.updated || "Unknown"}
+👨‍💻 *Developer:* ${app.developer?.name || "Unknown"}
+📊 *Version:* ${app.version_name || app.version || "Unknown"}
 
-⚠️ *Note:* APK download link not available.
-Search for the app on Google Play or Aptoide.`,
-          },
-          footer: { text: "" },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "📋 Copy App Name",
-                  copy_code: app.name,
-                }),
-              },
-            ],
-          },
-        },
-      ];
+✅ *APK sent successfully!*
 
-      await zk.deleteMessage(chatId, loadingMsg.key);
+> NJABULO MD`
+      }, { quoted: ms });
 
-      const message = generateWAMessageFromContent(
-        chatId,
-        {
-          viewOnceMessage: {
-            message: {
-              messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
-              interactiveMessage: {
-                header: { text: `📦 NJABULO MD APK FINDER` },
-                body: { text: `*📂 Search Results for: ${app.name}*` },
-                headerType: 1,
-                carouselMessage: { cards },
-              },
-            },
-          },
-        },
-        { quoted: ms }
-      );
-      
-      await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-      
+      // Send success reaction
+      await zk.sendMessage(chatId, { react: { text: "✅", key: ms.key } });
+
     } catch (error) {
-      console.error("APK search error:", error);
-      await zk.deleteMessage(chatId, loadingMsg.key);
-      repondre(`❌ *Error searching APK*\n\nPlease try again later.`);
+      console.error("APK Error:", error.message);
+      await zk.sendMessage(chatId, { react: { text: "❌", key: ms.key } });
+      sendFormattedMessage(zk, chatId, "❌ *An error occurred*\n\nPlease try again later.", ms);
     }
   }
 );
