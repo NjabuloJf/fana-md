@@ -13,7 +13,7 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Standard button set (used by all modules) ────────────────────────
+// ── Standard button set ────────────────────────────────────────────
 const baseButtons = [
     {
         name: "cta_url",
@@ -33,29 +33,47 @@ const baseButtons = [
     },
 ];
 
-// ── NEW AI APIS (replaced bk9.fun) ─────────────────────────────────
+// ── YOUR WORKING APIS (FIXED PARSING) ─────────────────────────────
 const AI_APIS = [
-    (q) => `https://mistral.stacktoy.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`,
-    (q) => `https://llama.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`,
-    (q) => `https://mistral.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`
+    async (q) => {
+        const url = `https://mistral.stacktoy.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        // CORRECTED: extracts the response from data.data.response
+        return data?.data?.response || null;
+    },
+    async (q) => {
+        const url = `https://llama.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        // Adjust if this API returns a different structure
+        return data?.data?.response || data?.response || null;
+    },
+    async (q) => {
+        const url = `https://mistral.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        // Adjust if this API returns a different structure
+        return data?.data?.response || data?.response || null;
+    }
 ];
 
+// ── AI FETCHER WITH FALLBACK ──────────────────────────────────────
 const askAI = async (query) => {
-    for (const apiUrl of AI_APIS) {
+    for (const api of AI_APIS) {
         try {
-            const { data } = await axios.get(apiUrl(query), { timeout: 15000 });
-            const response = data?.data?.response || data?.response || data?.BK9 || data?.message;
-            if (response && typeof response === 'string' && response.trim()) {
+            console.log(`🔄 Trying API...`);
+            const response = await api(query);
+            if (response && typeof response === 'string' && response.trim().length > 0) {
+                console.log(`✅ API Success! Response length: ${response.length}`);
                 return response.trim();
             }
-        } catch {
+        } catch (error) {
+            console.log(`❌ API failed: ${error.message}`);
             continue;
         }
     }
-    throw new Error('All AI APIs failed');
+    return "🤖 *AI Service temporarily unavailable* 🤖\n\nPlease try again in a few moments.\n\n> 💫 NJABULO MD";
 };
 
-// ── Helper that sends an interactive message with image + buttons ─────
+// ── Helper that sends interactive message ──────────────────────────
 async function sendFormattedMessage(zk, chatId, text, ms) {
     const buttons = JSON.parse(JSON.stringify(baseButtons));
     buttons[1].buttonParamsJson = JSON.stringify({
@@ -64,17 +82,21 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
         copy_code: text,
     });
 
+    let finalText = text;
+    if (finalText.length > 3000) {
+        finalText = finalText.substring(0, 2970) + "\n\n...*[Message truncated due to length]*";
+    }
+
     await zk.sendMessage(
         chatId,
         {
-            interactiveMessage: {
-                image: { url: randomNjabulourl },
-                header: { title: "🤖 NJABULO MD AI", hasMediaAttachment: false },
-                body: { text: text },
-                footer: { text: "💫 Powered by NJABULO MD" },
-                buttons: buttons,
-                headerType: 1,
-            },
+            text: finalText,
+            buttons: buttons.map(btn => ({
+                buttonId: btn.name === "cta_url" ? "url" : btn.name,
+                buttonText: { displayText: JSON.parse(btn.buttonParamsJson).display_text },
+                type: btn.name === "cta_url" ? 2 : 1
+            })),
+            viewOnce: false
         },
         { quoted: ms }
     );
@@ -89,73 +111,66 @@ const handleAiCommand = async (dest, zk, params, systemPrompt, usageExample) => 
         return repondre(usageExample);
     }
 
+    // Send typing indicator
+    await zk.sendPresenceUpdate('composing', dest);
+    
     try {
         let response = await askAI(query);
         
-        if (systemPrompt && response) {
-            response = `${systemPrompt}\n\n${response}`;
-        }
-        
-        if (response.length > 4000) {
-            response = response.substring(0, 3970) + "...\n\n📌 *Response truncated due to length*";
+        if (systemPrompt && response && !response.includes("unavailable")) {
+            response = `${systemPrompt}\n${response}`;
         }
         
         await sendFormattedMessage(zk, dest, response, params.ms);
     } catch (error) {
-        console.error("Error generating AI response:", error);
-        await repondre("❌ Sorry, I couldn't process your request. Please try again later.");
+        console.error("Error:", error);
+        await repondre("❌ *Error* ❌\n\nSorry, I couldn't process your request. Please try again later.\n\n> 💫 NJABULO MD");
     }
 };
 
-// ── COMMAND HANDLERS ─────────────────────────────────────────────────
+// ── COMMAND HANDLERS ───────────────────────────────────────────────
 
-// Chat command
 fana({
     nomCom: "chat",
     alias: ["chatbot", "chatai"],
     reaction: '⚔️',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "", "📌 *Usage:* .chat <message>\n\n📝 *Example:* .chat Hello, how are you?");
+    handleAiCommand(dest, zk, params, "", "📌 *.chat <message>*\n\nExample: .chat Hello, how are you?");
 });
 
-// Njabulo command
 fana({
     nomCom: "njabulo",
     alias: ["njabulomd", "njabulbot"],
     reaction: '⚔️',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    const systemPrompt = "🤖 *NJABULO MD AI* 🤖\n\n";
-    handleAiCommand(dest, zk, params, systemPrompt, "📌 *Usage:* .njabulo <message>\n\n📝 *Example:* .njabulo What can you do?");
+    handleAiCommand(dest, zk, params, "🤖 *NJABULO MD:*\n\n", "📌 *.njabulo <message>*\n\nExample: .njabulo What can you do?");
 });
 
-// GPT command
 fana({
     nomCom: "gpt",
     alias: ["chatgpt", "gptai"],
     reaction: '👻',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "", "📌 *Usage:* .gpt <message>\n\n📝 *Example:* .gpt Tell me a joke");
+    handleAiCommand(dest, zk, params, "", "📌 *.gpt <message>*\n\nExample: .gpt Tell me a joke");
 });
 
-// Gemini command
 fana({
     nomCom: "gemini",
     alias: ["gemini4", "geminiai"],
     reaction: '👻',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "", "📌 *Usage:* .gemini <message>\n\n📝 *Example:* .gemini Write a poem");
+    handleAiCommand(dest, zk, params, "", "📌 *.gemini <message>*\n\nExample: .gemini Write a poem");
 });
 
-// Ilama command
 fana({
     nomCom: "ilama",
     alias: ["llama", "llamaai"],
     reaction: '🤖',
     categorie: "AI"
 }, async (dest, zk, params) => {
-    handleAiCommand(dest, zk, params, "", "📌 *Usage:* .ilama <message>\n\n📝 *Example:* .ilama Explain AI");
+    handleAiCommand(dest, zk, params, "", "📌 *.ilama <message>*\n\nExample: .ilama Explain AI");
 });
