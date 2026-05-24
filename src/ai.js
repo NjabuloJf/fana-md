@@ -53,7 +53,6 @@ const askAI = async (query) => {
 // ── SIMPLE TEXT MESSAGE (NO BUTTONS) ──────────────────────────────
 async function sendMessage(zk, chatId, text, ms) {
     await zk.sendMessage(chatId, {
-        await zk.sendMessage(dest, { 
           interactiveMessage: {
           header: text,
           buttons,
