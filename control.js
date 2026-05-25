@@ -455,12 +455,29 @@ setTimeout(() => {
             if (!ms.message) return;
 
             const mtype = baileys_1.getContentType(ms.message);
+            
+            // Skip reaction messages
             if (mtype === "reactionMessage") return;
+            
+            // Skip protocol messages (WhatsApp internal messages like presence, read receipts)
+            if (mtype === "protocolMessage") {
+                console.log("⏭️ Skipping protocol message (WhatsApp internal)");
+                return;
+            }
+            
+            // Skip sender key distribution messages
+            if (mtype === "senderKeyDistributionMessage") return;
 
             var texte = mtype == "conversation" ? ms.message.conversation :
                 mtype == "imageMessage" ? ms.message.imageMessage?.caption :
                 mtype == "videoMessage" ? ms.message.videoMessage?.caption :
                 mtype == "extendedTextMessage" ? ms.message?.extendedTextMessage?.text : "";
+
+            // Skip if no text content
+            if (!texte && mtype !== "conversation" && mtype !== "extendedTextMessage") {
+                console.log("⏭️ Skipping non-text message");
+                return;
+            }
 
             var origineMessage = ms.key.remoteJid;
             var idBot = decodeJid(zk.user?.id);
@@ -494,7 +511,7 @@ setTimeout(() => {
             superUserNumbers.push(...sudoNumbersList);
             const superUserRawNumbers = [servBot?.split('@')[0], ownerNumber, conf.NUMERO_OWNER];
             
-            // DEFINE superUser HERE (this is the variable used in command execution)
+            // DEFINE superUser HERE
             const superUser = superUserNumbers.includes(auteurMessage) || superUserRawNumbers.includes(auteurMessage?.split('@')[0]);
             const isDev = superUser;
 
@@ -737,7 +754,7 @@ setTimeout(() => {
             }
 
             // ========== COMMAND EXECUTION ==========
-            if (verifCom) {
+            if (verifCom && texte) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
