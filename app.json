@@ -2,7 +2,7 @@
  "name":"ɳʝαႦυʅσ ʝႦ",
   "description":"Njabulo AI",
   "keywords":["bot","node","baileys","whatsapp"],
-  "logo":"https://files.catbox.moe/ety154.jpg",
+  "logo":"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
   "repository":"https://github.com/NjabuloJf/fana-md",
   "succes_url":"/",
   "stack":"container",
@@ -33,7 +33,7 @@
     },
     "BOT_NAME" : {
       "description":"👤put A name for your bot",
-      "value":"Njabulo_Jb",
+      "value":"ɳʝαႦυʅσ ʝႦ",
       "required":false
     },
     "BOT_MENU_LINKS" : {
