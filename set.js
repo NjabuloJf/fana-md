@@ -39,7 +39,6 @@ module.exports = {
     
     // ========== MODE SETTINGS ==========
     MODE: process.env.PUBLIC_MODE || "yes",
-    PM_PERMIT: process.env.PM_PERMIT || 'no',
     
     // ========== HEROKU SETTINGS ==========
     HEROKU_APP_NAME: process.env.HEROKU_APP_NAME,
