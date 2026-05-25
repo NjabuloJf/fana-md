@@ -36,7 +36,7 @@ const askAI = async (query) => {
 };
 
 fana({
-    nomCom: "njabuloai",
+    nomCom: "fanaai",
     alias: ["njabuloaai", "naai", "njabulo-ai", "ai"],
     categorie: "AI",
     reaction: "🧠",
@@ -255,9 +255,7 @@ fana({
 
 
 
-/*
-const { fana } = require("../njabulo/fana");
-const axios = require("axios");
+
 
 // ── YOUR WORKING APIS ─────────────────────────────────────────────
 const AI_APIS = [
@@ -300,12 +298,12 @@ const askAI = async (query) => {
 async function sendTypingAnimation(zk, chatId, ms) {
     const frames = ['◐', '◓', '◑', '◒'];
     let i = 0;
-    const typingMsg = await zk.sendMessage(chatId, { text: `🧠 *NJABULO AI is thinking* ${frames[0]}` }, { quoted: ms });
+    const typingMsg = await zk.sendMessage(chatId, { text: `🧠 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴛʜɪɴᴋɪɴɢ* ${frames[0]}` }, { quoted: ms });
     
     const interval = setInterval(async () => {
         i = (i + 1) % frames.length;
         try {
-            await zk.sendMessage(chatId, { text: `🧠 *NJABULO AI is thinking* ${frames[i]}`, edit: typingMsg.key });
+            await zk.sendMessage(chatId, { text: `🧠 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴛʜɪɴᴋɪɴɢ* ${frames[i]}`, edit: typingMsg.key });
         } catch (e) {}
     }, 500);
     
@@ -357,18 +355,9 @@ fana({
         const responsePreview = response.length > maxPreviewLength ? response.substring(0, maxPreviewLength) + '...' : response;
         
         // Create intro text
-        const introText = `╭───(    NJABULO AI    )───
-├───≫ AI RESPONSE ≪───
-├ 
-├ 📝 *Your Question:*
-├ ${query}
-├ 
-├ 📊 *Response Length:* ${response.length} chars
-├ 
-├ 💬 *AI Answer Preview:*
-├ ${responsePreview}
-╰──────────────────☉
-> ©𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐁𝐲 𝐍𝐉𝐀𝐁𝐔𝐋𝐎 𝐌𝐃`;
+        const introText = `*AI Answer Preview:*
+${responsePreview}
+> ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴀssɪsᴛᴀɴᴛ ᴜɪ`;
 
         // Create response ID
         const responseId = Math.random().toString(36).substring(2);
@@ -392,7 +381,7 @@ fana({
                             "language": "text",
                             "code_blocks": [
                                 { 
-                                    "content": `📝 *QUESTION:*\n${query}\n\n💬 *ANSWER:*\n${response}`, 
+                                    "content": `📝 ɴᴊᴀʙᴜʟᴏ ᴀɪ ǫᴜᴇsᴛɪᴏɴ:\n${query}\n\n💬 ᴀɴsᴡᴇʀ\n${response}`, 
                                     "type": "DEFAULT" 
                                 }
                             ],
@@ -435,7 +424,7 @@ fana({
                                     codeBlocks: [
                                         {
                                             highlightType: 0,
-                                            codeContent: `📝 *QUESTION:*\n${query}\n\n💬 *ANSWER:*\n${response}`
+                                            codeContent: `📝 ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴀssɪsᴛᴀɴᴛ ᴜɪ ǫᴜᴇsᴛɪᴏɴ:\n${query}\n\n💬 ᴀɴsᴡᴇʀ:\n${response}`
                                         }
                                     ]
                                 }
