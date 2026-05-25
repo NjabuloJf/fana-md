@@ -1,6 +1,5 @@
 const { fana } = require("../njabulo/fana");
 const axios = require("axios");
-const config = require("../set");
 
 // ── YOUR WORKING APIS ─────────────────────────────────────────────
 const AI_APIS = [
@@ -55,13 +54,9 @@ async function sendTypingAnimation(zk, chatId, ms) {
     return { typingMsg, interval };
 }
 
-async function sendErrorMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
-}
-
 fana({
     nomCom: "njabuloai",
-    alias: ["njabuloaai", "naai", "njabulo-ai"],
+    alias: ["njabuloaai", "naai", "njabulo-ai", "ai"],
     categorie: "AI",
     reaction: "🧠",
 }, async (chatId, zk, commandeOptions) => {
@@ -70,7 +65,7 @@ fana({
     const query = arg.join(' ').trim();
     
     if (!query) {
-        return sendErrorMessage(zk, chatId, `📌 *NJABULO AI*
+        return repondre(`📌 *NJABULO AI*
 
 🤖 *How to use:*
 • Ask me anything!
@@ -80,7 +75,7 @@ fana({
 📝 *Example:* 
 .njabuloai What is artificial intelligence?
 
-💫 *Powered by NJABULO MD*`, ms);
+💫 *Powered by NJABULO MD*`);
     }
 
     // Send animated typing indicator
@@ -96,11 +91,40 @@ fana({
         }
         
         if (!response || response.includes("unavailable")) {
-            return sendErrorMessage(zk, chatId, `❌ *AI Service Unavailable*\n\nPlease try again later.`, ms);
+            return repondre(`❌ *AI Service Unavailable*\n\nPlease try again later.`);
         }
 
-        // Split long response into chunks for better display
-        const maxChunkSize = 3800;
+        // Create response ID
+        const responseId = Math.random().toString(36).substring(2);
+        
+        // Create intro text
+        const introText = `╭───(    NJABULO AI    )───
+├───≫ AI RESPONSE ≪───
+├ 
+├ 📝 *Your Question:*
+├ ${query.substring(0, 200)}${query.length > 200 ? '...' : ''}
+├ 
+├ 📊 *Response Length:* ${response.length} chars
+├ 📄 *Response Preview:*
+├ ${response.substring(0, 300)}${response.length > 300 ? '...' : ''}
+╰──────────────────☉
+> ©𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐁𝐲 𝐍𝐉𝐀𝐁𝐔𝐋𝐎 𝐌𝐃`;
+
+        // Create sections
+        const sections = [
+            {
+                "view_model": {
+                    "primitive": {
+                        "text": introText,
+                        "__typename": "GenAIMarkdownTextUXPrimitive"
+                    },
+                    "__typename": "GenAISingleLayoutViewModel"
+                }
+            }
+        ];
+        
+        // Split long response into chunks for code blocks
+        const maxChunkSize = 2000;
         const responseChunks = [];
         let remaining = response;
         
@@ -114,40 +138,9 @@ fana({
             remaining = remaining.substring(chunk.length);
         }
         
-        // Create response ID
-        const responseId = Math.random().toString(36).substring(2);
-        
-        // Create intro text with full question
-        let introText = `╭───(    NJABULO AI    )───
-├───≫ AI RESPONSE ≪───
-├ 
-├ 📝 *Your Question:*
-├ ${query}
-├ 
-├ 💬 *AI Answer:*
-├ ${responseChunks[0].substring(0, 300)}${responseChunks[0].length > 300 ? '...' : ''}
-├ 
-├ 📊 *Response Length:* ${response.length} chars
-├ 📄 *Total Parts:* ${responseChunks.length}
-╰──────────────────☉
-> ©𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐁𝐲 𝐍𝐉𝐀𝐁𝐔𝐋𝐎 𝐌𝐃`;
-
-        // Create sections for each chunk
-        const sections = [
-            {
-                "view_model": {
-                    "primitive": {
-                        "text": introText,
-                        "__typename": "GenAIMarkdownTextUXPrimitive"
-                    },
-                    "__typename": "GenAISingleLayoutViewModel"
-                }
-            }
-        ];
-        
-        // Add each response chunk as a separate section
+        // Add each response chunk as a separate code block
         for (let i = 0; i < responseChunks.length; i++) {
-            const chunkTitle = responseChunks.length > 1 ? `📝 *ANSWER PART ${i + 1}/${responseChunks.length}*` : `📝 *FULL ANSWER*`;
+            const chunkTitle = responseChunks.length > 1 ? `📝 *FULL ANSWER (Part ${i + 1}/${responseChunks.length})*` : `📝 *FULL ANSWER*`;
             sections.push({
                 "view_model": {
                     "primitive": {
@@ -171,7 +164,7 @@ fana({
             "sections": sections
         })).toString('base64');
 
-        // Create the message content
+        // Create the message content with proper format
         const content = {
             messageContextInfo: {
                 threadId: [],
@@ -189,37 +182,30 @@ fana({
             },
             botForwardedMessage: {
                 message: {
-                    richResponseMessage: {
-                        submessages: [
-                            {
-                                messageType: 2,
-                                messageText: introText
-                            },
-                            ...responseChunks.map((chunk, index) => ({
-                                messageType: 3,
-                                codeMetadata: {
-                                    codeLanguage: "text",
-                                    codeBlocks: [
-                                        {
-                                            highlightType: 0,
-                                            codeContent: `${responseChunks.length > 1 ? `📝 *ANSWER PART ${index + 1}/${responseChunks.length}*\n\n` : '📝 *FULL ANSWER*\n\n'}${chunk}`
-                                        }
-                                    ]
-                                }
-                            }))
-                        ],
-                        messageType: 1,
-                        unifiedResponse: {
-                            data: encodedData
+                    text: introText,
+                    contextInfo: {
+                        mentionedJid: [],
+                        groupMentions: [],
+                        statusAttributions: [],
+                        forwardingScore: 743,
+                        isForwarded: true,
+                        forwardedAiBotMessageInfo: {
+                            botJid: "867051314767696@bot"
                         },
-                        
+                        forwardOrigin: 4
                     }
                 }
             }
         };
-
-        // Send the AI response
+        
+        // Also send the full response as a follow-up message
         await zk.relayMessage(chatId, content, {});
+        
+        // Send the full response as regular text
+        for (let i = 0; i < responseChunks.length; i++) {
+            const chunkTitle = responseChunks.length > 1 ? `📝 *Part ${i + 1}/${responseChunks.length}*\n\n` : '';
+            await zk.sendMessage(chatId, { text: `${chunkTitle}${responseChunks[i]}` }, { quoted: ms });
+        }
         
         // Send success reaction
         await zk.sendMessage(chatId, { react: { text: "✅", key: ms.key } });
@@ -230,6 +216,6 @@ fana({
         if (typingMsg && typingMsg.key) {
             await zk.sendMessage(chatId, { delete: typingMsg.key }).catch(() => {});
         }
-        sendErrorMessage(zk, chatId, `❌ *Error*\n\n${error.message}\n\nPlease try again later.`, ms);
+        repondre(`❌ *Error*\n\n${error.message}\n\nPlease try again later.`);
     }
 });
