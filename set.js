@@ -30,12 +30,12 @@ module.exports = {
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
     // ========== BOT INFORMATION ==========
-    BOT_NAME: process.env.BOT_NAME || 'NJABULO MD',
-    BOT: process.env.BOT_NAME || 'NJABULO MD',
+    BOT_NAME: process.env.BOT_NAME || 'NJABULO JB',
+    BOT: process.env.BOT_NAME || 'NJABULO JB',
     
     // ========== MEDIA LINKS ==========
     URL: process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
-    GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u',
+    GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     
     // ========== MODE SETTINGS ==========
     MODE: process.env.PUBLIC_MODE || "yes",
