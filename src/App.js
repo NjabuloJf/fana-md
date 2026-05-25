@@ -13,7 +13,6 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Helper function to format file size ─────────────────────────────
 function formatFileSize(bytes) {
   if (!bytes) return "Unknown";
   if (bytes < 1024) return bytes + " B";
@@ -21,7 +20,10 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
-// ── APK command with download and cards ─────────────────────────────────────────
+async function sendErrorMessage(zk, chatId, text, ms) {
+  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+}
+
 fana(
   {
     nomCom: "apk",
@@ -33,7 +35,7 @@ fana(
     const { ms, repondre, arg } = commandeOptions;
 
     if (!arg || !arg[0]) {
-      return repondre("📌 *Please provide an app name*\n\n📝 *Example:* `.apk whatsapp`\n`.apk instagram`\n`.apk spotify`\n\n📥 *To download:* `.apk download whatsapp`");
+      return sendErrorMessage(zk, chatId, "📌 *Please provide an app name*\n\n📝 *Example:* `.apk whatsapp`\n`.apk download whatsapp`\n`.apk instagram`", ms);
     }
 
     await zk.sendPresenceUpdate('composing', chatId);
@@ -42,7 +44,7 @@ fana(
     const isDownload = query.toLowerCase().includes("download");
     const searchQuery = isDownload ? query.replace(/download/gi, '').trim() : query;
     
-    const loadingMsg = await repondre(`🔍 *Searching for ${searchQuery} APK...*`);
+    const loadingMsg = await zk.sendMessage(chatId, { text: `🔍 *Searching for ${searchQuery} APK...*` }, { quoted: ms });
 
     try {
       const apiUrl = `http://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(searchQuery)}/limit=1`;
@@ -50,15 +52,16 @@ fana(
       const data = response.data;
 
       if (!data || !data.datalist || !data.datalist.list || data.datalist.list.length === 0) {
-        await zk.deleteMessage(chatId, loadingMsg.key);
-        return repondre(`❌ *No APK found*\n\nCould not find "${searchQuery}". Please try a different app name.`);
+        if (loadingMsg && loadingMsg.key) {
+          await zk.sendMessage(chatId, { delete: loadingMsg.key }).catch(() => {});
+        }
+        return sendErrorMessage(zk, chatId, `❌ *No APK found*\n\nCould not find "${searchQuery}". Please try a different app name.`, ms);
       }
 
       const app = data.datalist.list[0];
       const appSize = formatFileSize(app.file?.filesize || app.size);
       const downloadUrl = app.file?.path_alt || app.file?.path || app.obb?.main?.path;
       
-      // Get app icon
       let imageBuffer = null;
       try {
         const iconUrl = app.icon || app.media?.icon || randomNjabulourl;
@@ -68,7 +71,6 @@ fana(
       
       const imageMessage = imageBuffer ? (await generateWAMessageContent({ image: imageBuffer }, { upload: zk.waUploadToServer })).imageMessage : null;
       
-      // Create cards
       const cards = [
         {
           header: {
@@ -113,8 +115,7 @@ fana(
 📌 *To download:* 
 \`.apk download ${app.name}\`
 
-⚠️ *Note:* 
-Enable "Unknown Sources" 
+⚠️ *Note:* Enable "Unknown Sources" 
 in settings to install!`,
           },
           footer: { text: "" },
@@ -132,7 +133,9 @@ in settings to install!`,
         },
       ];
 
-      await zk.deleteMessage(chatId, loadingMsg.key);
+      if (loadingMsg && loadingMsg.key) {
+        await zk.sendMessage(chatId, { delete: loadingMsg.key }).catch(() => {});
+      }
 
       const message = generateWAMessageFromContent(
         chatId,
@@ -159,7 +162,7 @@ in settings to install!`,
       
       // Handle download if requested
       if (isDownload && downloadUrl) {
-        const downloadMsg = await repondre(`⏳ *Downloading ${app.name} APK...*`);
+        const downloadMsg = await zk.sendMessage(chatId, { text: `⏳ *Downloading ${app.name} APK...*` }, { quoted: ms });
         
         try {
           const apkResponse = await axios({
@@ -191,22 +194,28 @@ in settings to install!`,
 > NJABULO MD`
           }, { quoted: ms });
           
-          await zk.deleteMessage(chatId, downloadMsg.key);
-          await repondre(`✅ *${app.name} APK sent successfully!*`);
+          if (downloadMsg && downloadMsg.key) {
+            await zk.sendMessage(chatId, { delete: downloadMsg.key }).catch(() => {});
+          }
+          await zk.sendMessage(chatId, { text: `✅ *${app.name} APK sent successfully!*` }, { quoted: ms });
           
         } catch (downloadError) {
           console.error("Download error:", downloadError);
-          await zk.deleteMessage(chatId, downloadMsg.key);
-          await repondre(`❌ *Download failed*\n\nCould not download ${app.name}. Please try again later.`);
+          if (downloadMsg && downloadMsg.key) {
+            await zk.sendMessage(chatId, { delete: downloadMsg.key }).catch(() => {});
+          }
+          await zk.sendMessage(chatId, { text: `❌ *Download failed*\n\nCould not download ${app.name}. Please try again later.` }, { quoted: ms });
         }
       } else if (isDownload && !downloadUrl) {
-        await repondre(`❌ *Download not available*\n\nDownload link for ${app.name} is not available.`);
+        await zk.sendMessage(chatId, { text: `❌ *Download not available*\n\nDownload link for ${app.name} is not available.` }, { quoted: ms });
       }
       
     } catch (error) {
       console.error("APK search error:", error);
-      await zk.deleteMessage(chatId, loadingMsg.key);
-      repondre(`❌ *Error searching APK*\n\nPlease try again later.`);
+      if (loadingMsg && loadingMsg.key) {
+        await zk.sendMessage(chatId, { delete: loadingMsg.key }).catch(() => {});
+      }
+      sendErrorMessage(zk, chatId, `❌ *Error searching APK*\n\nPlease try again later.`, ms);
     }
   }
 );
