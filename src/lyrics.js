@@ -13,6 +13,11 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
+// ── Helper function to send error messages ─────────────────────────
+async function sendErrorMessage(zk, chatId, text, ms) {
+  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+}
+
 fana({
     nomCom: "lyrics",
     alias: ["lyric", "songlyrics", "lirik"],
@@ -24,15 +29,15 @@ fana({
     const songTitle = arg.join(' ').trim();
     
     if (!songTitle) {
-        return repondre(`📌 *Please enter the song name to get the lyrics*
+        return sendErrorMessage(zk, chatId, `📌 *Please enter the song name to get the lyrics*
 
 📝 *Example:* .lyrics Shape of You
-🔍 *Usage:* .lyrics <song name>`);
+🔍 *Usage:* .lyrics <song name>`, ms);
     }
 
     await zk.sendPresenceUpdate('composing', chatId);
     
-    const loadingMsg = await repondre(`🎵 *Searching for lyrics of:* "${songTitle}"\n\n⏳ Please wait...`);
+    const loadingMsg = await zk.sendMessage(chatId, { text: `🎵 *Searching for lyrics of:* "${songTitle}"\n\n⏳ Please wait...` }, { quoted: ms });
 
     try {
         const apiUrl = `https://discardapi.dpdns.org/api/music/lyrics?apikey=qasim&song=${encodeURIComponent(songTitle)}`;
@@ -40,8 +45,10 @@ fana({
         const data = response.data;
         
         if (!data.result || data.result.error || !data.result.message?.lyrics) {
-            await zk.deleteMessage(chatId, loadingMsg.key);
-            return repondre(`❌ *Sorry, I couldn't find any lyrics for* "${songTitle}".\n\nPlease check the song name and try again.`);
+            if (loadingMsg && loadingMsg.key) {
+                await zk.deleteMessage(chatId, loadingMsg.key).catch(() => {});
+            }
+            return sendErrorMessage(zk, chatId, `❌ *Sorry, I couldn't find any lyrics for* "${songTitle}".\n\nPlease check the song name and try again.`, ms);
         }
 
         const messageData = data.result.message;
@@ -129,7 +136,9 @@ fana({
             },
         ];
 
-        await zk.deleteMessage(chatId, loadingMsg.key);
+        if (loadingMsg && loadingMsg.key) {
+            await zk.deleteMessage(chatId, loadingMsg.key).catch(() => {});
+        }
 
         const message = generateWAMessageFromContent(
             chatId,
@@ -156,7 +165,9 @@ fana({
 
     } catch (error) {
         console.error('Lyrics Command Error:', error);
-        await zk.deleteMessage(chatId, loadingMsg.key);
+        if (loadingMsg && loadingMsg.key) {
+            await zk.deleteMessage(chatId, loadingMsg.key).catch(() => {});
+        }
         
         let errorMessage = `❌ *An error occurred while fetching the lyrics*\n\n`;
         
@@ -168,6 +179,6 @@ fana({
             errorMessage += `⚠️ *Reason:* ${error.message}`;
         }
         
-        repondre(errorMessage);
+        sendErrorMessage(zk, chatId, errorMessage, ms);
     }
 });
