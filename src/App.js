@@ -62,6 +62,9 @@ fana(
       const appSize = formatFileSize(app.file?.filesize || app.size);
       const downloadUrl = app.file?.path_alt || app.file?.path || app.obb?.main?.path;
       
+      console.log("Download URL:", downloadUrl);
+      console.log("Is Download requested:", isDownload);
+      
       let imageBuffer = null;
       try {
         const iconUrl = app.icon || app.media?.icon || randomNjabulourl;
@@ -160,20 +163,31 @@ in settings to install!`,
       
       await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
       
-      // Handle download if requested
-      if (isDownload && downloadUrl) {
-        const downloadMsg = await zk.sendMessage(chatId, { text: `⏳ *Downloading ${app.name} APK...*` }, { quoted: ms });
+      // Handle download if requested - THIS WILL ALWAYS RUN IF "download" IS IN THE COMMAND
+      if (isDownload === true) {
+        console.log("DOWNLOADING APK...");
+        
+        const downloadMsg = await zk.sendMessage(chatId, { text: `⏳ *Downloading ${app.name} APK...*\n\n📦 Size: ${appSize}\n⏱️ Please wait...` }, { quoted: ms });
         
         try {
+          if (!downloadUrl) {
+            throw new Error("No download URL available");
+          }
+          
+          console.log("Downloading from URL:", downloadUrl);
+          
           const apkResponse = await axios({
             method: 'GET',
             url: downloadUrl,
             responseType: 'arraybuffer',
-            timeout: 60000
+            timeout: 120000
           });
           
           const apkBuffer = Buffer.from(apkResponse.data);
           
+          console.log("APK downloaded, size:", apkBuffer.length, "bytes");
+          
+          // Send the APK as a document
           await zk.sendMessage(chatId, {
             document: apkBuffer,
             fileName: `${app.name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`,
@@ -194,20 +208,23 @@ in settings to install!`,
 > NJABULO MD`
           }, { quoted: ms });
           
+          // Delete download message
           if (downloadMsg && downloadMsg.key) {
             await zk.sendMessage(chatId, { delete: downloadMsg.key }).catch(() => {});
           }
-          await zk.sendMessage(chatId, { text: `✅ *${app.name} APK sent successfully!*` }, { quoted: ms });
+          
+          // Send success confirmation
+          await zk.sendMessage(chatId, { text: `✅ *${app.name} APK sent successfully!*\n\nCheck the document above to download and install.` }, { quoted: ms });
           
         } catch (downloadError) {
-          console.error("Download error:", downloadError);
+          console.error("Download error:", downloadError.message);
           if (downloadMsg && downloadMsg.key) {
             await zk.sendMessage(chatId, { delete: downloadMsg.key }).catch(() => {});
           }
-          await zk.sendMessage(chatId, { text: `❌ *Download failed*\n\nCould not download ${app.name}. Please try again later.` }, { quoted: ms });
+          await zk.sendMessage(chatId, { text: `❌ *Download failed*\n\nCould not download ${app.name}.\n\nReason: ${downloadError.message}\n\nPlease try again later.` }, { quoted: ms });
         }
-      } else if (isDownload && !downloadUrl) {
-        await zk.sendMessage(chatId, { text: `❌ *Download not available*\n\nDownload link for ${app.name} is not available.` }, { quoted: ms });
+      } else {
+        console.log("No download requested. Use: .apk download [appname]");
       }
       
     } catch (error) {
