@@ -551,13 +551,10 @@ setTimeout(() => {
 
                     console.log("🔗 LINK DETECTED")
                     
-                    // Check if bot is admin
                     const isBotAdmin = admins.includes(idBot);
                     
-                    // Skip for superUser, group admin, or if bot not admin
                     if (isSuperUser || verifAdmin || !isBotAdmin) {
                         console.log(`⏭️ Skipping action - SuperUser: ${isSuperUser}, GroupAdmin: ${verifAdmin}, BotAdmin: ${isBotAdmin}`);
-                        // Still send warning message even if skipping action
                         await zk.sendMessage(origineMessage, { 
                             text: `⚠️ *LINK DETECTED* ⚠️\n\nPlease don't send links in this group!\n\n@${auteurMessage.split("@")[0]} avoid sending links.`,
                             mentions: [auteurMessage]
@@ -593,7 +590,6 @@ setTimeout(() => {
                     var action = await recupererActionJid(origineMessage);
                     console.log(`Action for this group: ${action}`);
 
-                    // Delete the link message
                     try {
                         await zk.sendMessage(origineMessage, { delete: key });
                         console.log(`✅ Link message deleted`);
@@ -710,7 +706,6 @@ setTimeout(() => {
                     var txt = "🤖 *BOT DETECTED* 🤖\n";
                     var action = await atbrecupererActionJid(origineMessage);
 
-                    // Delete bot message
                     try {
                         await zk.sendMessage(origineMessage, { delete: key });
                     } catch (e) {}
@@ -742,34 +737,50 @@ setTimeout(() => {
 
             // ========== COMMAND EXECUTION ==========
             if (verifCom) {
-                const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
+                const cd = evt.cm.find((fana) => fana.nomCom === (com));
                 if (cd) {
                     try {
-                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !isSuperUser) return;
-                        if (!isSuperUser && origineMessage === auteurMessage && (conf.PM_PERMIT || "") === "yes") {
-                            repondre("You don't have access to commands here");
+                        // Check if bot is in public mode
+                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !isSuperUser) {
+                            console.log("Bot is in private mode");
                             return;
                         }
+                        
+                        // PM PERMIT CHECK - FIXED: Now allows everyone to use commands in DM
+                        // Only block if PM_PERMIT is 'yes' AND user is not superUser
+                        if (conf.PM_PERMIT === "yes" && !isSuperUser && origineMessage === auteurMessage) {
+                            repondre("❌ *Access Denied*\n\nYou don't have permission to use commands in private chat.\n\n> NJABULO MD");
+                            return;
+                        }
+                        
+                        // Group ban check
                         if (!isSuperUser && verifGroupe) {
                             let req = await isGroupBanned(origineMessage);
                             if (req) return;
                         }
+                        
+                        // Only admin check
                         if (!verifAdmin && verifGroupe) {
                             let req = await isGroupOnlyAdmin(origineMessage);
                             if (req) return;
                         }
+                        
+                        // User ban check
                         if (!isSuperUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
-                                repondre("You are banned from bot commands");
+                                repondre("❌ *You are banned from using bot commands*");
                                 return;
                             }
                         }
+                        
+                        // Execute command
                         if (cd.reaction) reagir(origineMessage, zk, ms, cd.reaction);
                         cd.fonction(origineMessage, zk, commandeOptions);
+                        
                     } catch (e) {
                         console.log("Error:", e);
-                        zk.sendMessage(origineMessage, { text: "Error: " + e.message }, { quoted: ms });
+                        zk.sendMessage(origineMessage, { text: "❌ Error: " + e.message }, { quoted: ms });
                     }
                 }
             }
