@@ -17,7 +17,7 @@ module.exports = {
     PREFIXE: process.env.PREFIX || ".",
     
     // ========== OWNER INFORMATION ==========
-    OWNER_NAME: process.env.OWNER_NAME || "NJABULO JB",
+    OWNER_NAME: process.env.OWNER_NAME || "ɳʝαႦυʅσ ʝႦ",
     NUMERO_OWNER: process.env.NUMERO_OWNER || "26777821911",
     
     // ========== STATUS SETTINGS ==========
@@ -30,8 +30,8 @@ module.exports = {
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
     // ========== BOT INFORMATION ==========
-    BOT_NAME: process.env.BOT_NAME || 'NJABULO JB',
-    BOT: process.env.BOT_NAME || 'NJABULO JB',
+    BOT_NAME: process.env.BOT_NAME || 'ɳʝαႦυʅσ ʝႦ',
+    BOT: process.env.BOT_NAME || 'ɳʝαႦυʅσ ʝႦ',
     
     // ========== MEDIA LINKS ==========
     URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
