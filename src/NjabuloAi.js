@@ -473,6 +473,5 @@ ${responsePreview}
         repondre(`❌ *Error*\n\n${error.message}\n\nPlease try again later.`);
     }
 });
-*/
 
                     
