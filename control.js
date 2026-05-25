@@ -758,27 +758,29 @@ setTimeout(() => {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-                        // MODE CHECK (Public/Private)
-                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !superUser) {
-                            console.log("Bot is in private mode");
-                            return;
+                        // For DMs: Always allow commands (no restrictions for non-owners)
+                        // For Groups: Check MODE and admin status
+                        if (verifGroupe) {
+                            // Group mode check
+                            if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !superUser) {
+                                console.log("Bot is in private mode for groups");
+                                return;
+                            }
+                            
+                            // Group ban check
+                            if (!superUser && verifGroupe) {
+                                let req = await isGroupBanned(origineMessage);
+                                if (req) return;
+                            }
+                            
+                            // Only admin check
+                            if (!verifAdmin && verifGroupe) {
+                                let req = await isGroupOnlyAdmin(origineMessage);
+                                if (req) return;
+                            }
                         }
                         
-                        // PM_PERMIT REMOVED - Everyone can use DM commands now
-                        
-                        // Group ban check
-                        if (!superUser && verifGroupe) {
-                            let req = await isGroupBanned(origineMessage);
-                            if (req) return;
-                        }
-                        
-                        // Only admin check
-                        if (!verifAdmin && verifGroupe) {
-                            let req = await isGroupOnlyAdmin(origineMessage);
-                            if (req) return;
-                        }
-                        
-                        // User ban check
+                        // User ban check (applies to both groups and DMs)
                         if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
