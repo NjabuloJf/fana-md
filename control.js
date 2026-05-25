@@ -735,62 +735,49 @@ setTimeout(() => {
                 console.log('Anti-bot error:', er);
             }
 
-                     //execution des commandes   
+            // ========== COMMAND EXECUTION ==========
             if (verifCom) {
-                //await await zk.readMessages(ms.key);
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-
-            if ((conf.MODE).toLocaleLowerCase() != 'yes' && !superUser) {
-                return;
-            }
-
-                         /******************* PM_PERMT***************/
-
-            if (!superUser && origineMessage === auteurMessage&& conf.PM_PERMIT === "no" ) {
-                repondre("You don't have acces to commands here") ; return }
-            ///////////////////////////////
-
-
-            /*****************************banGroup  */
-            if (!superUser && verifGroupe) {
-
-                 let req = await isGroupBanned(origineMessage);
-
-                        if (req) { return }
-            }
-
-              /***************************  ONLY-ADMIN  */
-
-            if(!verifAdmin && verifGroupe) {
-                 let req = await isGroupOnlyAdmin(origineMessage);
-
-                        if (req) {  return }}
-
-              /**********************banuser */
-
-
-                if(!superUser) {
-                    let req = await isUserBanned(auteurMessage);
-
-                        if (req) {repondre("You are banned from bot commands"); return}
-
-
-                } 
-
-                        reagir(origineMessage, zk, ms, cd.reaction);
+                        // MODE CHECK (Public/Private)
+                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !isSuperUser) {
+                            console.log("Bot is in private mode");
+                            return;
+                        }
+                        
+                        // Group ban check
+                        if (!isSuperUser && verifGroupe) {
+                            let req = await isGroupBanned(origineMessage);
+                            if (req) return;
+                        }
+                        
+                        // Only admin check
+                        if (!verifAdmin && verifGroupe) {
+                            let req = await isGroupOnlyAdmin(origineMessage);
+                            if (req) return;
+                        }
+                        
+                        // User ban check
+                        if (!isSuperUser) {
+                            let req = await isUserBanned(auteurMessage);
+                            if (req) {
+                                repondre("❌ *You are banned from using bot commands*");
+                                return;
+                            }
+                        }
+                        
+                        // Execute command
+                        if (cd.reaction) reagir(origineMessage, zk, ms, cd.reaction);
                         cd.fonction(origineMessage, zk, commandeOptions);
-                    }
-                    catch (e) {
-                        console.log("😡😡 " + e);
-                        zk.sendMessage(origineMessage, { text: "😡😡 " + e }, { quoted: ms });
+                        
+                    } catch (e) {
+                        console.log("Error:", e);
+                        zk.sendMessage(origineMessage, { text: "❌ Error: " + e.message }, { quoted: ms });
                     }
                 }
             }
-            //fin exécution commandes
         });
-
 
         // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
