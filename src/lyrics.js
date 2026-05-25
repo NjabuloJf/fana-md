@@ -3,6 +3,16 @@ const config = require('../set');
 const { fana } = require("../njabulo/fana");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
+const buttons = [
+  {
+    name: "cta_url",
+    buttonParamsJson: JSON.stringify({
+      display_text: "🌐WA channel",
+      id: "backup channel",
+      url: config.GURL
+    }),
+  },
+  ];
 // ── Random image list ─────────────────────────────────────────────
 const njabulox = [
   "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
@@ -42,7 +52,13 @@ function getCurrentDate() {
 }
 
 async function sendErrorMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+  await zk.sendMessage(chatId, { 
+    interactiveMessage: {
+    header: text,
+         buttons,
+          headerType: 1
+  }
+  }, { quoted: ms });
 }
 
 fana({
@@ -110,10 +126,7 @@ fana({
                 body: {
                     text: `🎤 *Title:* ${title}
 👨‍🎤 *Artist:* ${artist}
-📅 *Date:* ${tempSong.date}
-📆 *Year:* ${tempSong.year}
-🕐 *Time:* ${tempSong.time}
-📏 *Length:* ${lyrics.length} chars`,
+📅 *Date:* ${tempSong.date}`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -168,7 +181,9 @@ fana({
                     imageMessage: imageMessage,
                 },
                 body: {
-                    text: lyrics.substring(2000, 4000) + (lyrics.length > 4000 ? "\n\n... (Continued)" : ""),
+                    text: `📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -250,22 +265,14 @@ fana({
             }
         } else {
             await zk.sendMessage(chatId, {
-                text: `╭━━━━━━━━━━━━━━━━━━━━╮
-┃     🎵 *TEMP SONG* 🎵
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃ 📀 *Title:* ${tempSong.title}
-┃ 🎤 *Artist:* ${tempSong.artist}
-┃ 📅 *Date:* ${tempSong.date}
-┃ 📆 *Year:* ${tempSong.year}
-┃
-┃ 📝 *Full Lyrics:*
-┃
-┃ ${lyrics}
-┃
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃ 💫 *NJABULO MD*
-╰━━━━━━━━━━━━━━━━━━━━╯`
+              interactiveMessage: {
+                header: `📀 *Title:* ${tempSong.title}
+📝 *Full Lyrics:*
+ ${lyrics}`,
+       buttons,
+          headerType: 1
+              }
+
             }, { quoted: ms });
         }
 
