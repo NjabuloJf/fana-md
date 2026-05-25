@@ -13,6 +13,24 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
+// ── Helper function to split long text into chunks ─────────────────
+function splitTextIntoChunks(text, maxLength = 3800) {
+  const chunks = [];
+  let remaining = text;
+  
+  while (remaining.length > 0) {
+    let chunk = remaining.substring(0, maxLength);
+    // Try to break at a newline for better readability
+    const lastNewline = chunk.lastIndexOf('\n');
+    if (lastNewline > maxLength - 500 && lastNewline > 0) {
+      chunk = chunk.substring(0, lastNewline);
+    }
+    chunks.push(chunk);
+    remaining = remaining.substring(chunk.length);
+  }
+  return chunks;
+}
+
 // ── Helper function to get current date ─────────────────────────
 function getCurrentDate() {
   const date = new Date();
@@ -62,13 +80,6 @@ fana({
         const messageData = data.result.message;
         const { artist, lyrics, image, title, url } = messageData;
         
-        const maxChars = 2500;
-        let lyricsOutput = lyrics;
-        
-        if (lyrics.length > maxChars) {
-            lyricsOutput = lyrics.slice(0, maxChars - 50) + "\n\n... [Truncated]";
-        }
-
         let imageBuffer = null;
         try {
             const imgUrl = image || randomNjabulourl;
@@ -100,7 +111,9 @@ fana({
                     text: `🎤 *Title:* ${title}
 👨‍🎤 *Artist:* ${artist}
 📅 *Date:* ${tempSong.date}
-`,
+📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -109,7 +122,7 @@ fana({
                             name: "cta_copy",
                             buttonParamsJson: JSON.stringify({
                                 display_text: "📋 Copy Info",
-                                copy_code: `Title: ${title}\nArtist: ${artist}\nDate: ${tempSong.date}\nYear: ${tempSong.year}\nTime: ${tempSong.time}`,
+                                copy_code: `Title: ${title}\nArtist: ${artist}\nDate: ${tempSong.date}\nYear: ${tempSong.year}`,
                             }),
                         },
                         {
@@ -124,14 +137,12 @@ fana({
             },
             {
                 header: {
-                    title: `📝 LYRICS`,
+                    title: `📝 LYRICS (Part 1)`,
                     hasMediaAttachment: true,
                     imageMessage: imageMessage,
                 },
                 body: {
-                    text: `📆 *Year:* ${tempSong.year}
-🕐 *Time:* ${tempSong.time}
-📏 *Length:* ${lyrics.length} chars`,
+                    text: lyrics.length > 2000 ? lyrics.substring(0, 2000) + "\n\n... (More in next card)" : lyrics,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -140,13 +151,64 @@ fana({
                             name: "cta_copy",
                             buttonParamsJson: JSON.stringify({
                                 display_text: "📋 Copy Lyrics",
-                                copy_code: lyricsOutput,
+                                copy_code: lyrics,
                             }),
                         },
                     ],
                 },
             },
         ];
+
+        // Add more cards if lyrics are very long
+        if (lyrics.length > 2000) {
+            cards.push({
+                header: {
+                    title: `📝 LYRICS (Part 2)`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: lyrics.substring(2000, 4000) + (lyrics.length > 4000 ? "\n\n... (Continued)" : ""),
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: "📋 Copy Remaining",
+                                copy_code: lyrics.substring(2000),
+                            }),
+                        },
+                    ],
+                },
+            });
+        }
+        
+        if (lyrics.length > 4000) {
+            cards.push({
+                header: {
+                    title: `📝 LYRICS (Part 3)`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: lyrics.substring(4000, 6000) + (lyrics.length > 6000 ? "\n\n... (Continued)" : ""),
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: "📋 Copy Remaining",
+                                copy_code: lyrics.substring(4000),
+                            }),
+                        },
+                    ],
+                },
+            });
+        }
 
         if (loadingMsg && loadingMsg.key) {
             await zk.sendMessage(chatId, { delete: loadingMsg.key }).catch(() => {});
@@ -175,9 +237,20 @@ fana({
         
         await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
         
-        // Also send lyrics as simple text
-        await zk.sendMessage(chatId, {
-            text: `╭━━━━━━━━━━━━━━━━━━━━╮
+        // Also send full lyrics as separate text messages if needed
+        const lyricsChunks = splitTextIntoChunks(lyrics, 3800);
+        
+        if (lyricsChunks.length > 1) {
+            await zk.sendMessage(chatId, { text: `📝 *FULL LYRICS (${lyricsChunks.length} parts)*\n\n━━━━━━━━━━━━━━━━━━━` }, { quoted: ms });
+            
+            for (let i = 0; i < lyricsChunks.length; i++) {
+                await zk.sendMessage(chatId, { 
+                    text: `*Part ${i + 1}/${lyricsChunks.length}*\n\n${lyricsChunks[i]}` 
+                }, { quoted: ms });
+            }
+        } else {
+            await zk.sendMessage(chatId, {
+                text: `╭━━━━━━━━━━━━━━━━━━━━╮
 ┃     🎵 *TEMP SONG* 🎵
 ┣━━━━━━━━━━━━━━━━━━━━┫
 ┃
@@ -185,15 +258,16 @@ fana({
 ┃ 🎤 *Artist:* ${tempSong.artist}
 ┃ 📅 *Date:* ${tempSong.date}
 ┃ 📆 *Year:* ${tempSong.year}
-┃ 🕐 *Time:* ${tempSong.time}
 ┃
-┃ 📝 *Lyrics:*
-┃ ${lyricsOutput.substring(0, 500)}${lyricsOutput.length > 500 ? '...' : ''}
+┃ 📝 *Full Lyrics:*
+┃
+┃ ${lyrics}
 ┃
 ┣━━━━━━━━━━━━━━━━━━━━┫
 ┃ 💫 *NJABULO MD*
 ╰━━━━━━━━━━━━━━━━━━━━╯`
-        }, { quoted: ms });
+            }, { quoted: ms });
+        }
 
     } catch (error) {
         console.error('Lyrics Error:', error);
