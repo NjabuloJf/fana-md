@@ -34,7 +34,7 @@ module.exports = {
     BOT: process.env.BOT_NAME || 'NJABULO JB',
     
     // ========== MEDIA LINKS ==========
-    URL: process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
+    URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     
     // ========== MODE SETTINGS ==========
