@@ -25,6 +25,7 @@
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@xaviabot/fb-downloader": "^1.0.14",
+    "adm-zip": "^0.5.12",
     "aptoide-scraper": "^1.0.1",
     "axios": "^1.4.0",
     "cache-manager": "^5.2.3",
