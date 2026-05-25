@@ -1,10 +1,5 @@
 const { fana } = require('../njabulo/fana');
-const fs = require('fs');
-const getFBInfo = require("@xaviabot/fb-downloader");
-const { default: axios } = require('axios');
-const config = require("../set");
 
-// ---------- Help command ----------
 fana({
   nomCom: "fbhelp",
   alias: ["facebookhelp", "fbguide"],
@@ -13,66 +8,86 @@ fana({
 }, async (dest, zk, commandeOptions) => {
   const { ms } = commandeOptions;
   
-  const msg = {
+  const sections = [
+    {
+      title: "📥 Download Options",
+      rows: [
+        { title: "🎬 HD Download", description: "Download high quality video", rowId: ".facebook " },
+        { title: "📱 SD Download", description: "Download standard quality", rowId: ".fb " }
+      ]
+    },
+    {
+      title: "ℹ️ Information",
+      rows: [
+        { title: "📚 Help Menu", description: "Show this menu again", rowId: ".fbhelp" }
+      ]
+    }
+  ];
+
+  const listMessage = {
+    text: `╭━━━━━━━━━━━━━━━━━━━━╮
+┃   📥 *FACEBOOK DOWNLOADER* 📥
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃
+┃ 📌 *.facebook <link>* - HD Quality
+┃ 📌 *.fb <link>* - SD Quality
+┃
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃ 💫 *Powered by NJABULO MD*
+╰━━━━━━━━━━━━━━━━━━━━╯`,
+    footer: "✨ NJABULO MD",
+    title: "📚 Facebook Downloader",
+    buttonText: "📥 Choose Action",
+    sections: sections,
+    listType: 1
+  };
+
+  await zk.sendMessage(dest, { listMessage: listMessage }, { quoted: ms });
+});
+
+
+
+
+
+fana({
+  nomCom: "fbhelpi",
+  alias: ["facebookhelp", "fbguide"],
+  categorie: "Download",
+  reaction: "📚"
+}, async (dest, zk, commandeOptions) => {
+  const { ms } = commandeOptions;
+  
+  const sections = [
+    {
+      title: "Download",
+      rows: [
+        { title: "HD Download", description: "Download HD quality", rowId: ".facebook " },
+        { title: "SD Download", description: "Download SD quality", rowId: ".fb " }
+      ]
+    },
+    {
+      title: "Other",
+      rows: [
+        { title: "Help Menu", description: "Show menu again", rowId: ".fbhelp" }
+      ]
+    }
+  ];
+
+  const listMessage = {
     text: `╭━━━━━━━━━━━━╮
 ┃   📥 *FACEBOOK DOWNLOADER* 📥
 ┣━━━━━━━━━━━━┫
 ┃ 📌 *.facebook <link>* = HD
 ┃ 📌 *.fb <link>* = SD
-┃ 📌 *.fbhelp* = This menu
 ╰━━━━━━━━━━━━╯
 
-📝 *How to use:* Tap "Choose Action" below, then paste your FB link`,
-    footer: '✨ Powered by NJABULO MD',
-    interactive: {
-      body: { text: 'Select what you want to do:' },
-      footer: { text: 'NJABULO MD' },
-      header: {
-        title: '📚 Facebook Help',
-        hasMediaAttachment: false
-      },
-      nativeFlowMessage: {
-        buttons: [
-          {
-            name: "single_select",
-            buttonParamsJson: JSON.stringify({
-              title: "📥 Choose Action",
-              sections: [
-                {
-                  title: "Download",
-                  rows: [
-                    {
-                      header: "HD Download",
-                      title: ".facebook <link>",
-                      description: "Download HD quality",
-                      id: ".facebook "
-                    },
-                    {
-                      header: "SD Download", 
-                      title: ".fb <link>",
-                      description: "Download SD quality",
-                      id: ".fb "
-                    }
-                  ]
-                },
-                {
-                  title: "Other",
-                  rows: [
-                    {
-                      header: "Help Menu",
-                      title: ".fbhelp",
-                      description: "Show menu again",
-                      id: ".fbhelp"
-                    }
-                  ]
-                }
-              ]
-            })
-          }
-        ]
-      }
-    }
+Tap "Choose Action" below 👇`,
+    footer: "✨ Powered by NJABULO MD",
+    title: "📚 Facebook Help",
+    buttonText: "📥 Choose Action",
+    sections: sections,
+    listType: 1
   };
 
-  await zk.sendMessage(dest, msg, { quoted: ms });
+  await zk.sendMessage(dest, { listMessage: listMessage }, { quoted: ms });
 });
