@@ -17,7 +17,7 @@ module.exports = {
     PREFIXE: process.env.PREFIX || ".",
     
     // ========== OWNER INFORMATION ==========
-    OWNER_NAME: process.env.OWNER_NAME || "ɳʝαႦυʅσ ʝႦ",
+    OWNER_NAME: process.env.OWNER_NAME || "NJABULO JB",
     NUMERO_OWNER: process.env.NUMERO_OWNER || "26777821911",
     
     // ========== STATUS SETTINGS ==========
@@ -30,14 +30,16 @@ module.exports = {
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
     // ========== BOT INFORMATION ==========
-    BOT_NAME: process.env.BOT_NAME || 'ɳʝαႦυʅσ ʝႦ',
-    BOT: process.env.BOT_NAME || 'ɳʝαႦυʅσ ʝႦ',
+    BOT_NAME: process.env.BOT_NAME || 'NJABULO JB',
+    BOT: process.env.BOT_NAME || 'NJABULO JB',
     
     // ========== MEDIA LINKS ==========
-    URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
+    URL: process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     
     // ========== MODE SETTINGS ==========
+    // MODE: 'yes' = Public (everyone can use in groups), 'no' = Private (only owner in groups)
+    // NOTE: DMs ALWAYS work for everyone regardless of MODE setting
     MODE: process.env.PUBLIC_MODE || "yes",
     
     // ========== HEROKU SETTINGS ==========
