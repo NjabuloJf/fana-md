@@ -735,56 +735,62 @@ setTimeout(() => {
                 console.log('Anti-bot error:', er);
             }
 
-            // ========== COMMAND EXECUTION ==========
+                     //execution des commandes   
             if (verifCom) {
-                const cd = evt.cm.find((fana) => fana.nomCom === (com));
+                //await await zk.readMessages(ms.key);
+                const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-                        // Check if bot is in public mode
-                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !isSuperUser) {
-                            console.log("Bot is in private mode");
-                            return;
-                        }
-                        
-                        // PM PERMIT CHECK - FIXED: Now allows everyone to use commands in DM
-                        // Only block if PM_PERMIT is 'yes' AND user is not superUser
-                        if (conf.PM_PERMIT === "yes" && !isSuperUser && origineMessage === auteurMessage) {
-                            repondre("❌ *Access Denied*\n\nYou don't have permission to use commands in private chat.\n\n> NJABULO MD");
-                            return;
-                        }
-                        
-                        // Group ban check
-                        if (!isSuperUser && verifGroupe) {
-                            let req = await isGroupBanned(origineMessage);
-                            if (req) return;
-                        }
-                        
-                        // Only admin check
-                        if (!verifAdmin && verifGroupe) {
-                            let req = await isGroupOnlyAdmin(origineMessage);
-                            if (req) return;
-                        }
-                        
-                        // User ban check
-                        if (!isSuperUser) {
-                            let req = await isUserBanned(auteurMessage);
-                            if (req) {
-                                repondre("❌ *You are banned from using bot commands*");
-                                return;
-                            }
-                        }
-                        
-                        // Execute command
-                        if (cd.reaction) reagir(origineMessage, zk, ms, cd.reaction);
+
+            if ((conf.MODE).toLocaleLowerCase() != 'yes' && !superUser) {
+                return;
+            }
+
+                         /******************* PM_PERMT***************/
+
+            if (!superUser && origineMessage === auteurMessage&& conf.PM_PERMIT === "no" ) {
+                repondre("You don't have acces to commands here") ; return }
+            ///////////////////////////////
+
+
+            /*****************************banGroup  */
+            if (!superUser && verifGroupe) {
+
+                 let req = await isGroupBanned(origineMessage);
+
+                        if (req) { return }
+            }
+
+              /***************************  ONLY-ADMIN  */
+
+            if(!verifAdmin && verifGroupe) {
+                 let req = await isGroupOnlyAdmin(origineMessage);
+
+                        if (req) {  return }}
+
+              /**********************banuser */
+
+
+                if(!superUser) {
+                    let req = await isUserBanned(auteurMessage);
+
+                        if (req) {repondre("You are banned from bot commands"); return}
+
+
+                } 
+
+                        reagir(origineMessage, zk, ms, cd.reaction);
                         cd.fonction(origineMessage, zk, commandeOptions);
-                        
-                    } catch (e) {
-                        console.log("Error:", e);
-                        zk.sendMessage(origineMessage, { text: "❌ Error: " + e.message }, { quoted: ms });
+                    }
+                    catch (e) {
+                        console.log("😡😡 " + e);
+                        zk.sendMessage(origineMessage, { text: "😡😡 " + e }, { quoted: ms });
                     }
                 }
             }
+            //fin exécution commandes
         });
+
 
         // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
