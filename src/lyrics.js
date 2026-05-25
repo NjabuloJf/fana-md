@@ -155,7 +155,9 @@ fana({
                     imageMessage: imageMessage,
                 },
                 body: {
-                    text: lyrics.length > 2000 ? lyrics.substring(0, 2000) + "\n\n... (More in next card)" : lyrics,
+                    text: `📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
