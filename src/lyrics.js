@@ -13,6 +13,16 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
+// ── Helper function to get current date ─────────────────────────
+function getCurrentDate() {
+  const date = new Date();
+  return {
+    date: date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    year: date.getFullYear(),
+    time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  };
+}
+
 async function sendErrorMessage(zk, chatId, text, ms) {
   await zk.sendMessage(chatId, { text: text }, { quoted: ms });
 }
@@ -68,6 +78,17 @@ fana({
         
         const imageMessage = imageBuffer ? (await generateWAMessageContent({ image: imageBuffer }, { upload: zk.waUploadToServer })).imageMessage : null;
         
+        const currentDate = getCurrentDate();
+        
+        // Create temp song data
+        const tempSong = {
+            title: title,
+            artist: artist,
+            date: currentDate.date,
+            year: currentDate.year,
+            time: currentDate.time
+        };
+        
         const cards = [
             {
                 header: {
@@ -78,7 +99,8 @@ fana({
                 body: {
                     text: `🎤 *Title:* ${title}
 👨‍🎤 *Artist:* ${artist}
-📏 *Length:* ${lyrics.length} chars`,
+📅 *Date:* ${tempSong.date}
+`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -87,7 +109,7 @@ fana({
                             name: "cta_copy",
                             buttonParamsJson: JSON.stringify({
                                 display_text: "📋 Copy Info",
-                                copy_code: `Title: ${title}\nArtist: ${artist}`,
+                                copy_code: `Title: ${title}\nArtist: ${artist}\nDate: ${tempSong.date}\nYear: ${tempSong.year}\nTime: ${tempSong.time}`,
                             }),
                         },
                         {
@@ -107,7 +129,9 @@ fana({
                     imageMessage: imageMessage,
                 },
                 body: {
-                    text: lyricsOutput,
+                    text: `📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
                 },
                 footer: { text: "" },
                 nativeFlowMessage: {
@@ -139,7 +163,7 @@ fana({
                         },
                         interactiveMessage: {
                             header: { text: `🎵 NJABULO MD` },
-                            body: { text: `*Lyrics for: ${title}*` },
+                            body: { text: `*📂 Temp Song: ${tempSong.title}*` },
                             headerType: 1,
                             carouselMessage: { cards },
                         },
@@ -150,6 +174,26 @@ fana({
         );
         
         await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
+        
+        // Also send lyrics as simple text
+        await zk.sendMessage(chatId, {
+            text: `╭━━━━━━━━━━━━━━━━━━━━╮
+┃     🎵 *TEMP SONG* 🎵
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃
+┃ 📀 *Title:* ${tempSong.title}
+┃ 🎤 *Artist:* ${tempSong.artist}
+┃ 📅 *Date:* ${tempSong.date}
+┃ 📆 *Year:* ${tempSong.year}
+┃ 🕐 *Time:* ${tempSong.time}
+┃
+┃ 📝 *Lyrics:*
+┃ ${lyricsOutput.substring(0, 500)}${lyricsOutput.length > 500 ? '...' : ''}
+┃
+┣━━━━━━━━━━━━━━━━━━━━┫
+┃ 💫 *NJABULO MD*
+╰━━━━━━━━━━━━━━━━━━━━╯`
+        }, { quoted: ms });
 
     } catch (error) {
         console.error('Lyrics Error:', error);
