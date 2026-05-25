@@ -493,8 +493,10 @@ setTimeout(() => {
             const superUserNumbers = [servBot, ownerJid, ownerNumber + "@s.whatsapp.net"];
             superUserNumbers.push(...sudoNumbersList);
             const superUserRawNumbers = [servBot?.split('@')[0], ownerNumber, conf.NUMERO_OWNER];
-            const isSuperUser = superUserNumbers.includes(auteurMessage) || superUserRawNumbers.includes(auteurMessage?.split('@')[0]);
-            const isDev = isSuperUser;
+            
+            // DEFINE superUser HERE (this is the variable used in command execution)
+            const superUser = superUserNumbers.includes(auteurMessage) || superUserRawNumbers.includes(auteurMessage?.split('@')[0]);
+            const isDev = superUser;
 
             function repondre(mes) {
                 zk.sendMessage(origineMessage, { text: mes }, { quoted: ms });
@@ -534,7 +536,7 @@ setTimeout(() => {
             }
 
             var commandeOptions = {
-                superUser: isSuperUser,
+                superUser: superUser,
                 dev: isDev,
                 verifGroupe, mbre, membreGroupe, verifAdmin,
                 infosGroupe, nomGroupe, auteurMessage, nomAuteurMessage, idBot,
@@ -544,7 +546,6 @@ setTimeout(() => {
             };
 
             // ========== ANTI-LINK WITH STICKER AND BUTTONS ==========
-            // anti-lien
             try {
                 const yes = await verifierEtatJid(origineMessage)
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com') || texte.includes('wa.me')) && verifGroupe && yes) {
@@ -553,8 +554,8 @@ setTimeout(() => {
                     
                     const isBotAdmin = admins.includes(idBot);
                     
-                    if (isSuperUser || verifAdmin || !isBotAdmin) {
-                        console.log(`⏭️ Skipping action - SuperUser: ${isSuperUser}, GroupAdmin: ${verifAdmin}, BotAdmin: ${isBotAdmin}`);
+                    if (superUser || verifAdmin || !isBotAdmin) {
+                        console.log(`⏭️ Skipping action - SuperUser: ${superUser}, GroupAdmin: ${verifAdmin}, BotAdmin: ${isBotAdmin}`);
                         await zk.sendMessage(origineMessage, { 
                             text: `⚠️ *LINK DETECTED* ⚠️\n\nPlease don't send links in this group!\n\n@${auteurMessage.split("@")[0]} avoid sending links.`,
                             mentions: [auteurMessage]
@@ -741,13 +742,15 @@ setTimeout(() => {
                 if (cd) {
                     try {
                         // MODE CHECK (Public/Private)
-                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !isSuperUser) {
+                        if ((conf.MODE || "").toLocaleLowerCase() != 'yes' && !superUser) {
                             console.log("Bot is in private mode");
                             return;
                         }
                         
+                        // PM_PERMIT REMOVED - Everyone can use DM commands now
+                        
                         // Group ban check
-                        if (!isSuperUser && verifGroupe) {
+                        if (!superUser && verifGroupe) {
                             let req = await isGroupBanned(origineMessage);
                             if (req) return;
                         }
@@ -759,7 +762,7 @@ setTimeout(() => {
                         }
                         
                         // User ban check
-                        if (!isSuperUser) {
+                        if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
                                 repondre("❌ *You are banned from using bot commands*");
