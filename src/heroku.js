@@ -280,38 +280,6 @@ fana({
     await sendFormattedMessage(zk, chatId, responseMessage, ms);
 });
 
-// Pm-permit command
-fana({
-    nomCom: 'pm-permit',
-    categorie: "HEROKU-CLIENT"
-}, async (chatId, zk, context) => {
-    const { ms, repondre, superUser, auteurMessage, arg } = context;
-
-    if (!superUser) {
-        return sendFormattedMessage(zk, chatId, "❌ This command is restricted to the bot owner.", ms);
-    }
-
-    if (!arg[0]) {
-        return sendFormattedMessage(zk, chatId, "📌 Instructions:\n\nType 'pm-permit yes' to enable or 'pm-permit no' to disable.", ms);
-    }
-
-    const option = arg.join(' ').toLowerCase();
-    let responseMessage;
-    switch (option) {
-        case "yes":
-            s.PM_PERMIT = 'yes';
-            responseMessage = '✅ PM permit has been enabled successfully.';
-            break;
-        case "no":
-            s.PM_PERMIT = 'no';
-            responseMessage = '✅ PM permit has been disabled successfully.';
-            break;
-        default:
-            return sendFormattedMessage(zk, chatId, "❌ Invalid option. Type 'pm-permit yes' or 'pm-permit no'.", ms);
-    }
-
-    await sendFormattedMessage(zk, chatId, responseMessage, ms);
-});
 
 // Chatbot command
 fana({
