@@ -31,7 +31,13 @@ function formatFileSize(bytes) {
 }
 
 async function sendErrorMessage(zk, chatId, text, ms) {
-  await zk.sendMessage(chatId, { text: text }, { quoted: ms });
+  await zk.sendMessage(chatId, {
+    interactiveMessage: {
+    header: text,
+             buttons,
+          headerType: 1
+    }
+    }, { quoted: ms });
 }
 
 fana(
@@ -200,10 +206,11 @@ in settings to install!`,
           
           // Send the APK as a document
           await zk.sendMessage(chatId, {
+            interactiveMessage: {
             document: apkBuffer,
             fileName: `${app.name.replace(/[^a-zA-Z0-9]/g, '_')}.apk`,
             mimetype: "application/vnd.android.package-archive",
-            caption: `📦 *${app.name} APK*
+            header: `📦 *${app.name} APK*
 
 📱 *Name:* ${app.name}
 🏋️ *Size:* ${appSize}
@@ -214,9 +221,11 @@ in settings to install!`,
 ⚠️ *Installation Tips:*
 • Enable "Unknown Sources" in Settings
 • Open the downloaded file
-• Click "Install"
+• Click "Install"`,
+       buttons,
+          headerType: 1
+            }
 
-> NJABULO MD`
           }, { quoted: ms });
           
           // Delete download message
