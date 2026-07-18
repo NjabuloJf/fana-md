@@ -1,5 +1,29 @@
 const { fana } = require("../njabulo/fana");
 const conf = require("../set");
+const axios = require("axios");
+
+// ========== TRANSLATION FUNCTION ==========
+let translateText = async (text, targetLang) => {
+    try {
+        if (!targetLang || targetLang === 'en') return text;
+        try {
+            const { translate } = require('@vitalets/google-translate-api');
+            const result = await translate(text, { to: targetLang });
+            return result.text;
+        } catch (e) {
+            const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
+                timeout: 5000
+            });
+            if (response.data && response.data.responseData) {
+                return response.data.responseData.translatedText || text;
+            }
+            return text;
+        }
+    } catch (error) {
+        console.error('Translation error:', error.message);
+        return text;
+    }
+};
 
 async function sendMessage(zk, chatId, text, ms) {
   const buttons = [
@@ -22,13 +46,6 @@ async function sendMessage(zk, chatId, text, ms) {
   }, { quoted: ms });
 }
 
-const templates = {
-  pong: "🏓 *PONG!*",
-  ping: "📡 *Ping:*",
-  uptime: "⏱️ *Uptime:*",
-  status: "✅ *Status:* Online"
-};
-
 fana({
   nomCom: "ping",
   alias: ["pong", "speed"],
@@ -40,6 +57,12 @@ fana({
   
   const lang = conf.LANGUAGE || "en";
   
+  // Translate to selected language
+  const pongMsg = await translateText("🏓 *PONG!*", lang);
+  const pingMsg = await translateText("📡 *Ping:*", lang);
+  const uptimeMsg = await translateText("⏱️ *Uptime:*", lang);
+  const statusMsg = await translateText("✅ *Status:* Online", lang);
+  
   const start = Date.now();
   const ping = Date.now() - start;
   const uptime = process.uptime();
@@ -48,12 +71,12 @@ fana({
   const minutes = Math.floor((uptime % 3600) / 60);
   const seconds = Math.floor(uptime % 60);
   
-  const message = `${templates.pong}
+  const message = `${pongMsg}
 
-${templates.ping} ${ping}ms
-${templates.uptime} ${days}d ${hours}h ${minutes}m ${seconds}s
+${pingMsg} ${ping}ms
+${uptimeMsg} ${days}d ${hours}h ${minutes}m ${seconds}s
 
-${templates.status}
+${statusMsg}
 
 > NJABULO MD`;
 
