@@ -321,16 +321,18 @@ setTimeout(() => {
     async function main() {
         const { version, isLatest } = await baileys_1.fetchLatestBaileysVersion();
         const { state, saveCreds } = await baileys_1.useMultiFileAuthState(sessionDir);
+        
+        // ========== FIXED SOCK OPTIONS - REMOVED PROBLEMATIC OPTIONS ==========
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            shouldSyncHistoryMessage: true,
-            downloadHistory: true,
-            syncFullHistory: true,
-            generateHighQualityLinkPreview: true,
+            // REMOVED: shouldSyncHistoryMessage (causing error)
+            // REMOVED: downloadHistory (causing error)
+            // REMOVED: syncFullHistory (causing error)
+            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -345,6 +347,7 @@ setTimeout(() => {
                 return { conversation: 'An Error Occurred, Repeat Command!' };
             }
         };
+        
         const zk = baileys_1.default(sockOptions);
         store.bind(zk.ev);
 
@@ -568,7 +571,7 @@ setTimeout(() => {
                 }
             }
 
-            // ========== ANTI-LINK WITH PERSONAL IMAGE AND LANGUAGE ==========
+            // ========== ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
@@ -660,7 +663,7 @@ setTimeout(() => {
                 console.log("Anti-link error:", e);
             }
 
-            // ========== ANTI-BOT WITH PERSONAL IMAGE AND LANGUAGE ==========
+            // ========== ANTI-BOT ==========
             try {
                 const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
                 const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
