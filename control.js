@@ -45,8 +45,48 @@ const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
 const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
-const { translateText } = require("./translate");
-const { languageNames } = require("./language");
+
+// ========== TRANSLATION SETUP WITH FALLBACK ==========
+let translateText = async (text, targetLang) => {
+    try {
+        if (!targetLang || targetLang === 'en') return text;
+        // Try to use google translate if available
+        try {
+            const { translate } = require('@vitalets/google-translate-api');
+            const result = await translate(text, { to: targetLang });
+            return result.text;
+        } catch (e) {
+            // Fallback to mymemory translation
+            const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
+                timeout: 5000
+            });
+            if (response.data && response.data.responseData) {
+                return response.data.responseData.translatedText || text;
+            }
+            return text;
+        }
+    } catch (error) {
+        console.error('Translation error:', error.message);
+        return text;
+    }
+};
+
+const languageNames = {
+    en: "English",
+    sn: "Shona",
+    nd: "Ndebele",
+    af: "Afrikaans",
+    zu: "Zulu",
+    xh: "Xhosa",
+    pt: "Portuguese",
+    sw: "Swahili",
+    hi: "Hindi",
+    ar: "Arabic",
+    fr: "French",
+    es: "Spanish",
+    zh: "Chinese",
+    de: "German"
+};
 
 var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE;
@@ -56,7 +96,18 @@ const readmore = more.repeat(4001)
 console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 
 // ========== BUTTON HANDLER ==========
-const { handleButtons } = require("./commands/play0");
+let handleButtons = async (zk, msg) => {
+    console.log("Button handler triggered");
+    try {
+        if (msg.message?.buttonsResponseMessage) {
+            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
+            const from = msg.key.remoteJid;
+            console.log(`Button clicked: ${buttonId}`);
+        }
+    } catch (error) {
+        console.error("Button handler error:", error);
+    }
+};
 
 async function authentification() {
     try {
