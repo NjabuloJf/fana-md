@@ -1,6 +1,31 @@
 const { fana } = require("../njabulo/fana");
 const conf = require("../set");
+const axios = require("axios");
 
+// ========== TRANSLATION FUNCTION (Same as control.js) ==========
+let translateText = async (text, targetLang) => {
+    try {
+        if (!targetLang || targetLang === 'en') return text;
+        try {
+            const { translate } = require('@vitalets/google-translate-api');
+            const result = await translate(text, { to: targetLang });
+            return result.text;
+        } catch (e) {
+            const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
+                timeout: 5000
+            });
+            if (response.data && response.data.responseData) {
+                return response.data.responseData.translatedText || text;
+            }
+            return text;
+        }
+    } catch (error) {
+        console.error('Translation error:', error.message);
+        return text;
+    }
+};
+
+// ========== SEND MESSAGE WITH BUTTONS ==========
 async function sendMessage(zk, chatId, text, ms) {
   const buttons = [
     {
@@ -22,14 +47,7 @@ async function sendMessage(zk, chatId, text, ms) {
   }, { quoted: ms });
 }
 
-// English message templates (will be translated in control.js)
-const templates = {
-  reply: "⚠️ *Please reply to the message you want to delete.*",
-  success: "✅ *Message deleted successfully.*",
-  admin_rights: "❌ *I need admin rights to delete messages.*",
-  only_admins: "❌ *Sorry, only group admins can delete messages.*"
-};
-
+// ========== DEL COMMAND ==========
 fana(
   { nomCom: "del", categorie: "Group", reaction: "🗑️" },
   async (dest, zk, commandeOptions) => {
@@ -44,14 +62,17 @@ fana(
       superUser,
     } = commandeOptions;
 
-    // Get language from conf
+    // Get language from config
     const lang = conf.LANGUAGE || "en";
     
-    // Use the translated repondre function from control.js
-    // repondre is already translated in control.js
+    // Translate messages to selected language
+    const replyMsg = await translateText("⚠️ *Please reply to the message you want to delete.*", lang);
+    const successMsg = await translateText("✅ *Message deleted successfully.*", lang);
+    const adminRightsMsg = await translateText("❌ *I need admin rights to delete messages.*", lang);
+    const onlyAdminsMsg = await translateText("❌ *Sorry, only group admins can delete messages.*", lang);
 
     if (!msgRepondu) {
-      return await sendMessage(zk, dest, templates.reply, ms);
+      return await sendMessage(zk, dest, replyMsg, ms);
     }
 
     if (superUser && auteurMsgRepondu === idBot) {
@@ -61,7 +82,7 @@ fana(
         id: ms.message.extendedTextMessage.contextInfo.stanzaId,
       };
       await zk.sendMessage(dest, { delete: key });
-      await sendMessage(zk, dest, templates.success, ms);
+      await sendMessage(zk, dest, successMsg, ms);
       return;
     }
 
@@ -75,12 +96,12 @@ fana(
             participant: ms.message.extendedTextMessage.contextInfo.participant,
           };
           await zk.sendMessage(dest, { delete: key });
-          await sendMessage(zk, dest, templates.success, ms);
+          await sendMessage(zk, dest, successMsg, ms);
         } catch (e) {
-          await sendMessage(zk, dest, templates.admin_rights, ms);
+          await sendMessage(zk, dest, adminRightsMsg, ms);
         }
       } else {
-        await sendMessage(zk, dest, templates.only_admins, ms);
+        await sendMessage(zk, dest, onlyAdminsMsg, ms);
       }
     }
   }
