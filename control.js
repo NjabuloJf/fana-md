@@ -45,6 +45,9 @@ const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
 const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
+const { translateText } = require("./translate");
+const { languageNames } = require("./language");
+
 var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE;
 const more = String.fromCharCode(8206)
@@ -181,6 +184,46 @@ const store = baileys_1.makeInMemoryStore({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
 
+// ========== LANGUAGE HELPER ==========
+const getLang = () => conf.LANGUAGE || "en";
+
+// ========== TRANSLATE MESSAGE FUNCTION ==========
+const messageTemplates = {
+    welcome: "🎉 *WELCOME TO THE GROUP!*",
+    welcome_hello: "👋 *Hello*",
+    welcome_rules: "📜 *Rules:* No spam, No NSFW, Respect members",
+    welcome_enjoy: "💫 *Enjoy your stay!*",
+    goodbye: "👋 *GOODBYE*",
+    goodbye_left: "😢 *has left the group*",
+    goodbye_remaining: "👥 *Remaining:*",
+    goodbye_missed: "💫 *You will be missed!*",
+    link_detected: "⚠️ *LINK DETECTED* ⚠️",
+    link_warning: "Please don't send links in this group!",
+    link_deleted: "🚫 *Message deleted*",
+    link_removed: "🚫 *removed from group*",
+    link_warn: "⚠️ *LINK DETECTED!*",
+    link_warn_count: "You have received a warning!",
+    link_warn_remaining: "Remaining warnings before removal:",
+    bot_detected: "🤖 *BOT DETECTED* 🤖",
+    bot_removed: "🚫 removed from group.",
+    bot_deleted: "🚫 Bot message deleted",
+    members: "👥 *Members:*",
+    group: "📱 *Group:*",
+    date: "📅 *Date:*",
+    joined_at: "🎉 *Joined at:*",
+    left_at: "🕐 *Left at:*"
+};
+
+async function translateMessage(key, lang) {
+    const text = messageTemplates[key] || key;
+    if (lang === 'en') return text;
+    try {
+        return await translateText(text, lang);
+    } catch {
+        return text;
+    }
+}
+
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
@@ -307,8 +350,17 @@ setTimeout(() => {
             const superUser = allAllowedNumbers.includes(auteurMessage);
             var dev = [conf.NUMERO_OWNER].map((t) => t.replace(/[^0-9]/g) + "@s.whatsapp.net").includes(auteurMessage);
             
-            function repondre(mes) { 
-                zk.sendMessage(origineMessage, { text: mes }, { quoted: ms }); 
+            const lang = getLang();
+            
+            // ========== TRANSLATED REPONDRE FUNCTION ==========
+            async function repondre(mes) {
+                try {
+                    const translated = await translateText(mes, lang);
+                    await zk.sendMessage(origineMessage, { text: translated }, { quoted: ms });
+                } catch (error) {
+                    console.error("Translation error in repondre:", error);
+                    await zk.sendMessage(origineMessage, { text: mes }, { quoted: ms });
+                }
             }
             
             // ========== HELPER TO GET PROFILE PIC ==========
@@ -425,7 +477,7 @@ setTimeout(() => {
                 }
             }
 
-            // ========== ANTI-LINK WITH PERSONAL IMAGE ==========
+            // ========== ANTI-LINK WITH PERSONAL IMAGE AND LANGUAGE ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
@@ -436,7 +488,6 @@ setTimeout(() => {
                         return;
                     }
                     
-                    // Get user profile picture for warning
                     const userPP = await getUserProfilePic(auteurMessage);
                     
                     const key = {
@@ -459,10 +510,11 @@ setTimeout(() => {
                     await sticker.toFile("st1.webp");
                     var action = await recupererActionJid(origineMessage);
                     
-                    let txt = "⚠️ *LINK DETECTED* ⚠️\n";
+                    let txt = await translateMessage('link_detected', lang) + "\n";
                     
                     if (action === 'remove') {
-                        txt += `🚫 Message deleted\n👤 @${auteurMessage.split("@")[0]} removed from group.`;
+                        txt += await translateMessage('link_deleted', lang) + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ` + await translateMessage('link_removed', lang);
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         await (0, baileys_1.delay)(800);
                         await zk.sendMessage(origineMessage, { 
@@ -477,7 +529,8 @@ setTimeout(() => {
                         await fs.unlink("st1.webp");
                     } 
                     else if (action === 'delete') {
-                        txt += `🚫 Message deleted\n👤 @${auteurMessage.split("@")[0]} avoid sending links.`;
+                        txt += await translateMessage('link_deleted', lang) + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ` + await translateMessage('link_warning', lang);
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -491,7 +544,7 @@ setTimeout(() => {
                         let warn = await getWarnCountByJID(auteurMessage);
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = `⚠️ Link detected! You will be removed because of reaching warn limit (${warnlimit})`;
+                            var kikmsg = await translateMessage('link_warn', lang) + "\n" + await translateMessage('link_warn_remaining', lang);
                             await zk.sendMessage(origineMessage, { 
                                 image: { url: userPP || randomNjabulourl }, 
                                 caption: kikmsg, 
@@ -501,7 +554,7 @@ setTimeout(() => {
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = `⚠️ Link detected! Warning ${warn + 1}/${warnlimit}\nRemaining: ${rest}`;
+                            var msg = await translateMessage('link_warn', lang) + "\n" + await translateMessage('link_warn_count', lang) + `\n${await translateMessage('link_warn_remaining', lang)} ${rest}`;
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
                             await zk.sendMessage(origineMessage, { 
                                 image: { url: userPP || randomNjabulourl }, 
@@ -516,7 +569,7 @@ setTimeout(() => {
                 console.log("Anti-link error:", e);
             }
 
-            // ========== ANTI-BOT WITH PERSONAL IMAGE ==========
+            // ========== ANTI-BOT WITH PERSONAL IMAGE AND LANGUAGE ==========
             try {
                 const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
                 const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
@@ -526,7 +579,6 @@ setTimeout(() => {
                     if(!antibotactiver) return;
                     if(verifAdmin || auteurMessage === idBot) return;
                     
-                    // Get user profile picture for warning
                     const userPP = await getUserProfilePic(auteurMessage);
                     
                     const key = {
@@ -535,11 +587,12 @@ setTimeout(() => {
                         id: ms.key.id,
                         participant: auteurMessage
                     };
-                    var txt = "🤖 *BOT DETECTED* 🤖\n";
+                    var txt = await translateMessage('bot_detected', lang) + "\n";
                     var action = await atbrecupererActionJid(origineMessage);
                     
                     if (action === 'remove') {
-                        txt += `🚫 Bot detected\n👤 @${auteurMessage.split("@")[0]} removed from group.`;
+                        txt += await translateMessage('bot_removed', lang);
+                        txt += `\n👤 @${auteurMessage.split("@")[0]}`;
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -549,7 +602,8 @@ setTimeout(() => {
                         await zk.sendMessage(origineMessage, { delete: key });
                     } 
                     else if (action === 'delete') {
-                        txt += `🚫 Bot message deleted\n👤 @${auteurMessage.split("@")[0]} avoid sending bot messages.`;
+                        txt += await translateMessage('bot_deleted', lang);
+                        txt += `\n👤 @${auteurMessage.split("@")[0]}`;
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -562,7 +616,7 @@ setTimeout(() => {
                         let warn = await getWarnCountByJID(auteurMessage);
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = `🤖 Bot detected! You will be removed because of reaching warn limit (${warnlimit})`;
+                            var kikmsg = await translateMessage('bot_detected', lang) + "\n" + await translateMessage('link_warn_remaining', lang);
                             await zk.sendMessage(origineMessage, { 
                                 image: { url: userPP || randomNjabulourl }, 
                                 caption: kikmsg, 
@@ -572,7 +626,7 @@ setTimeout(() => {
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = `🤖 Bot detected! Warning ${warn + 1}/${warnlimit}\nRemaining: ${rest}`;
+                            var msg = await translateMessage('bot_detected', lang) + "\n" + await translateMessage('link_warn_count', lang) + `\n${await translateMessage('link_warn_remaining', lang)} ${rest}`;
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
                             await zk.sendMessage(origineMessage, { 
                                 image: { url: userPP || randomNjabulourl }, 
@@ -622,13 +676,14 @@ setTimeout(() => {
                     }
                     catch (e) {
                         console.log("Error:", e);
-                        zk.sendMessage(origineMessage, { text: "❌ Error: " + e.message }, { quoted: ms });
+                        const translatedError = await translateText("❌ Error: " + e.message, lang);
+                        zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
                 }
             }
         });
 
-        // ========== GROUP PARTICIPANTS UPDATE (WELCOME & GOODBYE WITH PERSONAL IMAGES) ==========
+        // ========== GROUP PARTICIPANTS UPDATE (WELCOME & GOODBYE WITH LANGUAGE) ==========
         const { recupevents } = require('./bdd/welcome');
         
         async function getProfilePic(jid) {
@@ -655,6 +710,8 @@ setTimeout(() => {
         zk.ev.on('group-participants.update', async (group) => {
             console.log("📢 Group update detected");
             
+            const lang = getLang();
+            
             let ppgroup;
             try {
                 ppgroup = await zk.profilePictureUrl(group.id, 'image');
@@ -678,20 +735,28 @@ setTimeout(() => {
                             const memberName = await getName(memberJid);
                             const memberPP = await getProfilePic(memberJid);
                             
+                            const welcomeTitle = await translateMessage('welcome', lang);
+                            const welcomeHello = await translateMessage('welcome_hello', lang);
+                            const welcomeRules = await translateMessage('welcome_rules', lang);
+                            const welcomeEnjoy = await translateMessage('welcome_enjoy', lang);
+                            const membersT = await translateMessage('members', lang);
+                            const joinedAt = await translateMessage('joined_at', lang);
+                            const dateT = await translateMessage('date', lang);
+                            
                             const welcomeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃     🎉 *WELCOME TO THE GROUP!* 🎉
+┃     ${welcomeTitle}
 ┃
-┃ 👋 *Hello ${memberName}* !
+┃ ${welcomeHello} ${memberName}!
 ┃
-┃ 📱 *Group:* ${groupName}
-┃ 👥 *Members:* ${participantCount}
+┃ 📱 *${await translateMessage('group', lang)}:* ${groupName}
+┃ 👥 ${membersT}: ${participantCount}
 ┃
-┃ 🕐 *Joined at:* ${joinTime}
-┃ 📅 *Date:* ${joinDate}
+┃ 🕐 ${joinedAt}: ${joinTime}
+┃ 📅 ${dateT}: ${joinDate}
 ┃
-┃ 📜 *Rules:* No spam, No NSFW, Respect members
+┃ ${welcomeRules}
 ┃
-┃ 💫 *Enjoy your stay!*
+┃ ${welcomeEnjoy}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
                             
                             await zk.sendMessage(group.id, {
@@ -714,18 +779,26 @@ setTimeout(() => {
                             const memberJid = participant;
                             const memberName = await getName(memberJid);
                             
+                            const goodbyeTitle = await translateMessage('goodbye', lang);
+                            const goodbyeLeft = await translateMessage('goodbye_left', lang);
+                            const goodbyeRemaining = await translateMessage('goodbye_remaining', lang);
+                            const goodbyeMissed = await translateMessage('goodbye_missed', lang);
+                            const groupT = await translateMessage('group', lang);
+                            const leftAt = await translateMessage('left_at', lang);
+                            const dateT = await translateMessage('date', lang);
+                            
                             const goodbyeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃        👋 *GOODBYE* 👋
+┃        ${goodbyeTitle}
 ┃
-┃ 😢 *${memberName}* has left the group
+┃ 😢 ${memberName} ${goodbyeLeft}
 ┃
-┃ 📱 *Group:* ${groupName}
-┃ 👥 *Remaining:* ${participantCount - 1}
+┃ 📱 ${groupT}: ${groupName}
+┃ 👥 ${goodbyeRemaining} ${participantCount - 1}
 ┃
-┃ 🕐 *Left at:* ${joinTime}
-┃ 📅 *Date:* ${joinDate}
+┃ 🕐 ${leftAt}: ${joinTime}
+┃ 📅 ${dateT}: ${joinDate}
 ┃
-┃ 💫 *You will be missed!*
+┃ ${goodbyeMissed}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
                             
                             await zk.sendMessage(group.id, {
@@ -777,11 +850,15 @@ setTimeout(() => {
                 (0, baileys_1.delay)(700);
                 var md = (conf.MODE || "").toLowerCase() === "yes" ? "public" : "private";
                 
+                const currentLang = conf.LANGUAGE || "en";
+                const langName = languageNames[currentLang] || "English";
+                
                 console.log("✅ NJABULO MD READY!");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 console.log("📌 BOT: NJABULO MD");
                 console.log("📌 PREFIX: " + prefixe);
                 console.log("📌 MODE: " + md);
+                console.log("📌 LANGUAGE: " + langName + " (" + currentLang + ")");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
@@ -790,6 +867,7 @@ setTimeout(() => {
 ┊┊ *ᯤNJABULO MD: ONLINE* 
 ┊┊ *PREFIX: [ ${prefixe} ]*
 ┊┊ *MODE:* ${md}
+┊┊ *LANGUAGE:* ${langName}
 ┊┊ *ANTI-DELETE:* ${conf.ADM === "yes" ? "✅ ON" : "❌ OFF"}
 ┊┗━┈┈┈┈┈┈┈┈
 ╰───────────⊷`;

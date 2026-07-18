@@ -1,100 +1,95 @@
 {
- "name":"ɳʝαႦυʅσ ʝႦ",
-  "description":"Njabulo AI",
-  "keywords":["bot","node","baileys","whatsapp"],
-  "logo":"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-  "repository":"https://github.com/NjabuloJf/fana-md",
-  "succes_url":"/",
-  "stack":"container",
-  "env":{
-    "PREFIX":
-    {
-      "description":"🔠choose your prefix of bot",
-      "value":".",
-      "required":true
+  "name": "Njabulo_Jb",
+  "description": "Njabulo AI",
+  "keywords": ["bot", "node", "baileys", "whatsapp"],
+  "logo": "https://files.catbox.moe/ety154.jpg",
+  "repository": "https://github.com/NjabuloJf/fana-md",
+  "succes_url": "/",
+  "stack": "container",
+  "env": {
+    "PREFIX": {
+      "description": "🔠 Choose your prefix of bot",
+      "value": ".",
+      "required": true
     },
-    "AUTO_READ_STATUS":
-    {
-      "description":"♻️Your contact status will be read automatically(type yes to active or no to deactive  ; don't write in capital letter)",
-      "value":"yes",
-      "required":false
-    }, 
-    "AUTO_DOWNLOAD_STATUS":
-    {
-      "description":"🟢Your contact status will be download automatically and send to you(type yes to active or no to deactive ; don't write in capital letter)",
-      "value":"no",
-      "required":false
+    "LANGUAGE": {
+      "description": "🌍 Choose your bot language\n🇬🇧 en - English\n🇿🇼 sn - Shona\n🇿🇼 nd - Ndebele\n🇿🇦 af - Afrikaans\n🇿🇦 zu - Zulu\n🇿🇦 xh - Xhosa\n🇵🇹 pt - Portuguese\n🇰🇪 sw - Swahili\n🇮🇳 hi - Hindi\n🇮🇶 ar - Arabic\n🇫🇷 fr - French\n🇪🇸 es - Spanish\n🇨🇳 zh - Chinese\n🇩🇪 de - German\n🇯🇵 ja - Japanese\n🇰🇷 ko - Korean\n🇷🇺 ru - Russian\n🇮🇹 it - Italian",
+      "value": "en",
+      "required": false
     },
-    "AUTOREACT_STATUS":
-    {
-      "description":"🎊Enter yes for your bot to auto like status",
-      "value":"yes",
-      "required":true
+    "AUTO_READ_STATUS": {
+      "description": "♻️ Your contact status will be read automatically",
+      "value": "yes",
+      "required": false
     },
-    "BOT_NAME" : {
-      "description":"👤put A name for your bot",
-      "value":"ɳʝαႦυʅσ ʝႦ",
-      "required":false
+    "AUTO_DOWNLOAD_STATUS": {
+      "description": "🟢 Your contact status will be download automatically",
+      "value": "no",
+      "required": false
     },
-    "BOT_MENU_LINKS" : {
-      "description":"🖼️add one or many link for your bot menu  ; eg : url1,url2,url3.....",
-      "value":"",
-      "required":false
+    "AUTOREACT_STATUS": {
+      "description": "🎊 Enter yes for your bot to auto like status",
+      "value": "yes",
+      "required": true
     },
-    "PUBLIC_MODE":
-    {
-      "description":"🌐type yes to put your bot on public mode or no to put it on private mod",
-      "value":"yes",
-      "required":false
+    "BOT_NAME": {
+      "description": "👤 Put a name for your bot",
+      "value": "Njabulo_Jb",
+      "required": false
+    },
+    "BOT_MENU_LINKS": {
+      "description": "🖼️ Add one or many link for your bot menu",
+      "value": "https://files.catbox.moe/mh36c7.jpg",
+      "required": false
+    },
+    "PUBLIC_MODE": {
+      "description": "🌐 Type yes to put your bot on public mode or no to put it on private mode",
+      "value": "yes",
+      "required": false
     },
     "HEROKU_APY_KEY": {
-      "description": "📡insert your heroku api-key ",
-      "value":"HRKU-AAa4OvbTCLDEK8R9CIpjZDInu5zGLmQfqkA0oJNNSu2Q_____wNi617Z3aQe",
-      "required" :true
+      "description": "📡 Insert your heroku api-key",
+      "value": "",
+      "required": true
     },
     "HEROKU_APP_NAME": {
-      "description": "👥insert your heroku APP NAME (the name you wrote at the beginning)",
-      "value":"",
-      "required" :true
+      "description": "👥 Insert your heroku APP NAME",
+      "value": "",
+      "required": true
     },
-    "SESSION_ID":
-    {
-      "description":"📃put your session ID, the code you received after pairing code",   
-      "value":"",
-      "required":true
+    "SESSION_ID": {
+      "description": "📃 Put your session ID, the code you received after pairing code",
+      "value": "",
+      "required": true
     },
-    "OWNER_NAME":
-    {
-      "desc": "👤Your Name",
+    "OWNER_NAME": {
+      "desc": "👤 Your Name",
       "required": false,
       "value": "Njabulo Jb"
     },
-    "NUMERO_OWNER":
-    {
-      "desc": "🍥Your number , dont put '+' and put you area code(exemple of togo '228')",
-      "required":false,
+    "NUMERO_OWNER": {
+      "desc": "🍥 Your number, don't put '+' and put your area code",
+      "required": false,
       "value": "26777821911"
     },
-    "WARN_COUNT":
-    {
-      "desc": "🚫this is the limit of warn for warning commandes",
+    "WARN_COUNT": {
+      "desc": "🚫 This is the limit of warn for warning commandes",
       "required": false,
       "value": "3"
     },
-    "STARTING_BOT_MESSAGE":
-    {
-      "description": "💬if you don't want startting-bot-message put no else put yes",
+    "STARTING_BOT_MESSAGE": {
+      "description": "💬 If you don't want starting bot message put no else put yes",
       "required": true,
       "value": "yes"
     },
-    "PRESENCE":{
-      "description":"⬇️Mark your presence: 1 to indicate that you are online even if you are not. 2 to indicate that you are currently typing a message. 3 to indicate that you are currently recording an audio. Or leave the field blank to indicate your real state.",
-      "value":"1",  
+    "PRESENCE": {
+      "description": "⬇️ Mark your presence: 1 for online, 2 for typing, 3 for recording",
+      "value": "1",
       "required": false
     },
-    "ANTI_DELETE_MESSAGE" : {
-      "description": "🚮if you want to enable anti delete message put yes else put no",
-      "value": "no",
+    "ANTI_DELETE_MESSAGE": {
+      "description": "🚮 If you want to enable anti delete message put yes else put no",
+      "value": "yes",
       "required": false
     }
   },
@@ -104,9 +99,9 @@
       "size": "basic"
     }
   },
-  "addons":[
+  "addons": [
     {
-      "plan":"heroku-postgresql:essential-0"
+      "plan": "heroku-postgresql:essential-0"
     }
   ]
 }

@@ -20,6 +20,12 @@ module.exports = {
     OWNER_NAME: process.env.OWNER_NAME || "NJABULO JB",
     NUMERO_OWNER: process.env.NUMERO_OWNER || "26777821911",
     
+    // ========== LANGUAGE SETTINGS ==========
+    // Supported: en, sn, nd, af, zu, xh, pt, vmw, seh, ts, sw, ki, luo, luh, kal,
+    // ha, ig, yo, hi, bn, ta, te, mr, gu, ar, ku, fa, he, tr, fr, es, de, it, ru, nl, el, pl,
+    // zh, ja, ko, th, vi, id, tl, ms, qu
+    LANGUAGE: process.env.LANGUAGE || "en",
+    
     // ========== STATUS SETTINGS ==========
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "yes",
     AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
@@ -38,8 +44,6 @@ module.exports = {
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     
     // ========== MODE SETTINGS ==========
-    // MODE: 'yes' = Public (everyone can use in groups), 'no' = Private (only owner in groups)
-    // NOTE: DMs ALWAYS work for everyone regardless of MODE setting
     MODE: process.env.PUBLIC_MODE || "yes",
     
     // ========== HEROKU SETTINGS ==========
