@@ -26,52 +26,56 @@ let translateText = async (text, targetLang) => {
 };
 
 async function sendMessage(zk, chatId, text, ms) {
-  const buttons = [
-    {
-      name: "cta_url",
-      buttonParamsJson: JSON.stringify({
-        display_text: "🌐 WA Channel",
-        id: "backup channel",
-        url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-      }),
-    }
-  ];
-  
-  await zk.sendMessage(chatId, {
-    interactiveMessage: {
-      header: text,
-      buttons,
-      headerType: 1
-    }
-  }, { quoted: ms });
+    const lang = conf.LANGUAGE || "en";
+    
+    // Translate button text
+    const buttonText = await translateText("🌐 WA Channel", lang);
+    
+    const buttons = [
+        {
+            name: "cta_url",
+            buttonParamsJson: JSON.stringify({
+                display_text: buttonText,
+                id: "backup channel",
+                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+            }),
+        }
+    ];
+    
+    await zk.sendMessage(chatId, {
+        interactiveMessage: {
+            header: text,
+            buttons,
+            headerType: 1
+        }
+    }, { quoted: ms });
 }
 
 fana({
-  nomCom: "ping",
-  alias: ["pong", "speed"],
-  categorie: "General",
-  reaction: "🏓",
-  use: ".ping"
+    nomCom: "ping",
+    alias: ["pong", "speed"],
+    categorie: "General",
+    reaction: "🏓",
+    use: ".ping"
 }, async (dest, zk, commandeOptions) => {
-  const { ms, repondre } = commandeOptions;
-  
-  const lang = conf.LANGUAGE || "en";
-  
-  // Translate to selected language
-  const pongMsg = await translateText("🏓 *PONG!*", lang);
-  const pingMsg = await translateText("📡 *Ping:*", lang);
-  const uptimeMsg = await translateText("⏱️ *Uptime:*", lang);
-  const statusMsg = await translateText("✅ *Status:* Online", lang);
-  
-  const start = Date.now();
-  const ping = Date.now() - start;
-  const uptime = process.uptime();
-  const days = Math.floor(uptime / 86400);
-  const hours = Math.floor((uptime % 86400) / 3600);
-  const minutes = Math.floor((uptime % 3600) / 60);
-  const seconds = Math.floor(uptime % 60);
-  
-  const message = `${pongMsg}
+    const { ms, repondre } = commandeOptions;
+    
+    const lang = conf.LANGUAGE || "en";
+    
+    const pongMsg = await translateText("🏓 *PONG!*", lang);
+    const pingMsg = await translateText("📡 *Ping:*", lang);
+    const uptimeMsg = await translateText("⏱️ *Uptime:*", lang);
+    const statusMsg = await translateText("✅ *Status:* Online", lang);
+    
+    const start = Date.now();
+    const ping = Date.now() - start;
+    const uptime = process.uptime();
+    const days = Math.floor(uptime / 86400);
+    const hours = Math.floor((uptime % 86400) / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+    
+    const message = `${pongMsg}
 
 ${pingMsg} ${ping}ms
 ${uptimeMsg} ${days}d ${hours}h ${minutes}m ${seconds}s
@@ -80,5 +84,5 @@ ${statusMsg}
 
 > NJABULO MD`;
 
-  await sendMessage(zk, dest, message, ms);
+    await sendMessage(zk, dest, message, ms);
 });
