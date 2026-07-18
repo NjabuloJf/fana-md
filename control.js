@@ -50,13 +50,11 @@ let { reagir } = require(__dirname + "/njabulo/app");
 let translateText = async (text, targetLang) => {
     try {
         if (!targetLang || targetLang === 'en') return text;
-        // Try to use google translate if available
         try {
             const { translate } = require('@vitalets/google-translate-api');
             const result = await translate(text, { to: targetLang });
             return result.text;
         } catch (e) {
-            // Fallback to mymemory translation
             const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
                 timeout: 5000
             });
@@ -88,8 +86,9 @@ const languageNames = {
     de: "German"
 };
 
-var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
-const prefixe = conf.PREFIXE;
+// ========== FIX: Handle undefined session ==========
+var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
+const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
 
