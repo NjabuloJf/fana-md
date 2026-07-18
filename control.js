@@ -91,7 +91,7 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-// ========== TRANSLATION FUNCTION ==========
+// ========== TRANSLATION SETUP WITH FALLBACK ==========
 let translateText = async (text, targetLang) => {
     try {
         if (!targetLang || targetLang === 'en') return text;
@@ -114,7 +114,6 @@ let translateText = async (text, targetLang) => {
     }
 };
 
-// ========== LANGUAGE NAMES ==========
 const languageNames = {
     en: "English",
     sn: "Shona",
@@ -132,41 +131,25 @@ const languageNames = {
     de: "German"
 };
 
-// ========== TRANSLATED BUTTON FUNCTION ==========
-async function getTranslatedButton() {
-    const lang = conf.LANGUAGE || "en";
-    return await translateText("🌐 WA Channel", lang);
-}
-
-// ========== SEND MESSAGE WITH TRANSLATED BUTTONS ==========
-async function sendMessage(zk, chatId, text, ms) {
-    const buttonText = await getTranslatedButton();
-    
-    const buttons = [
-        {
-            name: "cta_url",
-            buttonParamsJson: JSON.stringify({
-                display_text: buttonText,
-                id: "backup channel",
-                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-            }),
-        }
-    ];
-    
-    await zk.sendMessage(chatId, {
-        interactiveMessage: {
-            header: text,
-            buttons,
-            headerType: 1
-        }
-    }, { quoted: ms });
-}
-
-// ========== SESSION HANDLER ==========
+// ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
+
+// ========== BUTTON HANDLER ==========
+let handleButtons = async (zk, msg) => {
+    console.log("Button handler triggered");
+    try {
+        if (msg.message?.buttonsResponseMessage) {
+            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
+            const from = msg.key.remoteJid;
+            console.log(`Button clicked: ${buttonId}`);
+        }
+    } catch (error) {
+        console.error("Button handler error:", error);
+    }
+};
 
 async function authentification() {
     try {
@@ -185,6 +168,7 @@ async function authentification() {
 }
 authentification();
 
+// ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
@@ -338,12 +322,17 @@ setTimeout(() => {
         const { version, isLatest } = await baileys_1.fetchLatestBaileysVersion();
         const { state, saveCreds } = await baileys_1.useMultiFileAuthState(sessionDir);
         
+        // ========== FIXED SOCK OPTIONS - REMOVED PROBLEMATIC OPTIONS ==========
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
+            // REMOVED: shouldSyncHistoryMessage (causing error)
+            // REMOVED: downloadHistory (causing error)
+            // REMOVED: syncFullHistory (causing error)
+            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -372,19 +361,16 @@ setTimeout(() => {
         ];
         const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-        // ========== BUTTON HANDLER ==========
-        let handleButtons = async (zk, msg) => {
-            console.log("Button handler triggered");
-            try {
-                if (msg.message?.buttonsResponseMessage) {
-                    const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
-                    const from = msg.key.remoteJid;
-                    console.log(`Button clicked: ${buttonId}`);
-                }
-            } catch (error) {
-                console.error("Button handler error:", error);
-            }
-        };
+        const buttons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: "🌐 WA Channel",
+                    id: "backup channel",
+                    url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+                }),
+            },
+        ];
 
         // ========== BUTTON HANDLER EVENT ==========
         zk.ev.on("messages.upsert", async (m) => {
@@ -585,7 +571,7 @@ setTimeout(() => {
                 }
             }
 
-            // ========== ANTI-LINK WITH PERSONAL IMAGE AND LANGUAGE ==========
+            // ========== ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
@@ -677,7 +663,7 @@ setTimeout(() => {
                 console.log("Anti-link error:", e);
             }
 
-            // ========== ANTI-BOT WITH PERSONAL IMAGE AND LANGUAGE ==========
+            // ========== ANTI-BOT ==========
             try {
                 const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
                 const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
