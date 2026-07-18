@@ -26,24 +26,69 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const baileys_1 = __importStar(require("@whiskeysockets/baileys"));
-const logger_1 = __importDefault(require("@whiskeysockets/baileys/lib/Utils/logger"));
+
+// ========== IMPORT GITHUB BAILEYS ==========
+const baileysOriginal = require("@whiskeysockets/baileys");
+const logger_1 = require("@whiskeysockets/baileys/lib/Utils/logger");
 const logger = logger_1.default.child({});
 logger.level = 'silent';
 const pino = require("pino");
 const boom_1 = require("@hapi/boom");
+
+console.log("✅ Using Baileys from github:xhclintohn/Baileys");
+
+// ========== CREATE WRAPPER ==========
+const baileys_1 = { ...baileysOriginal };
+
+// Add polyfill to wrapper
+if (!baileys_1.makeInMemoryStore) {
+    console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
+    baileys_1.makeInMemoryStore = function(options) {
+        console.log("Using polyfilled store");
+        return {
+            chats: new Map(),
+            contacts: new Map(),
+            messages: new Map(),
+            bind: function(ev) { console.log("Store bound"); },
+            writeToFile: function(filename) {
+                try {
+                    const fs = require('fs-extra');
+                    const data = {
+                        chats: Array.from(this.chats.entries()),
+                        contacts: Array.from(this.contacts.entries()),
+                        messages: Array.from(this.messages.entries())
+                    };
+                    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+                } catch (e) {}
+            },
+            loadMessage: async function(jid, id) {
+                if (this.messages.has(jid)) {
+                    const messages = this.messages.get(jid);
+                    if (messages && Array.isArray(messages)) {
+                        return messages.find(msg => msg.key && msg.key.id === id);
+                    }
+                }
+                return undefined;
+            }
+        };
+    };
+    console.log("✅ Polyfill added to wrapper");
+}
+// ========== END OF WRAPPER ==========
+
 const conf = require("./set");
 const axios = require("axios");
 let fs = require("fs-extra");
 let path = require("path");
 const FileType = require('file-type');
-const { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter');
-const { verifierEtatJid , recupererActionJid } = require("./bdd/antilien");
-const { atbverifierEtatJid , atbrecupererActionJid } = require("./bdd/antibot");
+const { Sticker, StickerTypes } = require('wa-sticker-formatter');
+
+const { verifierEtatJid, recupererActionJid } = require("./bdd/antilien");
+const { atbverifierEtatJid, atbrecupererActionJid } = require("./bdd/antibot");
 let evt = require(__dirname + "/njabulo/fana");
-const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd/banUser");
-const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
-const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
+const { isUserBanned } = require("./bdd/banUser");
+const { isGroupBanned } = require("./bdd/banGroup");
+const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
 // ========== TRANSLATION SETUP WITH FALLBACK ==========
@@ -91,8 +136,6 @@ var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
-
-console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 
 // ========== BUTTON HANDLER ==========
 let handleButtons = async (zk, msg) => {
@@ -276,8 +319,8 @@ async function translateMessage(key, lang) {
 
 setTimeout(() => {
     async function main() {
-        const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
-        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
+        const { version, isLatest } = await baileys_1.fetchLatestBaileysVersion();
+        const { state, saveCreds } = await baileys_1.useMultiFileAuthState(sessionDir);
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
@@ -292,19 +335,17 @@ setTimeout(() => {
             keepAliveIntervalMs: 30_000,
             auth: {
                 creds: state.creds,
-                keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
+                keys: baileys_1.makeCacheableSignalKeyStore(state.keys, logger),
             },
             getMessage: async (key) => {
                 if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id, undefined);
-                    return msg.message || undefined;
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg?.message || undefined;
                 }
-                return {
-                    conversation: 'An Error Occurred, Repeat Command!'
-                };
+                return { conversation: 'An Error Occurred, Repeat Command!' };
             }
         };
-        const zk = (0, baileys_1.default)(sockOptions);
+        const zk = baileys_1.default(sockOptions);
         store.bind(zk.ev);
 
         // List of image URLs
@@ -350,7 +391,7 @@ setTimeout(() => {
             const ms = messages[0];
             if (!ms.message) return;
             
-            const mtype = (0, baileys_1.getContentType)(ms.message);
+            const mtype = baileys_1.getContentType(ms.message);
             
             if (mtype === "reactionMessage") return;
             if (mtype === "protocolMessage") {
@@ -361,7 +402,7 @@ setTimeout(() => {
             const decodeJid = (jid) => {
                 if (!jid) return jid;
                 if (/:\d+@/gi.test(jid)) {
-                    let decode = (0, baileys_1.jidDecode)(jid) || {};
+                    let decode = baileys_1.jidDecode(jid) || {};
                     return decode.user && decode.server && decode.user + '@' + decode.server || jid;
                 }
                 return jid;
@@ -566,7 +607,7 @@ setTimeout(() => {
                         txt += await translateMessage('link_deleted', lang) + "\n";
                         txt += `👤 @${auteurMessage.split("@")[0]} ` + await translateMessage('link_removed', lang);
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
-                        await (0, baileys_1.delay)(800);
+                        await baileys_1.delay(800);
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -733,7 +774,7 @@ setTimeout(() => {
             }
         });
 
-        // ========== GROUP PARTICIPANTS UPDATE (WELCOME & GOODBYE WITH LANGUAGE) ==========
+        // ========== GROUP PARTICIPANTS UPDATE ==========
         const { recupevents } = require('./bdd/welcome');
         
         async function getProfilePic(jid) {
@@ -877,9 +918,9 @@ setTimeout(() => {
             else if (connection === 'open') {
                 console.log("✅ NJABULO MD Connected to WhatsApp! ☺️");
                 console.log("--");
-                await (0, baileys_1.delay)(200);
+                await baileys_1.delay(200);
                 console.log("------");
-                await (0, baileys_1.delay)(300);
+                await baileys_1.delay(300);
                 console.log("------------------/-----");
                 console.log("NJABULO MD is Online 🕸\n\n");
                 console.log("Loading Commands ...\n");
@@ -897,7 +938,7 @@ setTimeout(() => {
                     });
                 }
                 
-                (0, baileys_1.delay)(700);
+                await baileys_1.delay(700);
                 var md = (conf.MODE || "").toLowerCase() === "yes" ? "public" : "private";
                 
                 const currentLang = conf.LANGUAGE || "en";
@@ -950,19 +991,24 @@ setTimeout(() => {
 
         zk.ev.on("creds.update", saveCreds);
         
-        zk.downloadAndSaveMediaMessage = async (message, filename = '', attachExtension = true) => {
-            let quoted = message.msg ? message.msg : message;
-            let mime = (message.msg || message).mimetype || '';
-            let messageType = message.mtype ? message.mtype.replace(/Message/gi, '') : mime.split('/')[0];
-            const stream = await (0, baileys_1.downloadContentFromMessage)(quoted, messageType);
-            let buffer = Buffer.from([]);
-            for await (const chunk of stream) {
-                buffer = Buffer.concat([buffer, chunk]);
+        zk.downloadAndSaveMediaMessage = async (message, filename = '') => {
+            try {
+                const buffer = await baileys_1.downloadMediaMessage(
+                    message,
+                    'buffer',
+                    {},
+                    { logger: pino({ level: "silent" }) }
+                );
+                if (!buffer) return null;
+                const type = await FileType.fromBuffer(buffer);
+                const extension = type ? type.ext : 'bin';
+                const trueFileName = filename ? `./${filename}.${extension}` : `./media_${Date.now()}.${extension}`;
+                await fs.writeFileSync(trueFileName, buffer);
+                return trueFileName;
+            } catch (error) {
+                console.error("Media download error:", error.message);
+                return null;
             }
-            let type = await FileType.fromBuffer(buffer);
-            let trueFileName = './' + filename + '.' + type.ext;
-            await fs.writeFileSync(trueFileName, buffer);
-            return trueFileName;
         };
         
         zk.awaitForMessage = async (options = {}) => {
