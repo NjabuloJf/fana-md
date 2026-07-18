@@ -1,6 +1,5 @@
 const { fana } = require("../njabulo/fana");
 const conf = require("../set");
-const { translateText } = require("../translate");
 
 async function sendMessage(zk, chatId, text, ms) {
   const buttons = [
@@ -23,7 +22,7 @@ async function sendMessage(zk, chatId, text, ms) {
   }, { quoted: ms });
 }
 
-// English message templates
+// English message templates (will be translated in control.js)
 const templates = {
   reply: "⚠️ *Please reply to the message you want to delete.*",
   success: "✅ *Message deleted successfully.*",
@@ -45,18 +44,14 @@ fana(
       superUser,
     } = commandeOptions;
 
+    // Get language from conf
     const lang = conf.LANGUAGE || "en";
     
-    // Translate messages to selected language
-    const t = {
-      reply: await translateText(templates.reply, lang),
-      success: await translateText(templates.success, lang),
-      admin_rights: await translateText(templates.admin_rights, lang),
-      only_admins: await translateText(templates.only_admins, lang)
-    };
+    // Use the translated repondre function from control.js
+    // repondre is already translated in control.js
 
     if (!msgRepondu) {
-      return await sendMessage(zk, dest, t.reply, ms);
+      return await sendMessage(zk, dest, templates.reply, ms);
     }
 
     if (superUser && auteurMsgRepondu === idBot) {
@@ -66,7 +61,7 @@ fana(
         id: ms.message.extendedTextMessage.contextInfo.stanzaId,
       };
       await zk.sendMessage(dest, { delete: key });
-      await sendMessage(zk, dest, t.success, ms);
+      await sendMessage(zk, dest, templates.success, ms);
       return;
     }
 
@@ -80,12 +75,12 @@ fana(
             participant: ms.message.extendedTextMessage.contextInfo.participant,
           };
           await zk.sendMessage(dest, { delete: key });
-          await sendMessage(zk, dest, t.success, ms);
+          await sendMessage(zk, dest, templates.success, ms);
         } catch (e) {
-          await sendMessage(zk, dest, t.admin_rights, ms);
+          await sendMessage(zk, dest, templates.admin_rights, ms);
         }
       } else {
-        await sendMessage(zk, dest, t.only_admins, ms);
+        await sendMessage(zk, dest, templates.only_admins, ms);
       }
     }
   }
