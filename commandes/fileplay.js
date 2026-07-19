@@ -28,6 +28,102 @@ let translateText = async (text, targetLang) => {
     }
 };
 
+// ========== AI APIS ==========
+const AI_APIS = [
+    async (q) => {
+        const url = `https://mistral.stacktoy.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        return data?.data?.response || null;
+    },
+    async (q) => {
+        const url = `https://llama.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        return data?.data?.response || data?.response || null;
+    },
+    async (q) => {
+        const url = `https://mistral.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
+        const { data } = await axios.get(url, { timeout: 15000 });
+        return data?.data?.response || data?.response || null;
+    }
+];
+
+// ========== AI FETCHER WITH FALLBACK ==========
+const askAI = async (query) => {
+    for (const api of AI_APIS) {
+        try {
+            console.log(`🔄 Trying AI API...`);
+            const response = await api(query);
+            if (response && typeof response === 'string' && response.trim().length > 0) {
+                console.log(`✅ AI API Success!`);
+                return response.trim();
+            }
+        } catch (error) {
+            console.log(`❌ AI API failed: ${error.message}`);
+            continue;
+        }
+    }
+    return "⚠️ AI service is currently unavailable. Please try again later.";
+};
+
+// ========== GOOGLE IMAGE SEARCH API ==========
+const GCSE_KEY = "YOUR_GOOGLE_API_KEY"; // Replace with your API key
+const GCSE_CX = "YOUR_GOOGLE_CX"; // Replace with your CX
+
+async function searchImages(query) {
+    try {
+        const { data } = await axios.get('https://www.googleapis.com/customsearch/v1', {
+            params: {
+                q: query,
+                key: GCSE_KEY,
+                cx: GCSE_CX,
+                searchType: 'image',
+                num: 5,
+                safe: 'off'
+            },
+            timeout: 15000
+        });
+        
+        if (!data.items || data.items.length === 0) {
+            return [];
+        }
+        
+        return data.items.map(item => ({
+            url: item.link,
+            title: item.title,
+            snippet: item.snippet
+        }));
+    } catch (error) {
+        console.error("Google Images API error:", error.response?.data || error.message);
+        return [];
+    }
+}
+
+// ========== GET CURRENT DATE ==========
+function getCurrentDate() {
+    const now = new Date();
+    const date = now.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    const year = now.getFullYear();
+    const time = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    return { date, year, time };
+}
+
+// ========== SPLIT TEXT INTO CHUNKS ==========
+function splitTextIntoChunks(text, maxLength = 3800) {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += maxLength) {
+        chunks.push(text.slice(i, i + maxLength));
+    }
+    return chunks;
+}
+
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButtons() {
     const lang = conf.LANGUAGE || "en";
@@ -64,14 +160,26 @@ fana({
     const audioDocOption = await translateText("2️⃣ Audio Document", lang);
     const videoOption = await translateText("3️⃣ Video", lang);
     const videoDocOption = await translateText("4️⃣ Video Document", lang);
-    const chooseOption = await translateText("Reply with number 1, 2, 3, or 4 to choose format:", lang);
-    const invalidChoice = await translateText("❌ Invalid choice! Please reply with 1, 2, 3, or 4.", lang);
+    const imageOption = await translateText("5️⃣ Images (5 photos)", lang);
+    const lyricsOption = await translateText("6️⃣ Lyrics", lang);
+    const ytsOption = await translateText("7️⃣ YouTube Search", lang);
+    const chatAIOption = await translateText("8️⃣ Chat AI", lang);
+    const chooseOption = await translateText("Reply with number 1, 2, 3, 4, 5, 6, 7, or 8 to choose:", lang);
+    const invalidChoice = await translateText("❌ Invalid choice! Please reply with 1, 2, 3, 4, 5, 6, 7, or 8.", lang);
     const timeoutMsg = await translateText("⏰ Timeout! Please try again.", lang);
+    const noImages = await translateText("❌ No images found for this query.", lang);
+    const sendingImages = await translateText("📸 Sending images...", lang);
+    const noLyrics = await translateText("❌ No lyrics found for this song.", lang);
+    const fetchingLyrics = await translateText("📝 Fetching lyrics...", lang);
+    const searchingYt = await translateText("🔍 Searching YouTube...", lang);
+    const noYtResults = await translateText("❌ No YouTube results found.", lang);
+    const thinking = await translateText("🤔 Thinking...", lang);
+    const aiResponse = await translateText("🤖 AI Response:", lang);
 
     // ========== CHECK IF REPLY IS A NUMBER SELECTION ==========
     const isNumberSelection = (text) => {
         const num = parseInt(text);
-        return num >= 1 && num <= 4 && !isNaN(num);
+        return num >= 1 && num <= 8 && !isNaN(num);
     };
 
     // ========== PARSE QUERY ==========
@@ -92,6 +200,18 @@ fana({
             query = arg.slice(1).join(' ');
         } else if (firstArg === 'videodoc' || firstArg === 'mp4doc') {
             specifiedFormat = 'videodoc';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'image' || firstArg === 'images' || firstArg === 'img' || firstArg === 'photos') {
+            specifiedFormat = 'images';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'lyrics' || firstArg === 'lyric' || firstArg === 'lirik') {
+            specifiedFormat = 'lyrics';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'yts' || firstArg === 'ytsearch' || firstArg === 'search' || firstArg === 'youtube') {
+            specifiedFormat = 'yts';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'ai' || firstArg === 'chat' || firstArg === 'gpt' || firstArg === 'ask') {
+            specifiedFormat = 'ai';
             query = arg.slice(1).join(' ');
         }
     }
@@ -197,6 +317,19 @@ fana({
 
         // ========== IF FORMAT SPECIFIED, DOWNLOAD DIRECTLY ==========
         if (specifiedFormat) {
+            if (specifiedFormat === 'images') {
+                await sendImages(zk, dest, ms, query, lang);
+                return;
+            } else if (specifiedFormat === 'lyrics') {
+                await sendLyrics(zk, dest, ms, query, lang);
+                return;
+            } else if (specifiedFormat === 'yts') {
+                await sendYoutubeSearch(zk, dest, ms, query, lang);
+                return;
+            } else if (specifiedFormat === 'ai') {
+                await sendAIResponse(zk, dest, ms, query, lang);
+                return;
+            }
             await downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, specifiedFormat, lang);
             return;
         }
@@ -207,13 +340,17 @@ fana({
             `${audioOption}\n` +
             `${audioDocOption}\n` +
             `${videoOption}\n` +
-            `${videoDocOption}\n\n` +
+            `${videoDocOption}\n` +
+            `${imageOption}\n` +
+            `${lyricsOption}\n` +
+            `${ytsOption}\n` +
+            `${chatAIOption}\n\n` +
             `${chooseOption}`,
             lang
         );
 
         // Send image with format selection
-        await zk.sendMessage(dest, {
+        const sentMessage = await zk.sendMessage(dest, {
             image: { url: firstVideo.thumbnail },
             caption: formatMessage,
             contextInfo: {
@@ -236,6 +373,8 @@ fana({
             ms,
             zk,
             lang,
+            query,
+            sentMessageId: sentMessage.key.id,
             timestamp: Date.now()
         };
 
@@ -253,21 +392,25 @@ fana({
                 
                 const sender = msg.key.remoteJid;
                 const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-                
-                // Check if this is a reply to our format selection
-                const isReply = msg.message.extendedTextMessage?.contextInfo?.quotedMessage || 
-                               msg.message.contextInfo?.quotedMessage;
+                const quotedMsgId = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.key?.id || 
+                                    msg.message.contextInfo?.quotedMessage?.key?.id;
                 
                 // Check if sender has active download
                 if (!activeDownloads[sender]) return;
                 
-                // Check if it's a number selection (1-4)
+                // Check if it's a reply to our message
+                const downloadData = activeDownloads[sender];
+                if (quotedMsgId !== downloadData.sentMessageId) {
+                    return;
+                }
+                
+                // Check if it's a number selection (1-8)
                 if (!isNumberSelection(content)) {
                     return;
                 }
                 
                 const selectedNumber = parseInt(content);
-                const downloadData = activeDownloads[sender];
+                const data = activeDownloads[sender];
                 
                 // Remove from active downloads
                 delete activeDownloads[sender];
@@ -276,12 +419,55 @@ fana({
                 zk.ev.off('messages.upsert', zk._replyListener);
                 zk._replyListener = null;
                 
+                // Add reaction to the reply
+                try {
+                    await zk.sendMessage(dest, {
+                        react: { text: "📥", key: msg.key }
+                    });
+                } catch (e) {}
+                
                 let formatType = '';
                 switch(selectedNumber) {
                     case 1: formatType = 'audio'; break;
                     case 2: formatType = 'audiodoc'; break;
                     case 3: formatType = 'video'; break;
                     case 4: formatType = 'videodoc'; break;
+                    case 5: 
+                        await sendImages(
+                            data.zk,
+                            data.dest,
+                            data.ms,
+                            data.query,
+                            data.lang
+                        );
+                        return;
+                    case 6:
+                        await sendLyrics(
+                            data.zk,
+                            data.dest,
+                            data.ms,
+                            data.query,
+                            data.lang
+                        );
+                        return;
+                    case 7:
+                        await sendYoutubeSearch(
+                            data.zk,
+                            data.dest,
+                            data.ms,
+                            data.query,
+                            data.lang
+                        );
+                        return;
+                    case 8:
+                        await sendAIResponse(
+                            data.zk,
+                            data.dest,
+                            data.ms,
+                            data.query,
+                            data.lang
+                        );
+                        return;
                     default: 
                         await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
                         return;
@@ -289,14 +475,14 @@ fana({
                 
                 // Download with selected format
                 await downloadMedia(
-                    downloadData.zk, 
-                    downloadData.dest, 
-                    downloadData.ms,
-                    downloadData.firstVideo,
-                    downloadData.videoId,
-                    downloadData.safeTitle,
+                    data.zk, 
+                    data.dest, 
+                    data.ms,
+                    data.firstVideo,
+                    data.videoId,
+                    data.safeTitle,
                     formatType,
-                    downloadData.lang
+                    data.lang
                 );
                 
             } catch (err) {
@@ -329,6 +515,411 @@ fana({
         }, { quoted: ms });
     }
 });
+
+// ========== SEND IMAGES FUNCTION ==========
+async function sendImages(zk, dest, ms, query, lang) {
+    try {
+        const sendingImages = await translateText("📸 Searching and sending images...", lang);
+        await zk.sendMessage(dest, { text: sendingImages }, { quoted: ms });
+
+        const images = await searchImages(query);
+        
+        if (!images || images.length === 0) {
+            const noImages = await translateText("❌ No images found for this query.", lang);
+            await zk.sendMessage(dest, { text: noImages }, { quoted: ms });
+            return;
+        }
+
+        // Send up to 5 images
+        const imageLimit = Math.min(images.length, 5);
+        
+        for (let i = 0; i < imageLimit; i++) {
+            const img = images[i];
+            await zk.sendMessage(dest, {
+                image: { url: img.url },
+                caption: `📸 *Image ${i+1}/${imageLimit}*\n\n🖼️ ${img.title || 'No title'}\n📝 ${img.snippet || ''}`,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363399999197102@newsletter',
+                        newsletterName: "╭••➤®Njabulo Jb",
+                        serverMessageId: 143,
+                    },
+                },
+            }, { quoted: ms });
+            
+            // Small delay between images to avoid rate limiting
+            if (i < imageLimit - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
+        const complete = await translateText("✅ Images sent successfully!", lang);
+        await zk.sendMessage(dest, { text: complete }, { quoted: ms });
+
+    } catch (err) {
+        console.error('[IMAGES] Error:', err);
+        await zk.sendMessage(dest, {
+            text: await translateText("Failed to fetch images. Please try again.", lang),
+        }, { quoted: ms });
+    }
+}
+
+// ========== SEND LYRICS FUNCTION ==========
+async function sendLyrics(zk, dest, ms, query, lang) {
+    try {
+        const fetchingLyrics = await translateText("📝 Fetching lyrics...", lang);
+        await zk.sendMessage(dest, { text: fetchingLyrics }, { quoted: ms });
+
+        const apiUrl = `https://discardapi.dpdns.org/api/music/lyrics?apikey=qasim&song=${encodeURIComponent(query)}`;
+        const response = await axios.get(apiUrl, { timeout: 15000 });
+        const data = response.data;
+        
+        if (!data.result || data.result.error || !data.result.message?.lyrics) {
+            const noLyrics = await translateText("❌ No lyrics found for this song.", lang);
+            await zk.sendMessage(dest, { text: noLyrics }, { quoted: ms });
+            return;
+        }
+
+        const messageData = data.result.message;
+        const { artist, lyrics, image, title, url } = messageData;
+        
+        let imageBuffer = null;
+        try {
+            const imgUrl = image || "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
+            const imgRes = await axios.get(imgUrl, { responseType: 'arraybuffer', timeout: 10000 });
+            imageBuffer = imgRes.data;
+        } catch (err) {}
+        
+        const imageMessage = imageBuffer ? (await generateWAMessageContent({ image: imageBuffer }, { upload: zk.waUploadToServer })).imageMessage : null;
+        
+        const currentDate = getCurrentDate();
+        
+        // Create temp song data
+        const tempSong = {
+            title: title || query,
+            artist: artist || 'Unknown Artist',
+            date: currentDate.date,
+            year: currentDate.year,
+            time: currentDate.time
+        };
+        
+        const cards = [
+            {
+                header: {
+                    title: `🎵 SONG INFO`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: `🎤 *Title:* ${tempSong.title}
+👨‍🎤 *Artist:* ${tempSong.artist}
+📅 *Date:* ${tempSong.date}`,
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("📋 Copy Info", lang),
+                                copy_code: `Title: ${tempSong.title}\nArtist: ${tempSong.artist}\nDate: ${tempSong.date}\nYear: ${tempSong.year}`,
+                            }),
+                        },
+                        {
+                            name: "cta_url",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("🔗 Genius", lang),
+                                url: url || 'https://genius.com',
+                            }),
+                        },
+                    ],
+                },
+            },
+            {
+                header: {
+                    title: `📝 LYRICS (Part 1)`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: `📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("📋 Copy Lyrics", lang),
+                                copy_code: lyrics,
+                            }),
+                        },
+                    ],
+                },
+            },
+        ];
+
+        // Add more cards if lyrics are very long
+        if (lyrics.length > 2000) {
+            cards.push({
+                header: {
+                    title: `📝 LYRICS (Part 2)`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: `📆 *Year:* ${tempSong.year}
+🕐 *Time:* ${tempSong.time}
+📏 *Length:* ${lyrics.length} chars`,
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("📋 Copy Remaining", lang),
+                                copy_code: lyrics.substring(2000),
+                            }),
+                        },
+                    ],
+                },
+            });
+        }
+        
+        if (lyrics.length > 4000) {
+            cards.push({
+                header: {
+                    title: `📝 LYRICS (Part 3)`,
+                    hasMediaAttachment: true,
+                    imageMessage: imageMessage,
+                },
+                body: {
+                    text: lyrics.substring(4000, 6000) + (lyrics.length > 6000 ? "\n\n... (Continued)" : ""),
+                },
+                footer: { text: "" },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("📋 Copy Remaining", lang),
+                                copy_code: lyrics.substring(4000),
+                            }),
+                        },
+                    ],
+                },
+            });
+        }
+
+        const message = generateWAMessageFromContent(
+            dest,
+            {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: {
+                            deviceListMetadata: {},
+                            deviceListMetadataVersion: 2,
+                        },
+                        interactiveMessage: {
+                            header: { text: `🎵 NJABULO MD` },
+                            body: { text: `*📂 Song: ${tempSong.title}*` },
+                            headerType: 1,
+                            carouselMessage: { cards },
+                        },
+                    },
+                },
+            },
+            { quoted: ms }
+        );
+        
+        await zk.relayMessage(dest, message.message, { messageId: message.key.id });
+        
+        // Also send full lyrics as separate text messages if needed
+        const lyricsChunks = splitTextIntoChunks(lyrics, 3800);
+        
+        if (lyricsChunks.length > 1) {
+            await zk.sendMessage(dest, { 
+                text: `📝 *FULL LYRICS (${lyricsChunks.length} parts)*\n\n━━━━━━━━━━━━━━━━━━━` 
+            }, { quoted: ms });
+            
+            for (let i = 0; i < lyricsChunks.length; i++) {
+                await zk.sendMessage(dest, { 
+                    text: `*Part ${i + 1}/${lyricsChunks.length}*\n\n${lyricsChunks[i]}` 
+                }, { quoted: ms });
+            }
+        } else {
+            await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    header: `📀 *Title:* ${tempSong.title}\n📝 *Full Lyrics:*\n${lyrics}`,
+                    headerType: 1
+                }
+            }, { quoted: ms });
+        }
+
+    } catch (err) {
+        console.error('[LYRICS] Error:', err);
+        await zk.sendMessage(dest, {
+            text: await translateText("Failed to fetch lyrics. Please try again.", lang),
+        }, { quoted: ms });
+    }
+}
+
+// ========== SEND YOUTUBE SEARCH FUNCTION ==========
+async function sendYoutubeSearch(zk, dest, ms, query, lang) {
+    try {
+        const searchingYt = await translateText("🔍 Searching YouTube...", lang);
+        await zk.sendMessage(dest, { text: searchingYt }, { quoted: ms });
+
+        const results = await ytSearch(query);
+        
+        if (!results || !results.videos || results.videos.length === 0) {
+            const noYtResults = await translateText("❌ No YouTube results found.", lang);
+            await zk.sendMessage(dest, { text: noYtResults }, { quoted: ms });
+            return;
+        }
+
+        const viewOnYoutube = await translateText("🌐 View on YouTube", lang);
+        const youtubeSearchResult = await translateText("YouTube Search Result", lang);
+        const titleText = await translateText("Title", lang);
+        const urlText = await translateText("URL", lang);
+        const viewsText = await translateText("Views", lang);
+        const uploadedText = await translateText("Uploaded", lang);
+        const durationText = await translateText("Duration", lang);
+        const njabuloFooter = await translateText("Njabulo JB YouTube Download", lang);
+
+        // Create cards for first 5 results
+        const cards = await Promise.all(
+            results.videos.slice(0, 5).map(async (video, i) => {
+                let resultText = `*${youtubeSearchResult} ${i+1}*\n\n`;
+                resultText += `*🎧${titleText}:* ${video.title}\n`;
+                resultText += `🖇️*${urlText}:* ${video.url}\n`;
+                resultText += `*👁️${viewsText}:* ${video.views.toLocaleString()}\n`;
+                resultText += `*📅${uploadedText}:* ${video.ago}\n`;
+                resultText += `*⏲️${durationText}:* ${video.timestamp}`;
+                
+                return {
+                    header: {
+                        title: `📸 ${video.title}`,
+                        hasMediaAttachment: true,
+                        imageMessage: (await generateWAMessageContent({ image: { url: video.thumbnail } }, { upload: zk.waUploadToServer })).imageMessage,
+                    },
+                    body: {
+                        text: resultText,
+                    },
+                    footer: {
+                        text: `*${njabuloFooter}*`,
+                    },
+                    nativeFlowMessage: {
+                        buttons: [
+                            {
+                                name: "cta_url",
+                                buttonParamsJson: JSON.stringify({
+                                    display_text: viewOnYoutube,
+                                    url: `https://youtu.be/${video.videoId}`,
+                                }),
+                            },
+                        ],
+                    },
+                };
+            })
+        );
+
+        const headerText = await translateText(`🔍 Search Results for "${query}"`, lang);
+        const footerText = await translateText(`📂 Found ${results.videos.length} results`, lang);
+
+        const message = generateWAMessageFromContent(
+            dest,
+            {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+                        interactiveMessage: {
+                            header: { text: headerText },
+                            footer: { text: footerText },
+                            carouselMessage: { cards },
+                        },
+                    },
+                },
+            },
+            { quoted: ms }
+        );
+
+        await zk.relayMessage(dest, message.message, { messageId: message.key.id });
+
+    } catch (err) {
+        console.error('[YTSEARCH] Error:', err);
+        await zk.sendMessage(dest, {
+            text: await translateText("Failed to search YouTube. Please try again.", lang),
+        }, { quoted: ms });
+    }
+}
+
+// ========== SEND AI RESPONSE FUNCTION ==========
+async function sendAIResponse(zk, dest, ms, query, lang) {
+    try {
+        const thinking = await translateText("🤔 Thinking...", lang);
+        const aiResponse = await translateText("🤖 AI Response:", lang);
+        
+        // Send thinking message
+        const thinkingMsg = await zk.sendMessage(dest, { text: thinking }, { quoted: ms });
+
+        // Get AI response
+        const response = await askAI(query);
+        
+        // Delete thinking message
+        if (thinkingMsg && thinkingMsg.key) {
+            await zk.sendMessage(dest, { delete: thinkingMsg.key }).catch(() => {});
+        }
+
+        // Check if response is error
+        if (response.includes("unavailable")) {
+            await zk.sendMessage(dest, { 
+                text: response,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363399999197102@newsletter',
+                        newsletterName: "╭••➤®Njabulo Jb",
+                        serverMessageId: 143,
+                    },
+                },
+            }, { quoted: ms });
+            return;
+        }
+
+        // Split response if too long
+        const responseChunks = splitTextIntoChunks(response, 3800);
+        
+        if (responseChunks.length > 1) {
+            await zk.sendMessage(dest, { 
+                text: `${aiResponse}\n\n━━━━━━━━━━━━━━━━━━━`
+            }, { quoted: ms });
+            
+            for (let i = 0; i < responseChunks.length; i++) {
+                await zk.sendMessage(dest, { 
+                    text: `*Part ${i + 1}/${responseChunks.length}*\n\n${responseChunks[i]}` 
+                }, { quoted: ms });
+            }
+        } else {
+            await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    header: `${aiResponse}\n\n${response}`,
+                    headerType: 1
+                }
+            }, { quoted: ms });
+        }
+
+    } catch (err) {
+        console.error('[AI] Error:', err);
+        await zk.sendMessage(dest, {
+            text: await translateText("Failed to get AI response. Please try again.", lang),
+        }, { quoted: ms });
+    }
+}
 
 // ========== DOWNLOAD MEDIA FUNCTION ==========
 async function downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, formatType, lang) {
@@ -513,4 +1104,4 @@ async function downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, forma
             text: await translateText("Failed to download media. Please try again.", lang),
         }, { quoted: ms });
     }
-        }
+    }
