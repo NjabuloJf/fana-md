@@ -604,7 +604,6 @@ setTimeout(() => {
                     console.log(`User is superUser: ${superUser}`);
                     
                     // Skip only if user is superUser (bot owner)
-                    // Allow bot to act on all other users including group admins
                     if(superUser) {
                         console.log('⏭️ Skipping action - User is superUser (bot owner)');
                         return;
@@ -613,7 +612,6 @@ setTimeout(() => {
                     // If bot is not admin, just warn but don't take action
                     if(!verifZokAdmin) {
                         console.log('⚠️ Bot is not admin, cannot take action');
-                        // Send warning message but don't delete or remove
                         const userPP = await getUserProfilePic(auteurMessage);
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
@@ -778,41 +776,58 @@ setTimeout(() => {
                 console.log('Anti-bot error:', er);
             }
 
-            // ========== COMMAND EXECUTION ==========
+            // ========== COMMAND EXECUTION - FIXED FOR EVERYONE ==========
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-                        if (verifGroupe) {
-                            if ((conf.MODE || "").toLowerCase() != 'yes' && !superUser) {
-                                console.log("Bot is in private mode for groups");
-                                return;
-                            }
-                        }
-                        
-                        if (!superUser && verifGroupe) {
-                            let req = await isGroupBanned(origineMessage);
-                            if (req) return;
-                        }
-                        
-                        if (!verifAdmin && verifGroupe) {
-                            let req = await isGroupOnlyAdmin(origineMessage);
-                            if (req) return;
-                        }
-                        
+                        // Check if user is banned (applies to ALL - DMs and Groups)
                         if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
-                                repondre("❌ You are banned from bot commands");
+                                await repondre("❌ You are banned from bot commands");
                                 return;
                             }
                         }
-                        
+
+                        // FOR GROUPS ONLY - Additional restrictions
+                        if (verifGroupe) {
+                            // Check if bot is in private mode for groups
+                            if ((conf.MODE || "").toLowerCase() != 'yes' && !superUser) {
+                                console.log("ℹ️ Bot is in private mode for groups");
+                                await repondre("❌ Bot is in private mode for groups. Only admins can use commands.");
+                                return;
+                            }
+                            
+                            // Check if group is banned
+                            if (!superUser) {
+                                let req = await isGroupBanned(origineMessage);
+                                if (req) {
+                                    await repondre("❌ This group is banned from using bot commands");
+                                    return;
+                                }
+                            }
+                            
+                            // Check if only admins can use bot in group
+                            if (!verifAdmin) {
+                                let req = await isGroupOnlyAdmin(origineMessage);
+                                if (req) {
+                                    await repondre("❌ Only admins can use bot commands in this group");
+                                    return;
+                                }
+                            }
+                        }
+
+                        // FOR DMs (INBOX) - EVERYONE CAN USE
+                        // No additional restrictions for DMs
+                        // Only banned users are blocked (checked above)
+
+                        // Execute the command
                         reagir(origineMessage, zk, ms, cd.reaction);
                         cd.fonction(origineMessage, zk, commandeOptions);
                     }
                     catch (e) {
-                        console.log("Error:", e);
+                        console.log("Error executing command:", e);
                         const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
                         zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
@@ -835,7 +850,6 @@ setTimeout(() => {
         async function getName(jid) {
             try {
                 if (!jid) return "Unknown";
-                // If jid is an object, extract the phoneNumber or id
                 if (typeof jid === 'object') {
                     if (jid.phoneNumber) return jid.phoneNumber.split('@')[0];
                     if (jid.id) return jid.id.split('@')[0];
@@ -879,7 +893,6 @@ setTimeout(() => {
                     if (welcomeStatus === 'on') {
                         for (const participant of group.participants) {
                             try {
-                                // Get the actual JID from the participant object
                                 const memberJid = participant.phoneNumber || participant.id;
                                 if (!memberJid) continue;
                                 
@@ -933,7 +946,6 @@ setTimeout(() => {
                     if (goodbyeStatus === 'on') {
                         for (const participant of group.participants) {
                             try {
-                                // Get the actual JID from the participant object
                                 const memberJid = participant.phoneNumber || participant.id;
                                 if (!memberJid) continue;
                                 
