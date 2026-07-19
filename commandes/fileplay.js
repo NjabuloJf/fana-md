@@ -66,8 +66,8 @@ const askAI = async (query) => {
 };
 
 // ========== GOOGLE IMAGE SEARCH API ==========
-const GCSE_KEY = "YOUR_GOOGLE_API_KEY"; // Replace with your API key
-const GCSE_CX = "YOUR_GOOGLE_CX"; // Replace with your CX
+const GCSE_KEY = 'AIzaSyDMbI3nvmQUrfjoCJYLS69Lej1hSXQjnWI';
+const GCSE_CX = 'baf9bdb0c631236e5';
 
 async function searchImages(query) {
     try {
@@ -77,7 +77,7 @@ async function searchImages(query) {
                 key: GCSE_KEY,
                 cx: GCSE_CX,
                 searchType: 'image',
-                num: 5,
+                num: 8,
                 safe: 'off'
             },
             timeout: 15000
@@ -161,7 +161,7 @@ fana({
     const audioDocOption = await translateText("2️⃣ Audio Document", lang);
     const videoOption = await translateText("3️⃣ Video", lang);
     const videoDocOption = await translateText("4️⃣ Video Document", lang);
-    const imageOption = await translateText("5️⃣ Images (5 photos)", lang);
+    const imageOption = await translateText("5️⃣ Images (8 photos)", lang);
     const lyricsOption = await translateText("6️⃣ Lyrics", lang);
     const ytsOption = await translateText("7️⃣ YouTube Search", lang);
     const chatAIOption = await translateText("8️⃣ Chat AI", lang);
@@ -169,7 +169,8 @@ fana({
     const invalidChoice = await translateText("❌ Invalid choice! Please reply with 1, 2, 3, 4, 5, 6, 7, or 8.", lang);
     const timeoutMsg = await translateText("⏰ Timeout! Please try again.", lang);
     const noImages = await translateText("❌ No images found for this query.", lang);
-    const sendingImages = await translateText("📸 Sending images...", lang);
+    const sendingImages = await translateText("📸 Searching and sending images...", lang);
+    const failedLoad = await translateText("❌ Failed to load images. Please try again.", lang);
     const noLyrics = await translateText("❌ No lyrics found for this song.", lang);
     const fetchingLyrics = await translateText("📝 Fetching lyrics...", lang);
     const searchingYt = await translateText("🔍 Searching YouTube...", lang);
@@ -538,45 +539,113 @@ fana({
     }
 });
 
-// ========== SEND IMAGES FUNCTION ==========
+// ========== SEND IMAGES WITH CAROUSEL ==========
 async function sendImages(zk, dest, ms, query, lang) {
     try {
         const sendingImages = await translateText("📸 Searching and sending images...", lang);
+        const noImages = await translateText("❌ No images found for this query.", lang);
+        const failedLoad = await translateText("❌ Failed to load images. Please try again.", lang);
+        const complete = await translateText("✅ Images sent successfully!", lang);
+        
         await zk.sendMessage(dest, { text: sendingImages }, { quoted: ms });
 
         const images = await searchImages(query);
         
         if (!images || images.length === 0) {
-            const noImages = await translateText("❌ No images found for this query.", lang);
             await zk.sendMessage(dest, { text: noImages }, { quoted: ms });
             return;
         }
 
-        // Send up to 5 images
-        const imageLimit = Math.min(images.length, 5);
-        
+        // Get the first 8 images
+        const imageLimit = Math.min(images.length, 8);
+        const validImages = [];
+
+        // Download images and convert to buffers
         for (let i = 0; i < imageLimit; i++) {
-            const img = images[i];
-            await zk.sendMessage(dest, {
-                image: { url: img.url },
-                caption: `📸 *Image ${i+1}/${imageLimit}*\n\n🖼️ ${img.title || 'No title'}\n📝 ${img.snippet || ''}`,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363399999197102@newsletter',
-                        newsletterName: "╭••➤®Njabulo Jb",
-                        serverMessageId: 143,
-                    },
-                },
-            }, { quoted: ms });
-            
-            // Small delay between images to avoid rate limiting
-            if (i < imageLimit - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const img = images[i];
+                const response = await axios.get(img.url, { 
+                    responseType: 'arraybuffer',
+                    timeout: 10000
+                });
+                
+                if (response.data) {
+                    validImages.push({
+                        buffer: response.data,
+                        directLink: img.url,
+                        title: img.title || `Image ${i + 1}`,
+                        snippet: img.snippet || ''
+                    });
+                }
+            } catch (err) {
+                console.log(`[IMAGES] Failed to download image ${i + 1}:`, err.message);
+                continue;
             }
         }
 
-        const complete = await translateText("✅ Images sent successfully!", lang);
+        if (validImages.length === 0) {
+            await zk.sendMessage(dest, { text: failedLoad }, { quoted: ms });
+            return;
+        }
+
+        // Create carousel cards
+        const cards = await Promise.all(
+            validImages.map(async (item, i) => ({
+                header: {
+                    title: `📸 Image ${i + 1}`,
+                    hasMediaAttachment: true,
+                    imageMessage: (await generateWAMessageContent({ image: item.buffer }, { upload: zk.waUploadToServer })).imageMessage,
+                },
+                body: { 
+                    text: `*🔍 Search: ${query}*\n\n🖼️ ${item.title || 'No title'}\n📝 ${item.snippet || ''}` 
+                },
+                footer: { 
+                    text: `✨ Image ${i + 1}/${validImages.length}` 
+                },
+                nativeFlowMessage: {
+                    buttons: [
+                        {
+                            name: "cta_url",
+                            buttonParamsJson: JSON.stringify({ 
+                                display_text: await translateText("🌐 View Original", lang), 
+                                url: item.directLink 
+                            }),
+                        },
+                        {
+                            name: "cta_copy",
+                            buttonParamsJson: JSON.stringify({
+                                display_text: await translateText("📋 Copy Link", lang),
+                                copy_code: item.directLink,
+                            }),
+                        },
+                    ],
+                },
+            }))
+        );
+
+        const headerText = await translateText(`🔍 Search Results for: ${query}`, lang);
+        const footerText = await translateText(`📂 Found ${validImages.length} images`, lang);
+
+        const message = generateWAMessageFromContent(
+            dest,
+            {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+                        interactiveMessage: {
+                            header: { text: `📸 Image Search` },
+                            body: { text: headerText },
+                            footer: { text: footerText },
+                            carouselMessage: { cards },
+                        },
+                    },
+                },
+            },
+            { quoted: ms }
+        );
+
+        await zk.relayMessage(dest, message.message, { messageId: message.key.id });
+
         await zk.sendMessage(dest, { text: complete }, { quoted: ms });
 
     } catch (err) {
