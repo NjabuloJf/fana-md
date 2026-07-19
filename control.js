@@ -596,9 +596,30 @@ setTimeout(() => {
                 const yes = await verifierEtatJid(origineMessage);
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
                     console.log("🔗 LINK DETECTED");
+                    
+                    // Check if bot is admin
                     var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
-                    if(superUser || verifAdmin || !verifZokAdmin) {
-                        console.log('⏭️ Skipping action');
+                    console.log(`Bot is admin: ${verifZokAdmin}`);
+                    console.log(`User is admin: ${verifAdmin}`);
+                    console.log(`User is superUser: ${superUser}`);
+                    
+                    // Skip only if user is superUser (bot owner)
+                    // Allow bot to act on all other users including group admins
+                    if(superUser) {
+                        console.log('⏭️ Skipping action - User is superUser (bot owner)');
+                        return;
+                    }
+                    
+                    // If bot is not admin, just warn but don't take action
+                    if(!verifZokAdmin) {
+                        console.log('⚠️ Bot is not admin, cannot take action');
+                        // Send warning message but don't delete or remove
+                        const userPP = await getUserProfilePic(auteurMessage);
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
                         return;
                     }
                     
@@ -638,7 +659,9 @@ setTimeout(() => {
                         }, { quoted: ms });
                         try {
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        } catch (e) {}
+                        } catch (e) {
+                            console.log("Failed to remove user:", e.message);
+                        }
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
                     } 
