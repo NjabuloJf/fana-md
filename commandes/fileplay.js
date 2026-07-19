@@ -193,6 +193,16 @@ fana({
     const noYtResults = await translateText("❌ No YouTube results found.", lang);
     const thinking = await translateText("🤔 Thinking...", lang);
     const aiResponse = await translateText("🤖 AI Response:", lang);
+    const buttons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("🌐 bot Channel", lang),
+                    id: "backup channel",
+                    url: conf.GURL
+                }),
+            },
+        ];
 
     // ========== CHECK IF REPLY IS A NUMBER SELECTION ==========
     const isNumberSelection = (text) => {
@@ -235,16 +245,12 @@ fana({
     }
 
     if (!query || query.trim() === '') {
-        return zk.sendMessage(dest, {
-            text: provideSong,
-            contextInfo: {
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363399999197102@newsletter',
-                    newsletterName: "╭••➤®Njabulo Jb",
-                    serverMessageId: 143,
-                },
-            },
+        return zk.sendMessage(dest, {            
+            interactiveMessage: {
+                    header: provideSong,
+                    buttons: buttons,
+                    headerType: 1
+            }
         }, { quoted: ms });
     }
 
@@ -252,15 +258,11 @@ fana({
         const search = await ytSearch(query);
         if (!search || !search.videos || !search.videos[0]) {
             return zk.sendMessage(dest, {
-                text: noResults,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363399999197102@newsletter',
-                        newsletterName: "╭••➤®Njabulo Jb",
-                        serverMessageId: 143,
-                    },
-                },
+                interactiveMessage: {
+                    header: noResults,
+                    buttons: buttons,
+                    headerType: 1
+                }
             }, { quoted: ms });
         }
 
@@ -367,16 +369,7 @@ fana({
             lang
         );
 
-        const buttons = [
-            {
-                name: "cta_url",
-                buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("🌐 bot Channel", lang),
-                    id: "backup channel",
-                    url: conf.GURL
-                }),
-            },
-        ];
+        
 
         // Send image with format selection - FIXED
         let sentMessage;
