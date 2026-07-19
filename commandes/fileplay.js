@@ -136,6 +136,7 @@ async function getTranslatedButtons() {
 // ========== STORE FOR ACTIVE DOWNLOADS ==========
 const activeDownloads = {};
 
+// ========== MAIN COMMAND ==========
 fana({
     nomCom: "play",
     aliases: ["song", "playdoc", "audio", "mp3", "mp4", "video", "videodoc"],
@@ -367,6 +368,9 @@ fana({
         const senderJid = ms.key.remoteJid;
         const msgId = ms.key.id;
         
+        // Generate unique session ID
+        const sessionId = `${senderJid}_${Date.now()}`;
+        
         activeDownloads[senderJid] = {
             firstVideo,
             videoId,
@@ -378,151 +382,151 @@ fana({
             query,
             sentMessageId: sentMessage.key.id,
             msgId: msgId,
-            timestamp: Date.now()
+            sessionId: sessionId,
+            timestamp: Date.now(),
+            active: true
         };
 
-        console.log(`[PLAY] Active download stored for ${senderJid}`);
+        console.log(`[PLAY] Active download stored for ${senderJid} | Session: ${sessionId}`);
 
-        // ========== SETUP REPLY COLLECTOR ==========
-        // Remove old listener if exists
-        if (zk._replyListener) {
-            zk.ev.off('messages.upsert', zk._replyListener);
-        }
-
-        // Create new listener
-        zk._replyListener = async (update) => {
-            try {
-                const msg = update.messages[0];
-                if (!msg || !msg.message) return;
-                
-                const sender = msg.key.remoteJid;
-                
-                // Check if sender has active download
-                if (!activeDownloads[sender]) {
-                    return;
-                }
-                
-                // Check if this is a reply
-                const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage || 
-                                 msg.message.contextInfo?.quotedMessage;
-                
-                if (!quotedMsg) {
-                    return;
-                }
-                
-                // Get the content
-                const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-                
-                // Check if it's a number selection (1-8)
-                if (!isNumberSelection(content)) {
-                    return;
-                }
-                
-                const selectedNumber = parseInt(content);
-                const data = activeDownloads[sender];
-                
-                console.log(`[PLAY] User ${sender} selected: ${selectedNumber}`);
-                
-                // Remove from active downloads
-                delete activeDownloads[sender];
-                
-                // Remove listener
-                if (zk._replyListener) {
-                    zk.ev.off('messages.upsert', zk._replyListener);
-                    zk._replyListener = null;
-                }
-                
-                // Add reaction to the reply
+        // ========== SETUP GLOBAL REPLY HANDLER ==========
+        // Remove old listener if exists (only once)
+        if (!zk._replyListenerRegistered) {
+            // Create global listener that handles all replies
+            zk._replyListenerRegistered = true;
+            
+            zk.ev.on('messages.upsert', async (update) => {
                 try {
-                    await zk.sendMessage(dest, {
-                        react: { text: "📥", key: msg.key }
-                    });
-                } catch (e) {
-                    console.log('[PLAY] Reaction error:', e);
+                    const msg = update.messages[0];
+                    if (!msg || !msg.message) return;
+                    
+                    const sender = msg.key.remoteJid;
+                    
+                    // Check if sender has active download
+                    if (!activeDownloads[sender]) {
+                        return;
+                    }
+                    
+                    // Check if this is a reply
+                    const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage || 
+                                     msg.message.contextInfo?.quotedMessage;
+                    
+                    if (!quotedMsg) {
+                        return;
+                    }
+                    
+                    // Get the content
+                    const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+                    
+                    // Check if it's a number selection (1-8)
+                    if (!isNumberSelection(content)) {
+                        return;
+                    }
+                    
+                    const selectedNumber = parseInt(content);
+                    const data = activeDownloads[sender];
+                    
+                    // Check if session is still active
+                    if (!data || !data.active) {
+                        return;
+                    }
+                    
+                    console.log(`[PLAY] User ${sender} selected: ${selectedNumber} | Session: ${data.sessionId}`);
+                    
+                    // Mark as inactive to prevent double processing
+                    data.active = false;
+                    
+                    // Remove from active downloads after processing
+                    setTimeout(() => {
+                        delete activeDownloads[sender];
+                    }, 1000);
+                    
+                    // Add reaction to the reply
+                    try {
+                        await zk.sendMessage(dest, {
+                            react: { text: "📥", key: msg.key }
+                        });
+                    } catch (e) {
+                        console.log('[PLAY] Reaction error:', e);
+                    }
+                    
+                    let formatType = '';
+                    switch(selectedNumber) {
+                        case 1: formatType = 'audio'; break;
+                        case 2: formatType = 'audiodoc'; break;
+                        case 3: formatType = 'video'; break;
+                        case 4: formatType = 'videodoc'; break;
+                        case 5: 
+                            await sendImages(
+                                data.zk,
+                                data.dest,
+                                data.ms,
+                                data.query,
+                                data.lang
+                            );
+                            return;
+                        case 6:
+                            await sendLyrics(
+                                data.zk,
+                                data.dest,
+                                data.ms,
+                                data.query,
+                                data.lang
+                            );
+                            return;
+                        case 7:
+                            await sendYoutubeSearch(
+                                data.zk,
+                                data.dest,
+                                data.ms,
+                                data.query,
+                                data.lang
+                            );
+                            return;
+                        case 8:
+                            await sendAIResponse(
+                                data.zk,
+                                data.dest,
+                                data.ms,
+                                data.query,
+                                data.lang
+                            );
+                            return;
+                        default: 
+                            await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
+                            return;
+                    }
+                    
+                    // Download with selected format
+                    await downloadMedia(
+                        data.zk, 
+                        data.dest, 
+                        data.ms,
+                        data.firstVideo,
+                        data.videoId,
+                        data.safeTitle,
+                        formatType,
+                        data.lang
+                    );
+                    
+                } catch (err) {
+                    console.error('[GLOBAL REPLY HANDLER ERROR]', err);
                 }
-                
-                let formatType = '';
-                switch(selectedNumber) {
-                    case 1: formatType = 'audio'; break;
-                    case 2: formatType = 'audiodoc'; break;
-                    case 3: formatType = 'video'; break;
-                    case 4: formatType = 'videodoc'; break;
-                    case 5: 
-                        await sendImages(
-                            data.zk,
-                            data.dest,
-                            data.ms,
-                            data.query,
-                            data.lang
-                        );
-                        return;
-                    case 6:
-                        await sendLyrics(
-                            data.zk,
-                            data.dest,
-                            data.ms,
-                            data.query,
-                            data.lang
-                        );
-                        return;
-                    case 7:
-                        await sendYoutubeSearch(
-                            data.zk,
-                            data.dest,
-                            data.ms,
-                            data.query,
-                            data.lang
-                        );
-                        return;
-                    case 8:
-                        await sendAIResponse(
-                            data.zk,
-                            data.dest,
-                            data.ms,
-                            data.query,
-                            data.lang
-                        );
-                        return;
-                    default: 
-                        await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
-                        return;
-                }
-                
-                // Download with selected format
-                await downloadMedia(
-                    data.zk, 
-                    data.dest, 
-                    data.ms,
-                    data.firstVideo,
-                    data.videoId,
-                    data.safeTitle,
-                    formatType,
-                    data.lang
-                );
-                
-            } catch (err) {
-                console.error('[REPLY HANDLER ERROR]', err);
-            }
-        };
-
-        // Register listener
-        zk.ev.on('messages.upsert', zk._replyListener);
+            });
+        }
 
         // ========== TIMEOUT ==========
         setTimeout(async () => {
             const senderJid = ms.key.remoteJid;
-            if (activeDownloads[senderJid]) {
+            if (activeDownloads[senderJid] && activeDownloads[senderJid].active) {
                 console.log(`[PLAY] Timeout for ${senderJid}`);
+                activeDownloads[senderJid].active = false;
                 delete activeDownloads[senderJid];
                 try {
                     await zk.sendMessage(dest, { 
                         text: timeoutMsg 
                     }, { quoted: ms });
                 } catch (e) {}
-            }
-            if (zk._replyListener) {
-                zk.ev.off('messages.upsert', zk._replyListener);
-                zk._replyListener = null;
             }
         }, 60000); // 60 seconds timeout
 
