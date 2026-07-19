@@ -376,25 +376,45 @@ fana({
                     url: conf.GURL
                 }),
             },
-           ]
+        ];
 
-        // Send image with format selection
-        const sentMessage = await zk.sendMessage(dest, {
-            interactiveMessage: {
-                image: { url: firstVideo.thumbnail },
+        // Send image with format selection - FIXED
+        let sentMessage;
+        try {
+            sentMessage = await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    image: { url: firstVideo.thumbnail },
                     header: formatMessage,
-                    buttons,
+                    buttons: buttons,
                     headerType: 1
-                }                                   
-        }, { quoted: ms });
+                }
+            }, { quoted: ms });
+        } catch (err) {
+            console.error('[PLAY] Failed to send format selection:', err);
+            // Fallback: send as text message
+            sentMessage = await zk.sendMessage(dest, {
+                text: formatMessage,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363399999197102@newsletter',
+                        newsletterName: "╭••➤®Njabulo Jb",
+                        serverMessageId: 143,
+                    },
+                },
+            }, { quoted: ms });
+        }
 
         // ========== STORE ACTIVE DOWNLOAD FOR THIS USER ==========
         const senderJid = ms.key.remoteJid;
         const msgId = ms.key.id;
-        
+
         // Generate unique session ID
         const sessionId = `${senderJid}_${Date.now()}`;
-        
+
+        // Check if sentMessage exists before accessing properties
+        const sentMessageId = sentMessage && sentMessage.key ? sentMessage.key.id : null;
+
         activeDownloads[senderJid] = {
             firstVideo,
             videoId,
@@ -404,14 +424,14 @@ fana({
             zk,
             lang,
             query,
-            sentMessageId: sentMessage.key.id,
+            sentMessageId: sentMessageId,
             msgId: msgId,
             sessionId: sessionId,
             timestamp: Date.now(),
             active: true
         };
 
-        console.log(`[PLAY] Active download stored for ${senderJid} | Session: ${sessionId}`);
+        console.log(`[PLAY] Active download stored for ${senderJid} | Session: ${sessionId} | MessageId: ${sentMessageId}`);
 
         // ========== SETUP GLOBAL REPLY HANDLER ==========
         // Remove old listener if exists (only once)
@@ -933,8 +953,6 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
                 },
             ];
 
-            
-            
             // Send image with no results message
             const randomImage = "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
             
@@ -1033,7 +1051,7 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
             {
                 name: "cta_url",
                 buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("🌐  Channel", lang),
+                    display_text: await translateText("🌐 Channel", lang),
                     id: "backup channel",
                     url: conf.GURL
                 }),
@@ -1092,7 +1110,7 @@ async function sendAIResponse(zk, dest, ms, query, lang) {
                 {
                     name: "cta_url",
                     buttonParamsJson: JSON.stringify({
-                        display_text: await translateText("🌐  Channel", lang),
+                        display_text: await translateText("🌐 Channel", lang),
                         id: "backup channel",
                         url: conf.GURL
                     }),
