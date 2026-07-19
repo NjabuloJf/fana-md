@@ -357,7 +357,6 @@ setTimeout(() => {
         const { version, isLatest } = await baileys_1.fetchLatestBaileysVersion();
         const { state, saveCreds } = await baileys_1.useMultiFileAuthState(sessionDir);
         
-        // ========== FIXED SOCK OPTIONS - REMOVED PROBLEMATIC OPTIONS ==========
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
@@ -597,19 +596,16 @@ setTimeout(() => {
                 if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
                     console.log("🔗 LINK DETECTED");
                     
-                    // Check if bot is admin
                     var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
                     console.log(`Bot is admin: ${verifZokAdmin}`);
                     console.log(`User is admin: ${verifAdmin}`);
                     console.log(`User is superUser: ${superUser}`);
                     
-                    // Skip only if user is superUser (bot owner)
                     if(superUser) {
                         console.log('⏭️ Skipping action - User is superUser (bot owner)');
                         return;
                     }
                     
-                    // If bot is not admin, just warn but don't take action
                     if(!verifZokAdmin) {
                         console.log('⚠️ Bot is not admin, cannot take action');
                         const userPP = await getUserProfilePic(auteurMessage);
@@ -781,7 +777,11 @@ setTimeout(() => {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-                        // Check if user is banned (applies to ALL - DMs and Groups)
+                        console.log(`🔍 Command: ${com} | User: ${auteurMessage.split("@")[0]} | Group: ${verifGroupe}`);
+
+                        // ============================================
+                        // CHECK 1: USER BANNED (Applies to ALL users)
+                        // ============================================
                         if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
@@ -790,16 +790,18 @@ setTimeout(() => {
                             }
                         }
 
-                        // FOR GROUPS ONLY - Additional restrictions
+                        // ============================================
+                        // CHECK 2: GROUP ONLY - Additional restrictions
+                        // ============================================
                         if (verifGroupe) {
-                            // Check if bot is in private mode for groups
-                            if ((conf.MODE || "").toLowerCase() != 'yes' && !superUser) {
+                            // 2a: Check MODE (public/private)
+                            if ((conf.MODE || "").toLowerCase() !== 'yes' && !superUser) {
                                 console.log("ℹ️ Bot is in private mode for groups");
-                                await repondre("❌ Bot is in private mode for groups. Only admins can use commands.");
+                                await repondre("❌ Bot is in private mode. Only admins can use commands in groups.");
                                 return;
                             }
                             
-                            // Check if group is banned
+                            // 2b: Check if group is banned
                             if (!superUser) {
                                 let req = await isGroupBanned(origineMessage);
                                 if (req) {
@@ -808,8 +810,8 @@ setTimeout(() => {
                                 }
                             }
                             
-                            // Check if only admins can use bot in group
-                            if (!verifAdmin) {
+                            // 2c: Check if only admins can use bot in group
+                            if (!verifAdmin && !superUser) {
                                 let req = await isGroupOnlyAdmin(origineMessage);
                                 if (req) {
                                     await repondre("❌ Only admins can use bot commands in this group");
@@ -818,19 +820,27 @@ setTimeout(() => {
                             }
                         }
 
-                        // FOR DMs (INBOX) - EVERYONE CAN USE
-                        // No additional restrictions for DMs
+                        // ============================================
+                        // CHECK 3: DMs (INBOX) - EVERYONE CAN USE!
+                        // ============================================
+                        // No restrictions for DMs - everyone can use!
                         // Only banned users are blocked (checked above)
 
-                        // Execute the command
+                        // ============================================
+                        // EXECUTE THE COMMAND
+                        // ============================================
+                        console.log(`✅ Executing command: ${com} for user: ${auteurMessage.split("@")[0]}`);
                         reagir(origineMessage, zk, ms, cd.reaction);
-                        cd.fonction(origineMessage, zk, commandeOptions);
-                    }
-                    catch (e) {
+                        await cd.fonction(origineMessage, zk, commandeOptions);
+                        
+                    } catch (e) {
                         console.log("Error executing command:", e);
                         const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
-                        zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
+                        await zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
+                } else {
+                    // Command not found - optional: ignore or send help
+                    // console.log(`❌ Command not found: ${com}`);
                 }
             }
         });
