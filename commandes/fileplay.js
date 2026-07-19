@@ -365,6 +365,8 @@ fana({
 
         // ========== STORE ACTIVE DOWNLOAD FOR THIS USER ==========
         const senderJid = ms.key.remoteJid;
+        const msgId = ms.key.id;
+        
         activeDownloads[senderJid] = {
             firstVideo,
             videoId,
@@ -375,8 +377,11 @@ fana({
             lang,
             query,
             sentMessageId: sentMessage.key.id,
+            msgId: msgId,
             timestamp: Date.now()
         };
+
+        console.log(`[PLAY] Active download stored for ${senderJid}`);
 
         // ========== SETUP REPLY COLLECTOR ==========
         // Remove old listener if exists
@@ -391,18 +396,22 @@ fana({
                 if (!msg || !msg.message) return;
                 
                 const sender = msg.key.remoteJid;
-                const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-                const quotedMsgId = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.key?.id || 
-                                    msg.message.contextInfo?.quotedMessage?.key?.id;
                 
                 // Check if sender has active download
-                if (!activeDownloads[sender]) return;
-                
-                // Check if it's a reply to our message
-                const downloadData = activeDownloads[sender];
-                if (quotedMsgId !== downloadData.sentMessageId) {
+                if (!activeDownloads[sender]) {
                     return;
                 }
+                
+                // Check if this is a reply
+                const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage || 
+                                 msg.message.contextInfo?.quotedMessage;
+                
+                if (!quotedMsg) {
+                    return;
+                }
+                
+                // Get the content
+                const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
                 
                 // Check if it's a number selection (1-8)
                 if (!isNumberSelection(content)) {
@@ -412,19 +421,25 @@ fana({
                 const selectedNumber = parseInt(content);
                 const data = activeDownloads[sender];
                 
+                console.log(`[PLAY] User ${sender} selected: ${selectedNumber}`);
+                
                 // Remove from active downloads
                 delete activeDownloads[sender];
                 
                 // Remove listener
-                zk.ev.off('messages.upsert', zk._replyListener);
-                zk._replyListener = null;
+                if (zk._replyListener) {
+                    zk.ev.off('messages.upsert', zk._replyListener);
+                    zk._replyListener = null;
+                }
                 
                 // Add reaction to the reply
                 try {
                     await zk.sendMessage(dest, {
                         react: { text: "📥", key: msg.key }
                     });
-                } catch (e) {}
+                } catch (e) {
+                    console.log('[PLAY] Reaction error:', e);
+                }
                 
                 let formatType = '';
                 switch(selectedNumber) {
@@ -497,10 +512,13 @@ fana({
         setTimeout(async () => {
             const senderJid = ms.key.remoteJid;
             if (activeDownloads[senderJid]) {
+                console.log(`[PLAY] Timeout for ${senderJid}`);
                 delete activeDownloads[senderJid];
-                await zk.sendMessage(dest, { 
-                    text: timeoutMsg 
-                }, { quoted: ms });
+                try {
+                    await zk.sendMessage(dest, { 
+                        text: timeoutMsg 
+                    }, { quoted: ms });
+                } catch (e) {}
             }
             if (zk._replyListener) {
                 zk.ev.off('messages.upsert', zk._replyListener);
@@ -1104,4 +1122,4 @@ async function downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, forma
             text: await translateText("Failed to download media. Please try again.", lang),
         }, { quoted: ms });
     }
-    }
+}
