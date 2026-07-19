@@ -56,16 +56,41 @@ fana({
     const errorOccurred = await translateText("An error occurred:", lang);
     const downloading = await translateText("⏳ Downloading", lang);
     const complete = await translateText("✅ Download complete!", lang);
+    const selectFormat = await translateText("📌 Select format:", lang);
+    const audioOption = await translateText("1️⃣ Audio", lang);
+    const audioDocOption = await translateText("2️⃣ Audio Document", lang);
+    const videoOption = await translateText("3️⃣ Video", lang);
+    const videoDocOption = await translateText("4️⃣ Video Document", lang);
+    const chooseOption = await translateText("Reply with number 1, 2, 3, or 4 to choose format:", lang);
+    const invalidChoice = await translateText("❌ Invalid choice! Please reply with 1, 2, 3, or 4.", lang);
+    const timeoutMsg = await translateText("⏰ Timeout! Please try again.", lang);
 
-    // Check if user wants video or audio
-    const isVideo = arg && arg[0] && (arg[0].toLowerCase() === 'video' || arg[0].toLowerCase() === 'mp4' || arg[0].toLowerCase() === 'videodoc');
-    const isAudio = arg && arg[0] && (arg[0].toLowerCase() === 'audio' || arg[0].toLowerCase() === 'mp3' || arg[0].toLowerCase() === 'song');
+    // ========== CHECK IF REPLY IS A NUMBER SELECTION ==========
+    const isNumberSelection = (text) => {
+        const num = parseInt(text);
+        return num >= 1 && num <= 4 && !isNaN(num);
+    };
 
+    // ========== PARSE QUERY ==========
     let query = arg ? arg.join(' ') : '';
 
-    // Remove command prefix if present
-    if (isVideo || isAudio) {
-        query = arg.slice(1).join(' ');
+    // Check if user specified format in command
+    let specifiedFormat = null;
+    if (arg && arg[0]) {
+        const firstArg = arg[0].toLowerCase();
+        if (firstArg === 'audio' || firstArg === 'mp3' || firstArg === 'song') {
+            specifiedFormat = 'audio';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'audiodoc' || firstArg === 'mp3doc') {
+            specifiedFormat = 'audiodoc';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'video' || firstArg === 'mp4') {
+            specifiedFormat = 'video';
+            query = arg.slice(1).join(' ');
+        } else if (firstArg === 'videodoc' || firstArg === 'mp4doc') {
+            specifiedFormat = 'videodoc';
+            query = arg.slice(1).join(' ');
+        }
     }
 
     if (!query || query.trim() === '') {
@@ -167,35 +192,199 @@ fana({
         const videoId = firstVideo.videoId;
         const safeTitle = firstVideo.title.replace(/[\\/:*?"<>|]/g, '');
 
+        // ========== IF FORMAT SPECIFIED, DOWNLOAD DIRECTLY ==========
+        if (specifiedFormat) {
+            await downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, specifiedFormat, lang);
+            return;
+        }
+
+        // ========== ASK USER TO SELECT FORMAT WITH IMAGE ==========
+        const formatMessage = await translateText(
+            `📌 *${selectFormat}*\n\n` +
+            `${audioOption}\n` +
+            `${audioDocOption}\n` +
+            `${videoOption}\n` +
+            `${videoDocOption}\n\n` +
+            `${chooseOption}`,
+            lang
+        );
+
+        // Send image with format selection
+        await zk.sendMessage(dest, {
+            image: { url: firstVideo.thumbnail },
+            caption: formatMessage,
+            contextInfo: {
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363399999197102@newsletter',
+                    newsletterName: "╭••➤®Njabulo Jb",
+                    serverMessageId: 143,
+                },
+            },
+        }, { quoted: ms });
+
+        // ========== WAIT FOR USER REPLY ==========
+        const filter = (msg) => {
+            const content = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+            return isNumberSelection(content) && msg.key.remoteJid === dest;
+        };
+
+        const collector = zk.ev.on('messages.upsert', async (update) => {
+            const msg = update.messages[0];
+            if (!msg || !filter(msg)) return;
+            
+            const selectedNumber = parseInt(msg.message.conversation || msg.message.extendedTextMessage?.text || '');
+            let formatType = '';
+            
+            switch(selectedNumber) {
+                case 1: formatType = 'audio'; break;
+                case 2: formatType = 'audiodoc'; break;
+                case 3: formatType = 'video'; break;
+                case 4: formatType = 'videodoc'; break;
+                default: 
+                    await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
+                    return;
+            }
+            
+            // Remove listener to avoid multiple responses
+            zk.ev.off('messages.upsert', collector);
+            
+            // Download with selected format
+            await downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, formatType, lang);
+        });
+
+        // ========== TIMEOUT ==========
+        setTimeout(async () => {
+            zk.ev.off('messages.upsert', collector);
+        }, 60000); // 60 seconds timeout
+
+    } catch (err) {
+        console.error('[PLAY] Error:', err);
+        await zk.sendMessage(dest, {
+            text: `${errorOccurred} ${err.message}`,
+        }, { quoted: ms });
+    }
+});
+
+// ========== DOWNLOAD MEDIA FUNCTION ==========
+async function downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, formatType, lang) {
+    try {
+        // ========== TRANSLATED TEXTS ==========
+        const failedDownload = await translateText("Failed to retrieve the download link. Please try again later.", lang);
+        const complete = await translateText("✅ Download complete!", lang);
+        
         // Determine download format
-        const format = isVideo ? 'mp4' : 'mp3';
-        const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(videoId)}&format=${format}`;
+        let downloadFormat = 'mp3';
+        let isDocument = false;
+        
+        if (formatType === 'audio' || formatType === 'mp3' || formatType === 'song') {
+            downloadFormat = 'mp3';
+            isDocument = false;
+        } else if (formatType === 'audiodoc' || formatType === 'mp3doc') {
+            downloadFormat = 'mp3';
+            isDocument = true;
+        } else if (formatType === 'video' || formatType === 'mp4') {
+            downloadFormat = 'mp4';
+            isDocument = false;
+        } else if (formatType === 'videodoc' || formatType === 'mp4doc') {
+            downloadFormat = 'mp4';
+            isDocument = true;
+        }
 
         const downloadingText = await translateText(`⏳ Downloading ${firstVideo.title}...`, lang);
         await zk.sendMessage(dest, { text: downloadingText }, { quoted: ms });
 
-        try {
-            const response = await axios.get(apiURL);
-            if (response.status !== 200) {
-                throw new Error('Failed to retrieve download link');
-            }
+        // ========== GET DOWNLOAD LINK ==========
+        const apiURL = `https://noobs-api.top/dipto/ytDl3?link=${encodeURIComponent(videoId)}&format=${downloadFormat}`;
+        const response = await axios.get(apiURL);
+        
+        if (response.status !== 200) {
+            throw new Error('Failed to retrieve download link');
+        }
 
-            const data = response.data;
-            if (!data.downloadLink) {
-                throw new Error('No download link available');
-            }
+        const data = response.data;
+        if (!data.downloadLink) {
+            throw new Error('No download link available');
+        }
 
-            const fileName = `${safeTitle}.${format}`;
+        const fileName = `${safeTitle}.${downloadFormat}`;
 
-            if (format === 'mp3') {
-                // Send as audio
+        // ========== SEND BASED ON FORMAT ==========
+        if (downloadFormat === 'mp3') {
+            if (isDocument) {
+                // Send as audio document
+                await zk.sendMessage(dest, {
+                    document: { url: data.downloadLink },
+                    mimetype: 'audio/mpeg',
+                    fileName: fileName,
+                    caption: `🎵 *${firstVideo.title}*\n\n⏱️ ${firstVideo.duration || 'Unknown'}\n👤 ${firstVideo.author?.name || 'Unknown'}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `🎵 ${firstVideo.title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: firstVideo.thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, {
+                    quoted: {
+                        key: {
+                            fromMe: false,
+                            participant: `0@s.whatsapp.net`,
+                            remoteJid: "status@broadcast"
+                        },
+                        message: {
+                            contactMessage: {
+                                displayName: "njᥲbᥙᥣo",
+                                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Njabulo-Jb;BOT;;;\nFN:Njabulo-Jb\nitem1.TEL;waid=26777821911:+26777821911\nitem1.X-ABLabel:Bot\nEND:VCARD`
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Send as audio (voice note)
                 await zk.sendMessage(dest, {
                     audio: { url: data.downloadLink },
                     mimetype: 'audio/mpeg',
                     fileName: fileName,
+                    ptt: false,
                     contextInfo: {
                         externalAdReply: {
                             title: `🎵 ${firstVideo.title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: firstVideo.thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, {
+                    quoted: {
+                        key: {
+                            fromMe: false,
+                            participant: `0@s.whatsapp.net`,
+                            remoteJid: "status@broadcast"
+                        },
+                        message: {
+                            contactMessage: {
+                                displayName: "njᥲbᥙᥣo",
+                                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Njabulo-Jb;BOT;;;\nFN:Njabulo-Jb\nitem1.TEL;waid=26777821911:+26777821911\nitem1.X-ABLabel:Bot\nEND:VCARD`
+                            }
+                        }
+                    }
+                });
+            }
+        } else if (downloadFormat === 'mp4') {
+            if (isDocument) {
+                // Send as video document
+                await zk.sendMessage(dest, {
+                    document: { url: data.downloadLink },
+                    mimetype: 'video/mp4',
+                    fileName: fileName,
+                    caption: `📹 *${firstVideo.title}*\n\n⏱️ ${firstVideo.duration || 'Unknown'}\n👤 ${firstVideo.author?.name || 'Unknown'}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${firstVideo.title}`,
                             mediaType: 1,
                             previewType: 0,
                             thumbnailUrl: firstVideo.thumbnail,
@@ -249,21 +438,15 @@ fana({
                     }
                 });
             }
-
-            const completeText = await translateText(`✅ Download complete!`, lang);
-            await zk.sendMessage(dest, { text: completeText }, { quoted: ms });
-
-        } catch (err) {
-            console.error('[PLAY] API Error:', err);
-            await zk.sendMessage(dest, {
-                text: failedDownload,
-            }, { quoted: ms });
         }
 
+        const completeText = await translateText(`✅ Download complete!`, lang);
+        await zk.sendMessage(dest, { text: completeText }, { quoted: ms });
+
     } catch (err) {
-        console.error('[PLAY] Error:', err);
+        console.error('[DOWNLOAD] Error:', err);
         await zk.sendMessage(dest, {
-            text: `${errorOccurred} ${err.message}`,
+            text: await translateText("Failed to download media. Please try again.", lang),
         }, { quoted: ms });
     }
-});
+                }
