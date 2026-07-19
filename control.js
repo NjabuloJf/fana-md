@@ -40,7 +40,6 @@ console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 // ========== CREATE WRAPPER ==========
 const baileys_1 = { ...baileysOriginal };
 
-// Add polyfill to wrapper
 if (!baileys_1.makeInMemoryStore) {
     console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
     baileys_1.makeInMemoryStore = function(options) {
@@ -74,7 +73,6 @@ if (!baileys_1.makeInMemoryStore) {
     };
     console.log("✅ Polyfill added to wrapper");
 }
-// ========== END OF WRAPPER ==========
 
 const conf = require("./set");
 const axios = require("axios");
@@ -121,7 +119,6 @@ let translateText = async (text, targetLang) => {
     }
 };
 
-// ========== CACHE FOR TRANSLATIONS ==========
 const translationCache = new Map();
 
 let translateTextWithCache = async (text, targetLang) => {
@@ -136,7 +133,6 @@ let translateTextWithCache = async (text, targetLang) => {
     try {
         const result = await translateText(text, targetLang);
         translationCache.set(cacheKey, result);
-        // Clear cache after 1 hour
         setTimeout(() => translationCache.delete(cacheKey), 3600000);
         return result;
     } catch (error) {
@@ -166,13 +162,11 @@ const languageNames = {
     ru: "Russian"
 };
 
-// ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
 
-// ========== BUTTON HANDLER ==========
 let handleButtons = async (zk, msg) => {
     console.log("Button handler triggered");
     try {
@@ -203,7 +197,6 @@ async function authentification() {
 }
 authentification();
 
-// ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
@@ -312,10 +305,8 @@ const store = baileys_1.makeInMemoryStore({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
 
-// ========== LANGUAGE HELPER ==========
 const getLang = () => conf.LANGUAGE || "en";
 
-// ========== TRANSLATE MESSAGE FUNCTION ==========
 const messageTemplates = {
     welcome: "🎉 *WELCOME TO THE GROUP!*",
     welcome_hello: "👋 *Hello*",
@@ -381,7 +372,6 @@ setTimeout(() => {
         const zk = baileys_1.default(sockOptions);
         store.bind(zk.ev);
 
-        // List of image URLs
         const njabulox = [
             "https://files.catbox.moe/iii5jv.jpg",
             "https://files.catbox.moe/xjeyjh.jpg",
@@ -391,7 +381,6 @@ setTimeout(() => {
         ];
         const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-        // ========== BUTTON HANDLER EVENT ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
             if (!msg.message) return;
@@ -451,8 +440,28 @@ setTimeout(() => {
             var nomGroupe = verifGroupe ? infosGroupe.subject : "";
             var msgRepondu = ms.message.extendedTextMessage?.contextInfo?.quotedMessage;
             var auteurMsgRepondu = decodeJid(ms.message?.extendedTextMessage?.contextInfo?.participant);
-            var auteurMessage = verifGroupe ? (ms.key.participant ? ms.key.participant : ms.participant) : origineMessage;
-            if (ms.key.fromMe) auteurMessage = idBot;
+            
+            // ========== FIX: CORRECTLY GET THE SENDER ==========
+            // For groups: get participant, for DMs: get the sender from the message key
+            var auteurMessage;
+            if (verifGroupe) {
+                // In groups, get the participant
+                auteurMessage = ms.key.participant ? ms.key.participant : ms.participant;
+            } else {
+                // In DMs, get the sender from the message key
+                // If it's from the bot itself (fromMe), use the bot's ID
+                if (ms.key.fromMe) {
+                    auteurMessage = idBot;
+                } else {
+                    // For DMs, the sender is the remoteJid (the person messaging the bot)
+                    auteurMessage = origineMessage;
+                }
+            }
+            
+            // If for some reason auteurMessage is still undefined, use the participant or remoteJid
+            if (!auteurMessage) {
+                auteurMessage = ms.key.participant || ms.participant || origineMessage;
+            }
 
             var membreGroupe = verifGroupe ? ms.key.participant : '';
             const { getAllSudoNumbers } = require("./bdd/sudo");
@@ -465,7 +474,6 @@ setTimeout(() => {
             
             const lang = getLang();
             
-            // ========== TRANSLATED REPONDRE FUNCTION ==========
             async function repondre(mes) {
                 try {
                     const translated = await translateTextWithCache(mes, lang);
@@ -476,7 +484,6 @@ setTimeout(() => {
                 }
             }
             
-            // ========== HELPER TO GET PROFILE PIC ==========
             async function getUserProfilePic(jid) {
                 try {
                     const pp = await zk.profilePictureUrl(jid, 'image');
@@ -489,7 +496,7 @@ setTimeout(() => {
             console.log("\tNJABULO MD ONLINE");
             console.log("=========== written message===========");
             if (verifGroupe) console.log("message provenant du groupe : " + nomGroupe);
-            console.log("message envoyé par : " + "[" + nomAuteurMessage + " : " + auteurMessage.split("@s.whatsapp.net")[0] + " ]");
+            console.log("message envoyé par : " + "[" + nomAuteurMessage + " : " + (auteurMessage ? auteurMessage.split("@s.whatsapp.net")[0] : "Unknown") + " ]");
             console.log("type de message : " + mtype);
             console.log("------ contenu du message ------");
             console.log(texte);
@@ -611,7 +618,7 @@ setTimeout(() => {
                         const userPP = await getUserProfilePic(auteurMessage);
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
-                            caption: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
+                            caption: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
                             mentions: [auteurMessage] 
                         }, { quoted: ms });
                         return;
@@ -643,7 +650,7 @@ setTimeout(() => {
                     
                     if (action === 'remove') {
                         txt += await translateMessage('link_deleted', lang) + "\n";
-                        txt += `👤 @${auteurMessage.split("@")[0]} ` + await translateMessage('link_removed', lang);
+                        txt += `👤 @${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"} ` + await translateMessage('link_removed', lang);
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         await baileys_1.delay(800);
                         await zk.sendMessage(origineMessage, { 
@@ -661,7 +668,7 @@ setTimeout(() => {
                     } 
                     else if (action === 'delete') {
                         txt += await translateMessage('link_deleted', lang) + "\n";
-                        txt += `👤 @${auteurMessage.split("@")[0]} ` + await translateMessage('link_warning', lang);
+                        txt += `👤 @${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"} ` + await translateMessage('link_warning', lang);
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -723,7 +730,7 @@ setTimeout(() => {
                     
                     if (action === 'remove') {
                         txt += await translateMessage('bot_removed', lang);
-                        txt += `\n👤 @${auteurMessage.split("@")[0]}`;
+                        txt += `\n👤 @${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"}`;
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -734,7 +741,7 @@ setTimeout(() => {
                     } 
                     else if (action === 'delete') {
                         txt += await translateMessage('bot_deleted', lang);
-                        txt += `\n👤 @${auteurMessage.split("@")[0]}`;
+                        txt += `\n👤 @${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"}`;
                         await zk.sendMessage(origineMessage, { 
                             image: { url: userPP || randomNjabulourl }, 
                             caption: txt, 
@@ -772,16 +779,14 @@ setTimeout(() => {
                 console.log('Anti-bot error:', er);
             }
 
-            // ========== COMMAND EXECUTION - FIXED FOR EVERYONE ==========
+            // ========== COMMAND EXECUTION ==========
             if (verifCom) {
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
-                        console.log(`🔍 Command: ${com} | User: ${auteurMessage.split("@")[0]} | Group: ${verifGroupe}`);
+                        console.log(`🔍 Command: ${com} | User: ${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"} | Group: ${verifGroupe}`);
 
-                        // ============================================
-                        // CHECK 1: USER BANNED (Applies to ALL users)
-                        // ============================================
+                        // Check if user is banned
                         if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
@@ -790,18 +795,14 @@ setTimeout(() => {
                             }
                         }
 
-                        // ============================================
-                        // CHECK 2: GROUP ONLY - Additional restrictions
-                        // ============================================
+                        // For groups only
                         if (verifGroupe) {
-                            // 2a: Check MODE (public/private)
                             if ((conf.MODE || "").toLowerCase() !== 'yes' && !superUser) {
                                 console.log("ℹ️ Bot is in private mode for groups");
                                 await repondre("❌ Bot is in private mode. Only admins can use commands in groups.");
                                 return;
                             }
                             
-                            // 2b: Check if group is banned
                             if (!superUser) {
                                 let req = await isGroupBanned(origineMessage);
                                 if (req) {
@@ -810,7 +811,6 @@ setTimeout(() => {
                                 }
                             }
                             
-                            // 2c: Check if only admins can use bot in group
                             if (!verifAdmin && !superUser) {
                                 let req = await isGroupOnlyAdmin(origineMessage);
                                 if (req) {
@@ -820,16 +820,8 @@ setTimeout(() => {
                             }
                         }
 
-                        // ============================================
-                        // CHECK 3: DMs (INBOX) - EVERYONE CAN USE!
-                        // ============================================
-                        // No restrictions for DMs - everyone can use!
-                        // Only banned users are blocked (checked above)
-
-                        // ============================================
-                        // EXECUTE THE COMMAND
-                        // ============================================
-                        console.log(`✅ Executing command: ${com} for user: ${auteurMessage.split("@")[0]}`);
+                        // For DMs - EVERYONE CAN USE (only banned users are blocked)
+                        console.log(`✅ Executing command: ${com} for user: ${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"}`);
                         reagir(origineMessage, zk, ms, cd.reaction);
                         await cd.fonction(origineMessage, zk, commandeOptions);
                         
@@ -838,9 +830,6 @@ setTimeout(() => {
                         const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
                         await zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
-                } else {
-                    // Command not found - optional: ignore or send help
-                    // console.log(`❌ Command not found: ${com}`);
                 }
             }
         });
@@ -874,7 +863,6 @@ setTimeout(() => {
             }
         }
         
-        // ========== FIXED WELCOME & GOODBYE ==========
         zk.ev.on('group-participants.update', async (group) => {
             console.log("📢 Group update detected:", group);
             
@@ -895,7 +883,6 @@ setTimeout(() => {
                 const joinTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const joinDate = currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
-                // ========== WELCOME ==========
                 if (group.action === 'add') {
                     const welcomeStatus = await recupevents(group.id, "welcome");
                     console.log(`📢 Welcome status for ${group.id}: ${welcomeStatus}`);
@@ -948,7 +935,6 @@ setTimeout(() => {
                     }
                 }
                 
-                // ========== GOODBYE ==========
                 if (group.action === 'remove') {
                     const goodbyeStatus = await recupevents(group.id, "goodbye");
                     console.log(`📢 Goodbye status for ${group.id}: ${goodbyeStatus}`);
@@ -1001,7 +987,6 @@ setTimeout(() => {
             }
         });
 
-        // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
             const { lastDisconnect, connection } = con;
             if (connection === "connecting") {
@@ -1044,7 +1029,6 @@ setTimeout(() => {
                 console.log("📌 LANGUAGE: " + langName + " (" + currentLang + ")");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
-                // ========== SEND DM TO OWNER ==========
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
@@ -1063,7 +1047,6 @@ setTimeout(() => {
                     console.log("❌ Failed to send startup message to owner DM:", e.message);
                 }
                 
-                // ========== ALSO SEND TO BOT'S OWN DM ==========
                 try {
                     const botJid = zk.user.id;
                     if (botJid) {
