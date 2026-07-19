@@ -173,15 +173,15 @@ fana({
     const downloading = await translateText("⏳ Downloading", lang);
     const complete = await translateText("✅ Download complete!", lang);
     const selectFormat = await translateText("📌 Select format:", lang);
-    const audioOption = await translateText("1️⃣ Audio", lang);
-    const audioDocOption = await translateText("2️⃣ Audio Document", lang);
-    const videoOption = await translateText("3️⃣ Video", lang);
-    const videoDocOption = await translateText("4️⃣ Video Document", lang);
-    const imageOption = await translateText("5️⃣ Images (8 photos)", lang);
-    const lyricsOption = await translateText("6️⃣ Lyrics", lang);
-    const ytsOption = await translateText("7️⃣ YouTube Search", lang);
-    const chatAIOption = await translateText("8️⃣ Chat AI", lang);
-    const chooseOption = await translateText("Reply with number 1, 2, 3, 4, 5, 6, 7, or 8 to choose:", lang);
+    const audioOption = await translateText("-᳆ *1* Audio mp3", lang);
+    const audioDocOption = await translateText("-᳆ *2*  Audio Document mp3", lang);
+    const videoOption = await translateText("-᳆ *3* Video mp4", lang);
+    const videoDocOption = await translateText("-᳆ *4* Video Document mp4", lang);
+    const imageOption = await translateText("-᳆ *5*  Images (8 photos)", lang);
+    const lyricsOption = await translateText("-᳆ *6*  Lyrics text", lang);
+    const ytsOption = await translateText("-᳆ *7*  YouTube Search", lang);
+    const chatAIOption = await translateText("-᳆ *8* Chat AI music", lang);
+    const chooseOption = await translateText("Reply with number 1 to 8 to choose:", lang);
     const invalidChoice = await translateText("❌ Invalid choice! Please reply with 1, 2, 3, 4, 5, 6, 7, or 8.", lang);
     const timeoutMsg = await translateText("⏰ Timeout! Please try again.", lang);
     const noImages = await translateText("❌ No images found for this query.", lang);
@@ -367,18 +367,25 @@ fana({
             lang
         );
 
+        const buttons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("🌐 bot Channel", lang),
+                    id: "backup channel",
+                    url: conf.GURL
+                }),
+            },
+           ]
+
         // Send image with format selection
         const sentMessage = await zk.sendMessage(dest, {
-            image: { url: firstVideo.thumbnail },
-            caption: formatMessage,
-            contextInfo: {
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363399999197102@newsletter',
-                    newsletterName: "╭••➤®Njabulo Jb",
-                    serverMessageId: 143,
-                },
-            },
+            interactiveMessage: {
+                image: { url: firstVideo.thumbnail },
+                    header: formatMessage,
+                    buttons,
+                    headerType: 1
+                }                                   
         }, { quoted: ms });
 
         // ========== STORE ACTIVE DOWNLOAD FOR THIS USER ==========
@@ -716,7 +723,7 @@ async function sendLyrics(zk, dest, ms, query, lang) {
             {
                 name: "cta_url",
                 buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("🌐 WA Channel", lang),
+                    display_text: await translateText("🌐 Channel", lang),
                     id: "backup channel",
                     url: conf.GURL
                 }),
@@ -912,7 +919,7 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
                 {
                     name: "cta_url",
                     buttonParamsJson: JSON.stringify({
-                        display_text: await translateText("🌐 WA Channel", lang),
+                        display_text: await translateText("🌐 Channel", lang),
                         id: "backup channel",
                         url: conf.GURL
                     }),
@@ -925,6 +932,8 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
                     }),
                 },
             ];
+
+            
             
             // Send image with no results message
             const randomImage = "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
@@ -936,14 +945,6 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
                     body: { text: noYtResults },
                     buttons: noResultsButtons,
                     headerType: 1,
-                    contextInfo: {
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363399999197102@newsletter',
-                            newsletterName: "╭••➤®Njabulo Jb",
-                            serverMessageId: 143,
-                        },
-                    },
                 }
             }, { quoted: ms });
             return;
@@ -1032,7 +1033,7 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
             {
                 name: "cta_url",
                 buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("🌐 WA Channel", lang),
+                    display_text: await translateText("🌐  Channel", lang),
                     id: "backup channel",
                     url: conf.GURL
                 }),
@@ -1091,7 +1092,7 @@ async function sendAIResponse(zk, dest, ms, query, lang) {
                 {
                     name: "cta_url",
                     buttonParamsJson: JSON.stringify({
-                        display_text: await translateText("🌐 WA Channel", lang),
+                        display_text: await translateText("🌐  Channel", lang),
                         id: "backup channel",
                         url: conf.GURL
                     }),
