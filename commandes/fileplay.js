@@ -37,6 +37,9 @@ async function getTranslatedButtons() {
     return { viewOnYoutube, downloadAudio, downloadVideo };
 }
 
+// ========== STORE FOR ACTIVE DOWNLOADS ==========
+const activeDownloads = {};
+
 fana({
     nomCom: "play",
     aliases: ["song", "playdoc", "audio", "mp3", "mp4", "video", "videodoc"],
@@ -223,39 +226,100 @@ fana({
             },
         }, { quoted: ms });
 
-        // ========== WAIT FOR USER REPLY ==========
-        const filter = (msg) => {
-            const content = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
-            return isNumberSelection(content) && msg.key.remoteJid === dest;
+        // ========== STORE ACTIVE DOWNLOAD FOR THIS USER ==========
+        const senderJid = ms.key.remoteJid;
+        activeDownloads[senderJid] = {
+            firstVideo,
+            videoId,
+            safeTitle,
+            dest,
+            ms,
+            zk,
+            lang,
+            timestamp: Date.now()
         };
 
-        const collector = zk.ev.on('messages.upsert', async (update) => {
-            const msg = update.messages[0];
-            if (!msg || !filter(msg)) return;
-            
-            const selectedNumber = parseInt(msg.message.conversation || msg.message.extendedTextMessage?.text || '');
-            let formatType = '';
-            
-            switch(selectedNumber) {
-                case 1: formatType = 'audio'; break;
-                case 2: formatType = 'audiodoc'; break;
-                case 3: formatType = 'video'; break;
-                case 4: formatType = 'videodoc'; break;
-                default: 
-                    await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
+        // ========== SETUP REPLY COLLECTOR ==========
+        // Remove old listener if exists
+        if (zk._replyListener) {
+            zk.ev.off('messages.upsert', zk._replyListener);
+        }
+
+        // Create new listener
+        zk._replyListener = async (update) => {
+            try {
+                const msg = update.messages[0];
+                if (!msg || !msg.message) return;
+                
+                const sender = msg.key.remoteJid;
+                const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+                
+                // Check if this is a reply to our format selection
+                const isReply = msg.message.extendedTextMessage?.contextInfo?.quotedMessage || 
+                               msg.message.contextInfo?.quotedMessage;
+                
+                // Check if sender has active download
+                if (!activeDownloads[sender]) return;
+                
+                // Check if it's a number selection (1-4)
+                if (!isNumberSelection(content)) {
                     return;
+                }
+                
+                const selectedNumber = parseInt(content);
+                const downloadData = activeDownloads[sender];
+                
+                // Remove from active downloads
+                delete activeDownloads[sender];
+                
+                // Remove listener
+                zk.ev.off('messages.upsert', zk._replyListener);
+                zk._replyListener = null;
+                
+                let formatType = '';
+                switch(selectedNumber) {
+                    case 1: formatType = 'audio'; break;
+                    case 2: formatType = 'audiodoc'; break;
+                    case 3: formatType = 'video'; break;
+                    case 4: formatType = 'videodoc'; break;
+                    default: 
+                        await zk.sendMessage(dest, { text: invalidChoice }, { quoted: ms });
+                        return;
+                }
+                
+                // Download with selected format
+                await downloadMedia(
+                    downloadData.zk, 
+                    downloadData.dest, 
+                    downloadData.ms,
+                    downloadData.firstVideo,
+                    downloadData.videoId,
+                    downloadData.safeTitle,
+                    formatType,
+                    downloadData.lang
+                );
+                
+            } catch (err) {
+                console.error('[REPLY HANDLER ERROR]', err);
             }
-            
-            // Remove listener to avoid multiple responses
-            zk.ev.off('messages.upsert', collector);
-            
-            // Download with selected format
-            await downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, formatType, lang);
-        });
+        };
+
+        // Register listener
+        zk.ev.on('messages.upsert', zk._replyListener);
 
         // ========== TIMEOUT ==========
         setTimeout(async () => {
-            zk.ev.off('messages.upsert', collector);
+            const senderJid = ms.key.remoteJid;
+            if (activeDownloads[senderJid]) {
+                delete activeDownloads[senderJid];
+                await zk.sendMessage(dest, { 
+                    text: timeoutMsg 
+                }, { quoted: ms });
+            }
+            if (zk._replyListener) {
+                zk.ev.off('messages.upsert', zk._replyListener);
+                zk._replyListener = null;
+            }
         }, 60000); // 60 seconds timeout
 
     } catch (err) {
@@ -449,4 +513,4 @@ async function downloadMedia(zk, dest, ms, firstVideo, videoId, safeTitle, forma
             text: await translateText("Failed to download media. Please try again.", lang),
         }, { quoted: ms });
     }
-                }
+        }
