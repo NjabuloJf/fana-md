@@ -91,25 +91,56 @@ const { isGroupBanned } = require("./bdd/banGroup");
 const { isGroupOnlyAdmin } = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
 
-// ========== TRANSLATION SETUP WITH FALLBACK ==========
+// ========== GOOGLE TRANSLATE API WITH FALLBACK ==========
 let translateText = async (text, targetLang) => {
     try {
         if (!targetLang || targetLang === 'en') return text;
+        if (!text) return text;
         try {
             const { translate } = require('@vitalets/google-translate-api');
             const result = await translate(text, { to: targetLang });
             return result.text;
         } catch (e) {
-            const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
-                timeout: 5000
-            });
-            if (response.data && response.data.responseData) {
-                return response.data.responseData.translatedText || text;
+            console.log('⚠️ Google Translate failed, using fallback...');
+            try {
+                const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
+                    timeout: 5000
+                });
+                if (response.data && response.data.responseData) {
+                    return response.data.responseData.translatedText || text;
+                }
+                return text;
+            } catch (fallbackError) {
+                console.error('⚠️ Fallback translation failed:', fallbackError.message);
+                return text;
             }
-            return text;
         }
     } catch (error) {
-        console.error('Translation error:', error.message);
+        console.error('⚠️ Translation error:', error.message);
+        return text;
+    }
+};
+
+// ========== CACHE FOR TRANSLATIONS ==========
+const translationCache = new Map();
+
+let translateTextWithCache = async (text, targetLang) => {
+    if (!targetLang || targetLang === 'en') return text;
+    if (!text) return text;
+    
+    const cacheKey = `${text}_${targetLang}`;
+    if (translationCache.has(cacheKey)) {
+        return translationCache.get(cacheKey);
+    }
+    
+    try {
+        const result = await translateText(text, targetLang);
+        translationCache.set(cacheKey, result);
+        // Clear cache after 1 hour
+        setTimeout(() => translationCache.delete(cacheKey), 3600000);
+        return result;
+    } catch (error) {
+        console.error('⚠️ Translation error:', error.message);
         return text;
     }
 };
@@ -128,7 +159,11 @@ const languageNames = {
     fr: "French",
     es: "Spanish",
     zh: "Chinese",
-    de: "German"
+    de: "German",
+    it: "Italian",
+    ja: "Japanese",
+    ko: "Korean",
+    ru: "Russian"
 };
 
 // ========== FIX: Handle undefined session ==========
@@ -311,7 +346,7 @@ async function translateMessage(key, lang) {
     const text = messageTemplates[key] || key;
     if (lang === 'en') return text;
     try {
-        return await translateText(text, lang);
+        return await translateTextWithCache(text, lang);
     } catch {
         return text;
     }
@@ -329,10 +364,6 @@ setTimeout(() => {
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            // REMOVED: shouldSyncHistoryMessage (causing error)
-            // REMOVED: downloadHistory (causing error)
-            // REMOVED: syncFullHistory (causing error)
-            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -449,7 +480,7 @@ setTimeout(() => {
             // ========== TRANSLATED REPONDRE FUNCTION ==========
             async function repondre(mes) {
                 try {
-                    const translated = await translateText(mes, lang);
+                    const translated = await translateTextWithCache(mes, lang);
                     await zk.sendMessage(origineMessage, { text: translated }, { quoted: ms });
                 } catch (error) {
                     console.error("Translation error in repondre:", error);
@@ -770,7 +801,7 @@ setTimeout(() => {
                     }
                     catch (e) {
                         console.log("Error:", e);
-                        const translatedError = await translateText("❌ Error: " + e.message, lang);
+                        const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
                         zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
                 }
