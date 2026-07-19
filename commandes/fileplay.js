@@ -32,17 +32,17 @@ let translateText = async (text, targetLang) => {
 const AI_APIS = [
     async (q) => {
         const url = `https://mistral.stacktoy.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
-        const { data } = await axios.get(url, { timeout: 15000 });
+        const { data } = await axios.get(url, { timeout: 30000 });
         return data?.data?.response || null;
     },
     async (q) => {
         const url = `https://llama.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
-        const { data } = await axios.get(url, { timeout: 15000 });
+        const { data } = await axios.get(url, { timeout: 30000 });
         return data?.data?.response || data?.response || null;
     },
     async (q) => {
         const url = `https://mistral.gtech-apiz.workers.dev/?apikey=Suhail&text=${encodeURIComponent(q)}`;
-        const { data } = await axios.get(url, { timeout: 15000 });
+        const { data } = await axios.get(url, { timeout: 30000 });
         return data?.data?.response || data?.response || null;
     }
 ];
@@ -54,7 +54,7 @@ const askAI = async (query) => {
             console.log(`🔄 Trying AI API...`);
             const response = await api(query);
             if (response && typeof response === 'string' && response.trim().length > 0) {
-                console.log(`✅ AI API Success!`);
+                console.log(`✅ AI API Success! Response length: ${response.length} chars`);
                 return response.trim();
             }
         } catch (error) {
@@ -64,6 +64,22 @@ const askAI = async (query) => {
     }
     return "⚠️ AI service is currently unavailable. Please try again later.";
 };
+
+// ========== ANIMATED TYPING INDICATOR ==========
+async function sendTypingAnimation(zk, chatId, ms) {
+    const frames = ['◐', '◓', '◑', '◒'];
+    let i = 0;
+    const typingMsg = await zk.sendMessage(chatId, { text: `🧠 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴛʜɪɴᴋɪɴɢ* ${frames[0]}` }, { quoted: ms });
+    
+    const interval = setInterval(async () => {
+        i = (i + 1) % frames.length;
+        try {
+            await zk.sendMessage(chatId, { text: `🧠 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴛʜɪɴᴋɪɴɢ* ${frames[i]}`, edit: typingMsg.key });
+        } catch (e) {}
+    }, 500);
+    
+    return { typingMsg, interval };
+}
 
 // ========== GOOGLE IMAGE SEARCH API ==========
 const GCSE_KEY = 'AIzaSyDMbI3nvmQUrfjoCJYLS69Lej1hSXQjnWI';
@@ -1055,67 +1071,73 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
 // ========== SEND AI RESPONSE FUNCTION ==========
 async function sendAIResponse(zk, dest, ms, query, lang) {
     try {
-        const thinking = await translateText("🤔 Thinking...", lang);
-        const aiResponse = await translateText("🤖 AI Response:", lang);
-        
-        // Send thinking message
-        const thinkingMsg = await zk.sendMessage(dest, { text: thinking }, { quoted: ms });
+        // Check if query is empty
+        if (!query || query.trim() === '') {
+            const helpText = await translateText(
+                `📌 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴛʜɪɴᴋɪɴɢ*
 
-        // Get AI response
-        const response = await askAI(query);
-        
-        // Delete thinking message
-        if (thinkingMsg && thinkingMsg.key) {
-            await zk.sendMessage(dest, { delete: thinkingMsg.key }).catch(() => {});
-        }
+🤖 *How to use:*
+• Ask me anything!
+• Get intelligent responses
+• Chat and learn
 
-        // Check if response is error
-        if (response.includes("unavailable")) {
-            await zk.sendMessage(dest, { 
-                text: response,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363399999197102@newsletter',
-                        newsletterName: "╭••➤®Njabulo Jb",
-                        serverMessageId: 143,
-                    },
+📝 *Example:* 
+.play ai What is artificial intelligence?
+
+💫 *ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴀssɪsᴛᴀɴᴛ ᴜɪ*`, lang
+            );
+            
+            const helpButtons = [
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("🌐 WA Channel", lang),
+                        id: "backup channel",
+                        url: conf.GURL
+                    }),
                 },
+                {
+                    name: "cta_copy",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("📋 Copy Help", lang),
+                        copy_code: helpText,
+                    }),
+                },
+            ];
+            
+            await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    header: `🤖 *AI Assistant*`,
+                    body: { text: helpText },
+                    buttons: helpButtons,
+                    headerType: 1,
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363399999197102@newsletter',
+                            newsletterName: "╭••➤®Njabulo Jb",
+                            serverMessageId: 143,
+                        },
+                    },
+                }
             }, { quoted: ms });
             return;
         }
 
-        // ========== BUTTONS FOR AI RESPONSE ==========
-        const buttons = [
-            {
-                name: "cta_url",
-                buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("🌐 WA Channel", lang),
-                    id: "backup channel",
-                    url: conf.GURL
-                }),
-            },
-            {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                    display_text: await translateText("📋 Copy Response", lang),
-                    copy_code: response,
-                }),
-            },
-        ];
+        // Send animated typing indicator
+        const { typingMsg, interval } = await sendTypingAnimation(zk, dest, ms);
 
-        // Split response if too long
-        const responseChunks = splitTextIntoChunks(response, 3800);
-        
-        if (responseChunks.length > 1) {
-            // Send first part with header
-            await zk.sendMessage(dest, { 
-                text: `${aiResponse}\n\n━━━━━━━━━━━━━━━━━━━`
-            }, { quoted: ms });
+        try {
+            const response = await askAI(query);
             
-            // Send each chunk
-            for (let i = 0; i < responseChunks.length; i++) {
-                const chunkButtons = [
+            // Clear typing animation
+            clearInterval(interval);
+            if (typingMsg && typingMsg.key) {
+                await zk.sendMessage(dest, { delete: typingMsg.key }).catch(() => {});
+            }
+            
+            if (!response || response.includes("unavailable")) {
+                const errorButtons = [
                     {
                         name: "cta_url",
                         buttonParamsJson: JSON.stringify({
@@ -1127,62 +1149,219 @@ async function sendAIResponse(zk, dest, ms, query, lang) {
                     {
                         name: "cta_copy",
                         buttonParamsJson: JSON.stringify({
-                            display_text: await translateText(`📋 Copy Part ${i + 1}`, lang),
-                            copy_code: responseChunks[i],
+                            display_text: await translateText("📋 Copy Query", lang),
+                            copy_code: query,
                         }),
                     },
                 ];
                 
                 await zk.sendMessage(dest, {
                     interactiveMessage: {
-                        header: `*Part ${i + 1}/${responseChunks.length}*\n\n${responseChunks[i]}`,
-                        buttons: chunkButtons,
-                        headerType: 1
+                        header: `❌ *AI Service Unavailable*`,
+                        body: { text: await translateText("Please try again later.", lang) },
+                        buttons: errorButtons,
+                        headerType: 1,
+                    }
+                }, { quoted: ms });
+                return;
+            }
+
+            // Split long response for better display
+            const maxPreviewLength = 500;
+            const responsePreview = response.length > maxPreviewLength ? response.substring(0, maxPreviewLength) + '...' : response;
+            
+            // Create intro text
+            const introText = `*AI Answer Preview:*\n${responsePreview}\n> ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴀssɪsᴛᴀɴᴛ ᴜɪ`;
+
+            // Create response ID
+            const responseId = Math.random().toString(36).substring(2);
+            
+            // Create encoded data with AI response
+            const encodedData = Buffer.from(JSON.stringify({
+                "response_id": responseId,
+                "sections": [
+                    {
+                        "view_model": {
+                            "primitive": {
+                                "text": introText,
+                                "__typename": "GenAIMarkdownTextUXPrimitive"
+                            },
+                            "__typename": "GenAISingleLayoutViewModel"
+                        }
+                    },
+                    {
+                        "view_model": {
+                            "primitive": {
+                                "language": "text",
+                                "code_blocks": [
+                                    { 
+                                        "content": `📝 ɴᴊᴀʙᴜʟᴏ ᴀɪ ǫᴜᴇsᴛɪᴏɴ:\n${query}\n\n💬 ᴀɴsᴡᴇʀ\n${response}`, 
+                                        "type": "DEFAULT" 
+                                    }
+                                ],
+                                "__typename": "GenAICodeUXPrimitive"
+                            },
+                            "__typename": "GenAISingleLayoutViewModel"
+                        }
+                    }
+                ]
+            })).toString('base64');
+
+            // Create the message content
+            const content = {
+                messageContextInfo: {
+                    threadId: [],
+                    deviceListMetadata: {
+                        senderKeyIndexes: [],
+                        recipientKeyIndexes: []
+                    },
+                    deviceListMetadataVersion: 2,
+                    botMetadata: {
+                        pluginMetadata: {},
+                        richResponseSourcesMetadata: {
+                            sources: []
+                        }
+                    }
+                },
+                botForwardedMessage: {
+                    message: {
+                        richResponseMessage: {
+                            submessages: [
+                                {
+                                    messageType: 2,
+                                    messageText: introText
+                                },
+                                {
+                                    messageType: 3,
+                                    codeMetadata: {
+                                        codeLanguage: "text",
+                                        codeBlocks: [
+                                            {
+                                                highlightType: 0,
+                                                codeContent: `📝 ɴᴊᴀʙᴜʟᴏ ᴀɪ ᴀssɪsᴛᴀɴᴛ ᴜɪ ǫᴜᴇsᴛɪᴏɴ:\n${query}\n\n💬 ᴀɴsᴡᴇʀ:\n${response}`
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            messageType: 1,
+                            unifiedResponse: {
+                                data: encodedData
+                            },
+                            contextInfo: {
+                                mentionedJid: [],
+                                groupMentions: [],
+                                statusAttributions: [],
+                                forwardingScore: 743,
+                                isForwarded: true,
+                                forwardedAiBotMessageInfo: {
+                                    botJid: "867051314767696@bot"
+                                },
+                                forwardOrigin: 4
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Send the AI response
+            try {
+                await zk.relayMessage(dest, content, {});
+                console.log(`✅ AI response sent with encodedData - Response ID: ${responseId}`);
+                
+                // Add buttons for the AI response
+                const aiButtons = [
+                    {
+                        name: "cta_url",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText("🌐 WA Channel", lang),
+                            id: "backup channel",
+                            url: conf.GURL
+                        }),
+                    },
+                    {
+                        name: "cta_copy",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText("📋 Copy Response", lang),
+                            copy_code: response,
+                        }),
+                    },
+                ];
+                
+                // Send buttons separately
+                await zk.sendMessage(dest, {
+                    interactiveMessage: {
+                        header: `💬 *Actions*`,
+                        body: { text: await translateText("Choose an action:", lang) },
+                        buttons: aiButtons,
+                        headerType: 1,
+                    }
+                }, { quoted: ms });
+                
+            } catch (relayError) {
+                console.error("Relay error, falling back to simple text:", relayError.message);
+                // Fallback to simple text if relay fails
+                const fallbackButtons = [
+                    {
+                        name: "cta_url",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText("🌐 WA Channel", lang),
+                            id: "backup channel",
+                            url: conf.GURL
+                        }),
+                    },
+                    {
+                        name: "cta_copy",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText("📋 Copy Response", lang),
+                            copy_code: response,
+                        }),
+                    },
+                ];
+                
+                await zk.sendMessage(dest, {
+                    interactiveMessage: {
+                        header: `🤖 *AI Response*\n\n${introText}`,
+                        body: { text: `📝 *Full Answer:*\n\n${response}` },
+                        buttons: fallbackButtons,
+                        headerType: 1,
                     }
                 }, { quoted: ms });
             }
-        } else {
-            // Create cards for AI response
-            const cards = [
-                {
-                    header: {
-                        title: `🤖 AI RESPONSE`,
-                        hasMediaAttachment: false,
-                    },
-                    body: {
-                        text: `${aiResponse}\n\n${response}`,
-                    },
-                    footer: {
-                        text: `💬 Powered by AI`,
-                    },
-                    nativeFlowMessage: {
-                        buttons: buttons,
-                    },
-                }
-            ];
 
-            const message = generateWAMessageFromContent(
-                dest,
+        } catch (err) {
+            console.error('[AI] Error:', err);
+            clearInterval(interval);
+            if (typingMsg && typingMsg.key) {
+                await zk.sendMessage(dest, { delete: typingMsg.key }).catch(() => {});
+            }
+            
+            const errorButtons = [
                 {
-                    viewOnceMessage: {
-                        message: {
-                            messageContextInfo: {
-                                deviceListMetadata: {},
-                                deviceListMetadataVersion: 2,
-                            },
-                            interactiveMessage: {
-                                header: { text: `🤖 Chat AI` },
-                                body: { text: `*📝 Query: ${query}*` },
-                                headerType: 1,
-                                carouselMessage: { cards },
-                            },
-                        },
-                    },
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("🌐 WA Channel", lang),
+                        id: "backup channel",
+                        url: conf.GURL
+                    }),
                 },
-                { quoted: ms }
-            );
-
-            await zk.relayMessage(dest, message.message, { messageId: message.key.id });
+                {
+                    name: "cta_copy",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("📋 Copy Query", lang),
+                        copy_code: query,
+                    }),
+                },
+            ];
+            
+            await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    header: `❌ *Error*`,
+                    body: { text: await translateText("Failed to get AI response. Please try again.", lang) },
+                    buttons: errorButtons,
+                    headerType: 1,
+                }
+            }, { quoted: ms });
         }
 
     } catch (err) {
