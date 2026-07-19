@@ -832,19 +832,20 @@ setTimeout(() => {
             }
         }
         
+        // ========== FIXED WELCOME & GOODBYE ==========
         zk.ev.on('group-participants.update', async (group) => {
-            console.log("📢 Group update detected");
-            
-            const lang = getLang();
-            
-            let ppgroup;
-            try {
-                ppgroup = await zk.profilePictureUrl(group.id, 'image');
-            } catch {
-                ppgroup = randomNjabulourl;
-            }
+            console.log("📢 Group update detected:", group);
             
             try {
+                const lang = getLang();
+                
+                let ppgroup;
+                try {
+                    ppgroup = await zk.profilePictureUrl(group.id, 'image');
+                } catch {
+                    ppgroup = randomNjabulourl;
+                }
+                
                 const metadata = await zk.groupMetadata(group.id);
                 const groupName = metadata.subject;
                 const participantCount = metadata.participants.length;
@@ -852,28 +853,33 @@ setTimeout(() => {
                 const joinTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const joinDate = currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 
-                // WELCOME
-                if (group.action == 'add' && (await recupevents(group.id, "welcome") == 'on')) {
-                    for (const participant of group.participants) {
-                        try {
-                            const memberJid = participant;
-                            const memberName = await getName(memberJid);
-                            const memberPP = await getProfilePic(memberJid);
-                            
-                            const welcomeTitle = await translateMessage('welcome', lang);
-                            const welcomeHello = await translateMessage('welcome_hello', lang);
-                            const welcomeRules = await translateMessage('welcome_rules', lang);
-                            const welcomeEnjoy = await translateMessage('welcome_enjoy', lang);
-                            const membersT = await translateMessage('members', lang);
-                            const joinedAt = await translateMessage('joined_at', lang);
-                            const dateT = await translateMessage('date', lang);
-                            
-                            const welcomeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
+                // ========== WELCOME ==========
+                if (group.action === 'add') {
+                    const welcomeStatus = await recupevents(group.id, "welcome");
+                    console.log(`📢 Welcome status for ${group.id}: ${welcomeStatus}`);
+                    
+                    if (welcomeStatus === 'on') {
+                        for (const participant of group.participants) {
+                            try {
+                                const memberJid = participant;
+                                const memberName = await getName(memberJid);
+                                const memberPP = await getProfilePic(memberJid);
+                                
+                                const welcomeTitle = await translateMessage('welcome', lang);
+                                const welcomeHello = await translateMessage('welcome_hello', lang);
+                                const welcomeRules = await translateMessage('welcome_rules', lang);
+                                const welcomeEnjoy = await translateMessage('welcome_enjoy', lang);
+                                const membersT = await translateMessage('members', lang);
+                                const joinedAt = await translateMessage('joined_at', lang);
+                                const dateT = await translateMessage('date', lang);
+                                const groupT = await translateMessage('group', lang);
+                                
+                                const welcomeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
 ┃     ${welcomeTitle}
 ┃
 ┃ ${welcomeHello} ${memberName}!
 ┃
-┃ 📱 *${await translateMessage('group', lang)}:* ${groupName}
+┃ 📱 ${groupT}: ${groupName}
 ┃ 👥 ${membersT}: ${participantCount}
 ┃
 ┃ 🕐 ${joinedAt}: ${joinTime}
@@ -883,36 +889,41 @@ setTimeout(() => {
 ┃
 ┃ ${welcomeEnjoy}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-                            
-                            await zk.sendMessage(group.id, {
-                                image: { url: memberPP || ppgroup || randomNjabulourl },
-                                caption: welcomeMsg,
-                                mentions: [memberJid]
-                            });
-                            
-                            console.log(`✅ Welcome message sent to ${memberName}`);
-                        } catch (memberError) {
-                            console.error(`Welcome error:`, memberError);
+                                
+                                await zk.sendMessage(group.id, {
+                                    image: { url: memberPP || ppgroup || randomNjabulourl },
+                                    caption: welcomeMsg,
+                                    mentions: [memberJid]
+                                });
+                                
+                                console.log(`✅ Welcome message sent to ${memberName}`);
+                            } catch (memberError) {
+                                console.error(`Welcome error for ${participant}:`, memberError);
+                            }
                         }
                     }
                 }
                 
-                // GOODBYE
-                if (group.action == 'remove' && (await recupevents(group.id, "goodbye") == 'on')) {
-                    for (const participant of group.participants) {
-                        try {
-                            const memberJid = participant;
-                            const memberName = await getName(memberJid);
-                            
-                            const goodbyeTitle = await translateMessage('goodbye', lang);
-                            const goodbyeLeft = await translateMessage('goodbye_left', lang);
-                            const goodbyeRemaining = await translateMessage('goodbye_remaining', lang);
-                            const goodbyeMissed = await translateMessage('goodbye_missed', lang);
-                            const groupT = await translateMessage('group', lang);
-                            const leftAt = await translateMessage('left_at', lang);
-                            const dateT = await translateMessage('date', lang);
-                            
-                            const goodbyeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
+                // ========== GOODBYE ==========
+                if (group.action === 'remove') {
+                    const goodbyeStatus = await recupevents(group.id, "goodbye");
+                    console.log(`📢 Goodbye status for ${group.id}: ${goodbyeStatus}`);
+                    
+                    if (goodbyeStatus === 'on') {
+                        for (const participant of group.participants) {
+                            try {
+                                const memberJid = participant;
+                                const memberName = await getName(memberJid);
+                                
+                                const goodbyeTitle = await translateMessage('goodbye', lang);
+                                const goodbyeLeft = await translateMessage('goodbye_left', lang);
+                                const goodbyeRemaining = await translateMessage('goodbye_remaining', lang);
+                                const goodbyeMissed = await translateMessage('goodbye_missed', lang);
+                                const groupT = await translateMessage('group', lang);
+                                const leftAt = await translateMessage('left_at', lang);
+                                const dateT = await translateMessage('date', lang);
+                                
+                                const goodbyeMsg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
 ┃        ${goodbyeTitle}
 ┃
 ┃ 😢 ${memberName} ${goodbyeLeft}
@@ -925,16 +936,17 @@ setTimeout(() => {
 ┃
 ┃ ${goodbyeMissed}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-                            
-                            await zk.sendMessage(group.id, {
-                                image: { url: ppgroup || randomNjabulourl },
-                                caption: goodbyeMsg,
-                                mentions: [memberJid]
-                            });
-                            
-                            console.log(`✅ Goodbye message sent for ${memberName}`);
-                        } catch (memberError) {
-                            console.error(`Goodbye error:`, memberError);
+                                
+                                await zk.sendMessage(group.id, {
+                                    image: { url: ppgroup || randomNjabulourl },
+                                    caption: goodbyeMsg,
+                                    mentions: [memberJid]
+                                });
+                                
+                                console.log(`✅ Goodbye message sent for ${memberName}`);
+                            } catch (memberError) {
+                                console.error(`Goodbye error for ${participant}:`, memberError);
+                            }
                         }
                     }
                 }
@@ -986,6 +998,7 @@ setTimeout(() => {
                 console.log("📌 LANGUAGE: " + langName + " (" + currentLang + ")");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
+                // ========== FIXED: SEND DM TO OWNER ==========
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
@@ -998,9 +1011,27 @@ setTimeout(() => {
 ╰───────────⊷`;
                 
                 try {
-                    await zk.sendMessage(ownerNumber, { text: cmsg });
-                    console.log("✅ Startup message sent to owner DM");
-                } catch (e) {}
+                    // Send to owner using zk.sendMessage
+                    await zk.sendMessage(ownerNumber, { 
+                        text: cmsg 
+                    });
+                    console.log("✅ Startup message sent to owner DM: " + ownerNumber);
+                } catch (e) {
+                    console.log("❌ Failed to send startup message to owner DM:", e.message);
+                }
+                
+                // ========== ALSO SEND TO BOT'S OWN DM (optional) ==========
+                try {
+                    const botJid = zk.user.id;
+                    if (botJid) {
+                        await zk.sendMessage(botJid, { 
+                            text: "✅ Bot is now online!" 
+                        });
+                        console.log("✅ Startup message sent to bot DM: " + botJid);
+                    }
+                } catch (e) {
+                    console.log("❌ Failed to send message to bot DM:", e.message);
+                }
                 
             }
             else if (connection == "close") {
