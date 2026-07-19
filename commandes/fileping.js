@@ -85,7 +85,7 @@ fana({
     const uptimeText = await translateText("Uptime", lang);
     const pingText = await translateText("Ping", lang);
     const systemInfoText = await translateText("System Info", lang);
-    const systemsLoadingText = await translateText("sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ", lang);
+    const systemsLoadingText = await translateText("system loading", lang);
     const waChannelText = await translateText("channel", lang);
     const availableText = await translateText("Available", lang);
 
@@ -240,8 +240,8 @@ fana({
     const uptimeText = await translateText("Uptime", lang);
     const pingText = await translateText("Ping", lang);
     const systemInfoText = await translateText("System Info", lang);
-    const systemsLoadingText = await translateText("sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ", lang);
-    const waChannelText = await translateText("𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹", lang);
+    const systemsLoadingText = await translateText("system loading", lang);
+    const waChannelText = await translateText("channel bot", lang);
 
     const cards = [
       {
@@ -388,7 +388,7 @@ fana({
     const uptimeText = await translateText("Uptime", lang);
     const pingText = await translateText("Ping", lang);
     const systemInfoText = await translateText("System Info", lang);
-    const systemsLoadingText = await translateText("sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ", lang);
+    const systemsLoadingText = await translateText("system loading", lang);
     const waChannelText = await translateText("channel", lang);
 
     const cards = [
