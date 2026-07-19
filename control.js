@@ -392,17 +392,6 @@ setTimeout(() => {
         ];
         const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-        const buttons = [
-            {
-                name: "cta_url",
-                buttonParamsJson: JSON.stringify({
-                    display_text: "🌐 WA Channel",
-                    id: "backup channel",
-                    url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
-                }),
-            },
-        ];
-
         // ========== BUTTON HANDLER EVENT ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
@@ -823,10 +812,16 @@ setTimeout(() => {
         async function getName(jid) {
             try {
                 if (!jid) return "Unknown";
-                if (typeof jid !== 'string') {
-                    jid = String(jid);
+                // If jid is an object, extract the phoneNumber or id
+                if (typeof jid === 'object') {
+                    if (jid.phoneNumber) return jid.phoneNumber.split('@')[0];
+                    if (jid.id) return jid.id.split('@')[0];
+                    return "Unknown";
                 }
-                return jid.split('@')[0];
+                if (typeof jid === 'string') {
+                    return jid.split('@')[0];
+                }
+                return "Unknown";
             } catch (e) {
                 return "Unknown";
             }
@@ -861,8 +856,11 @@ setTimeout(() => {
                     if (welcomeStatus === 'on') {
                         for (const participant of group.participants) {
                             try {
-                                const memberJid = participant;
-                                const memberName = await getName(memberJid);
+                                // Get the actual JID from the participant object
+                                const memberJid = participant.phoneNumber || participant.id;
+                                if (!memberJid) continue;
+                                
+                                const memberName = await getName(participant);
                                 const memberPP = await getProfilePic(memberJid);
                                 
                                 const welcomeTitle = await translateMessage('welcome', lang);
@@ -898,7 +896,7 @@ setTimeout(() => {
                                 
                                 console.log(`✅ Welcome message sent to ${memberName}`);
                             } catch (memberError) {
-                                console.error(`Welcome error for ${participant}:`, memberError);
+                                console.error(`Welcome error for participant:`, memberError.message);
                             }
                         }
                     }
@@ -912,8 +910,11 @@ setTimeout(() => {
                     if (goodbyeStatus === 'on') {
                         for (const participant of group.participants) {
                             try {
-                                const memberJid = participant;
-                                const memberName = await getName(memberJid);
+                                // Get the actual JID from the participant object
+                                const memberJid = participant.phoneNumber || participant.id;
+                                if (!memberJid) continue;
+                                
+                                const memberName = await getName(participant);
                                 
                                 const goodbyeTitle = await translateMessage('goodbye', lang);
                                 const goodbyeLeft = await translateMessage('goodbye_left', lang);
@@ -945,13 +946,13 @@ setTimeout(() => {
                                 
                                 console.log(`✅ Goodbye message sent for ${memberName}`);
                             } catch (memberError) {
-                                console.error(`Goodbye error for ${participant}:`, memberError);
+                                console.error(`Goodbye error for participant:`, memberError.message);
                             }
                         }
                     }
                 }
             } catch (e) {
-                console.error("Group update error:", e);
+                console.error("Group update error:", e.message);
             }
         });
 
@@ -998,7 +999,7 @@ setTimeout(() => {
                 console.log("📌 LANGUAGE: " + langName + " (" + currentLang + ")");
                 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 
-                // ========== FIXED: SEND DM TO OWNER ==========
+                // ========== SEND DM TO OWNER ==========
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
                 const cmsg = `╭──────────⊷
 ┊┏━┈┈┈┈┈┈┈⏤͟͟͞͞★
@@ -1011,16 +1012,13 @@ setTimeout(() => {
 ╰───────────⊷`;
                 
                 try {
-                    // Send to owner using zk.sendMessage
-                    await zk.sendMessage(ownerNumber, { 
-                        text: cmsg 
-                    });
+                    await zk.sendMessage(ownerNumber, { text: cmsg });
                     console.log("✅ Startup message sent to owner DM: " + ownerNumber);
                 } catch (e) {
                     console.log("❌ Failed to send startup message to owner DM:", e.message);
                 }
                 
-                // ========== ALSO SEND TO BOT'S OWN DM (optional) ==========
+                // ========== ALSO SEND TO BOT'S OWN DM ==========
                 try {
                     const botJid = zk.user.id;
                     if (botJid) {
