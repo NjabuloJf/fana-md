@@ -139,7 +139,7 @@ const activeDownloads = {};
 // ========== MAIN COMMAND ==========
 fana({
     nomCom: "play",
-    aliases: ["song", "playdoc", "audio", "mp3", "mp4", "video", "videodoc"],
+    aliases: ["mp3", "mp4", "video", "audio", "song"],
     categorie: "download",
     reaction: "🎸"
 }, async (dest, zk, commandOptions) => {
@@ -694,6 +694,25 @@ async function sendLyrics(zk, dest, ms, query, lang) {
             year: currentDate.year,
             time: currentDate.time
         };
+
+        // ========== BUTTONS FOR LYRICS ==========
+        const buttons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("🌐 WA Channel", lang),
+                    id: "backup channel",
+                    url: conf.GURL
+                }),
+            },
+            {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("📋 Copy Lyrics", lang),
+                    copy_code: lyrics,
+                }),
+            },
+        ];
         
         const cards = [
             {
@@ -843,9 +862,11 @@ async function sendLyrics(zk, dest, ms, query, lang) {
                 }, { quoted: ms });
             }
         } else {
+            // Send full lyrics with buttons
             await zk.sendMessage(dest, {
                 interactiveMessage: {
-                    header: `📀 *Title:* ${tempSong.title}\n📝 *Full Lyrics:*\n${lyrics}`,
+                    header: `📀 *Title:* ${tempSong.title}\n📝 *Full Lyrics:*\n\n${lyrics}`,
+                    buttons: buttons,
                     headerType: 1
                 }
             }, { quoted: ms });
@@ -869,7 +890,46 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
         
         if (!results || !results.videos || results.videos.length === 0) {
             const noYtResults = await translateText("❌ No YouTube results found.", lang);
-            await zk.sendMessage(dest, { text: noYtResults }, { quoted: ms });
+            
+            // ========== BUTTONS FOR NO RESULTS ==========
+            const noResultsButtons = [
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("🌐 WA Channel", lang),
+                        id: "backup channel",
+                        url: conf.GURL
+                    }),
+                },
+                {
+                    name: "cta_copy",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateText("📋 Copy Query", lang),
+                        copy_code: query,
+                    }),
+                },
+            ];
+            
+            // Send image with no results message
+            const randomImage = "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
+            
+            await zk.sendMessage(dest, {
+                interactiveMessage: {
+                    image: { url: randomImage },
+                    header: `🔍 *Search Results for:*\n"${query}"`,
+                    body: { text: noYtResults },
+                    buttons: noResultsButtons,
+                    headerType: 1,
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363399999197102@newsletter',
+                            newsletterName: "╭••➤®Njabulo Jb",
+                            serverMessageId: 143,
+                        },
+                    },
+                }
+            }, { quoted: ms });
             return;
         }
 
@@ -913,13 +973,20 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
                                     url: `https://youtu.be/${video.videoId}`,
                                 }),
                             },
+                            {
+                                name: "cta_copy",
+                                buttonParamsJson: JSON.stringify({
+                                    display_text: await translateText("📋 Copy URL", lang),
+                                    copy_code: video.url,
+                                }),
+                            },
                         ],
                     },
                 };
             })
         );
 
-        const headerText = await translateText(`🔍 Search Results for "${query}"`, lang);
+        const headerText = await translateText(`🔍 Search Results for: "${query}"`, lang);
         const footerText = await translateText(`📂 Found ${results.videos.length} results`, lang);
 
         const message = generateWAMessageFromContent(
@@ -943,8 +1010,44 @@ async function sendYoutubeSearch(zk, dest, ms, query, lang) {
 
     } catch (err) {
         console.error('[YTSEARCH] Error:', err);
+        
+        // ========== ERROR BUTTONS ==========
+        const errorButtons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("🌐 WA Channel", lang),
+                    id: "backup channel",
+                    url: conf.GURL
+                }),
+            },
+            {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("📋 Copy Query", lang),
+                    copy_code: query,
+                }),
+            },
+        ];
+        
+        const randomImage = "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
+        
         await zk.sendMessage(dest, {
-            text: await translateText("Failed to search YouTube. Please try again.", lang),
+            interactiveMessage: {
+                image: { url: randomImage },
+                header: `❌ *Error Searching YouTube*`,
+                body: { text: await translateText("Failed to search YouTube. Please try again.", lang) },
+                buttons: errorButtons,
+                headerType: 1,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363399999197102@newsletter',
+                        newsletterName: "╭••➤®Njabulo Jb",
+                        serverMessageId: 143,
+                    },
+                },
+            }
         }, { quoted: ms });
     }
 }
@@ -982,26 +1085,104 @@ async function sendAIResponse(zk, dest, ms, query, lang) {
             return;
         }
 
+        // ========== BUTTONS FOR AI RESPONSE ==========
+        const buttons = [
+            {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("🌐 WA Channel", lang),
+                    id: "backup channel",
+                    url: conf.GURL
+                }),
+            },
+            {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                    display_text: await translateText("📋 Copy Response", lang),
+                    copy_code: response,
+                }),
+            },
+        ];
+
         // Split response if too long
         const responseChunks = splitTextIntoChunks(response, 3800);
         
         if (responseChunks.length > 1) {
+            // Send first part with header
             await zk.sendMessage(dest, { 
                 text: `${aiResponse}\n\n━━━━━━━━━━━━━━━━━━━`
             }, { quoted: ms });
             
+            // Send each chunk
             for (let i = 0; i < responseChunks.length; i++) {
-                await zk.sendMessage(dest, { 
-                    text: `*Part ${i + 1}/${responseChunks.length}*\n\n${responseChunks[i]}` 
+                const chunkButtons = [
+                    {
+                        name: "cta_url",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText("🌐 WA Channel", lang),
+                            id: "backup channel",
+                            url: conf.GURL
+                        }),
+                    },
+                    {
+                        name: "cta_copy",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: await translateText(`📋 Copy Part ${i + 1}`, lang),
+                            copy_code: responseChunks[i],
+                        }),
+                    },
+                ];
+                
+                await zk.sendMessage(dest, {
+                    interactiveMessage: {
+                        header: `*Part ${i + 1}/${responseChunks.length}*\n\n${responseChunks[i]}`,
+                        buttons: chunkButtons,
+                        headerType: 1
+                    }
                 }, { quoted: ms });
             }
         } else {
-            await zk.sendMessage(dest, {
-                interactiveMessage: {
-                    header: `${aiResponse}\n\n${response}`,
-                    headerType: 1
+            // Create cards for AI response
+            const cards = [
+                {
+                    header: {
+                        title: `🤖 AI RESPONSE`,
+                        hasMediaAttachment: false,
+                    },
+                    body: {
+                        text: `${aiResponse}\n\n${response}`,
+                    },
+                    footer: {
+                        text: `💬 Powered by AI`,
+                    },
+                    nativeFlowMessage: {
+                        buttons: buttons,
+                    },
                 }
-            }, { quoted: ms });
+            ];
+
+            const message = generateWAMessageFromContent(
+                dest,
+                {
+                    viewOnceMessage: {
+                        message: {
+                            messageContextInfo: {
+                                deviceListMetadata: {},
+                                deviceListMetadataVersion: 2,
+                            },
+                            interactiveMessage: {
+                                header: { text: `🤖 Chat AI` },
+                                body: { text: `*📝 Query: ${query}*` },
+                                headerType: 1,
+                                carouselMessage: { cards },
+                            },
+                        },
+                    },
+                },
+                { quoted: ms }
+            );
+
+            await zk.relayMessage(dest, message.message, { messageId: message.key.id });
         }
 
     } catch (err) {
