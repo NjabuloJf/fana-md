@@ -40,6 +40,7 @@ console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 // ========== CREATE WRAPPER ==========
 const baileys_1 = { ...baileysOriginal };
 
+// Add polyfill to wrapper
 if (!baileys_1.makeInMemoryStore) {
     console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
     baileys_1.makeInMemoryStore = function(options) {
@@ -73,6 +74,7 @@ if (!baileys_1.makeInMemoryStore) {
     };
     console.log("✅ Polyfill added to wrapper");
 }
+// ========== END OF WRAPPER ==========
 
 const conf = require("./set");
 const axios = require("axios");
@@ -119,6 +121,7 @@ let translateText = async (text, targetLang) => {
     }
 };
 
+// ========== CACHE FOR TRANSLATIONS ==========
 const translationCache = new Map();
 
 let translateTextWithCache = async (text, targetLang) => {
@@ -162,11 +165,13 @@ const languageNames = {
     ru: "Russian"
 };
 
+// ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
 
+// ========== BUTTON HANDLER ==========
 let handleButtons = async (zk, msg) => {
     console.log("Button handler triggered");
     try {
@@ -197,6 +202,7 @@ async function authentification() {
 }
 authentification();
 
+// ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
@@ -305,8 +311,10 @@ const store = baileys_1.makeInMemoryStore({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
 
+// ========== LANGUAGE HELPER ==========
 const getLang = () => conf.LANGUAGE || "en";
 
+// ========== TRANSLATE MESSAGE FUNCTION ==========
 const messageTemplates = {
     welcome: "🎉 *WELCOME TO THE GROUP!*",
     welcome_hello: "👋 *Hello*",
@@ -441,14 +449,13 @@ setTimeout(() => {
             var msgRepondu = ms.message.extendedTextMessage?.contextInfo?.quotedMessage;
             var auteurMsgRepondu = decodeJid(ms.message?.extendedTextMessage?.contextInfo?.participant);
             
-            // ========== FIX: CORRECTLY GET THE SENDER ==========
-            // For groups: get participant, for DMs: get the sender from the message key
+            // ========== FIX: CORRECTLY GET THE SENDER FOR DMS ==========
             var auteurMessage;
             if (verifGroupe) {
                 // In groups, get the participant
                 auteurMessage = ms.key.participant ? ms.key.participant : ms.participant;
             } else {
-                // In DMs, get the sender from the message key
+                // In DMs, the sender is the person who sent the message
                 // If it's from the bot itself (fromMe), use the bot's ID
                 if (ms.key.fromMe) {
                     auteurMessage = idBot;
@@ -458,8 +465,8 @@ setTimeout(() => {
                 }
             }
             
-            // If for some reason auteurMessage is still undefined, use the participant or remoteJid
-            if (!auteurMessage) {
+            // Fallback: if auteurMessage is still undefined or invalid
+            if (!auteurMessage || auteurMessage === 'undefined') {
                 auteurMessage = ms.key.participant || ms.participant || origineMessage;
             }
 
@@ -474,6 +481,7 @@ setTimeout(() => {
             
             const lang = getLang();
             
+            // ========== REPONDRE FUNCTION ==========
             async function repondre(mes) {
                 try {
                     const translated = await translateTextWithCache(mes, lang);
@@ -484,6 +492,7 @@ setTimeout(() => {
                 }
             }
             
+            // ========== HELPER TO GET PROFILE PIC ==========
             async function getUserProfilePic(jid) {
                 try {
                     const pp = await zk.profilePictureUrl(jid, 'image');
@@ -786,7 +795,7 @@ setTimeout(() => {
                     try {
                         console.log(`🔍 Command: ${com} | User: ${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"} | Group: ${verifGroupe}`);
 
-                        // Check if user is banned
+                        // Check if user is banned (applies to ALL)
                         if (!superUser) {
                             let req = await isUserBanned(auteurMessage);
                             if (req) {
@@ -795,7 +804,7 @@ setTimeout(() => {
                             }
                         }
 
-                        // For groups only
+                        // For GROUPS only - additional restrictions
                         if (verifGroupe) {
                             if ((conf.MODE || "").toLowerCase() !== 'yes' && !superUser) {
                                 console.log("ℹ️ Bot is in private mode for groups");
@@ -820,7 +829,9 @@ setTimeout(() => {
                             }
                         }
 
-                        // For DMs - EVERYONE CAN USE (only banned users are blocked)
+                        // For DMs (INBOX) - EVERYONE CAN USE!
+                        // Only banned users are blocked
+
                         console.log(`✅ Executing command: ${com} for user: ${auteurMessage ? auteurMessage.split("@")[0] : "Unknown"}`);
                         reagir(origineMessage, zk, ms, cd.reaction);
                         await cd.fonction(origineMessage, zk, commandeOptions);
@@ -1041,16 +1052,10 @@ setTimeout(() => {
 ╰───────────⊷`;
                 
                 try {
- 
-
-                    await zk.sendMessage(zk.user.id, { text: cmsg });
-                    console.log("✅ Startup message sent to owner DM: ");
+                    await zk.sendMessage(ownerNumber, { text: cmsg });
+                    console.log("✅ Startup message sent to owner DM: " + ownerNumber);
                 } catch (e) {
-
-                    await zk.sendMessage(zk.user.id, { text: cmsg });
-                    console.log("❌ Failed to send startup message to owner DM:");
-                
-                
+                    console.log("❌ Failed to send startup message to owner DM:", e.message);
                 }
                 
                 try {
