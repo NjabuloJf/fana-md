@@ -1041,10 +1041,16 @@ setTimeout(() => {
 ╰───────────⊷`;
                 
                 try {
-                    await zk.sendMessage(ownerNumber, { text: cmsg });
-                    console.log("✅ Startup message sent to owner DM: " + ownerNumber);
+ 
+
+                    await zk.sendMessage(zk.user.id, { text: cmsg });
+                    console.log("✅ Startup message sent to owner DM: ");
                 } catch (e) {
-                    console.log("❌ Failed to send startup message to owner DM:", e.message);
+
+                    await zk.sendMessage(zk.user.id, { text: cmsg });
+                    console.log("❌ Failed to send startup message to owner DM:");
+                
+                
                 }
                 
                 try {
