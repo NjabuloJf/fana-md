@@ -21,7 +21,7 @@
   "author": "NjabuloJf",
   "license": "ISC",
   "dependencies": {
-    "@whiskeysockets/baileys": "npm:xmd-baileys@latest",
+    "@whiskeysockets/baileys": "npm:baileys@6.7.21",
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@vitalets/google-translate-api": "^9.2.0",
