@@ -40,11 +40,11 @@ const FileType = require('file-type');
 const { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter');
 const { verifierEtatJid , recupererActionJid } = require("./bdd/antilien");
 const { atbverifierEtatJid , atbrecupererActionJid } = require("./bdd/antibot");
-let evt = require(__dirname + "/framework/zokou");
+let evt = require(__dirname + "/njabulo/fana");
 const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd/banUser");
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
 const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
-let { reagir } = require(__dirname + "/framework/app");
+let { reagir } = require(__dirname + "/njabulo/app");
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
@@ -97,6 +97,27 @@ let translateTextWithCache = async (text, targetLang) => {
         console.error('⚠️ Translation error:', error.message);
         return text;
     }
+};
+
+const languageNames = {
+    en: "English",
+    sn: "Shona",
+    nd: "Ndebele",
+    af: "Afrikaans",
+    zu: "Zulu",
+    xh: "Xhosa",
+    pt: "Portuguese",
+    sw: "Swahili",
+    hi: "Hindi",
+    ar: "Arabic",
+    fr: "French",
+    es: "Spanish",
+    zh: "Chinese",
+    de: "German",
+    it: "Italian",
+    ja: "Japanese",
+    ko: "Korean",
+    ru: "Russian"
 };
 
 // ========== SESSION HANDLER WITH njabulo~ SUPPORT ==========
@@ -271,7 +292,35 @@ setTimeout(() => {
         const zk = (0, baileys_1.default)(sockOptions);
         store.bind(zk.ev);
 
-// ========== FIXED WELCOME & GOODBYE WITH IMAGE ==========
+// ========== BUTTON HANDLER ==========
+let handleButtons = async (zk, msg) => {
+    console.log("Button handler triggered");
+    try {
+        if (msg.message?.buttonsResponseMessage) {
+            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
+            const from = msg.key.remoteJid;
+            console.log(`Button clicked: ${buttonId}`);
+            
+            // Handle button actions here
+            if (buttonId === "backup channel") {
+                const lang = conf.LANGUAGE || "en";
+                const channelText = await translateTextWithCache("📢 Channel Link", lang);
+                await zk.sendMessage(from, { 
+                    text: `${channelText}\n\n${conf.GURL || "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"}` 
+                });
+            }
+        }
+        
+        if (msg.message?.listResponseMessage) {
+            const selectedRowId = msg.message.listResponseMessage.singleSelectReply?.selectedRowId;
+            console.log(`List selected: ${selectedRowId}`);
+        }
+    } catch (error) {
+        console.error("Button handler error:", error);
+    }
+};
+
+// ========== WELCOME & GOODBYE WITH IMAGE ==========
 const { recupevents } = require('./bdd/welcome');
 
 zk.ev.on('group-participants.update', async (group) => {
@@ -362,6 +411,23 @@ zk.ev.on('group-participants.update', async (group) => {
         console.error(e);
     }
 });
+
+        // ========== BUTTONS RESPONSE HANDLER ==========
+        zk.ev.on("messages.upsert", async (m) => {
+            const msg = m.messages[0];
+            if (!msg.message) return;
+            
+            const isButton = msg.message?.buttonsResponseMessage || 
+                            msg.message?.listResponseMessage ||
+                            msg.message?.templateButtonReplyMessage ||
+                            msg.message?.interactiveResponseMessage;
+            
+            if (isButton) {
+                console.log("🎯 Button interaction detected!");
+                await handleButtons(zk, msg);
+                return;
+            }
+        });
 
         // Anti-delete functionality
         zk.ev.on("messages.upsert", async (m) => {
@@ -655,7 +721,7 @@ zk.ev.on('group-participants.update', async (group) => {
                         id: ms.key.id,
                         participant: auteurMessage
                     };
-                    var txt = "⚠️ LINK DETECTED, \n";
+                    var txt = await translateTextWithCache("⚠️ LINK DETECTED", lang) + "\n";
                     const gifLink = "https://raw.githubusercontent.com/djalega8000/Zokou-MD/main/media/remover.gif";
                     var sticker = new Sticker(gifLink, {
                         pack: 'Njabulo-MD',
@@ -670,7 +736,7 @@ zk.ev.on('group-participants.update', async (group) => {
                     var action = await recupererActionJid(origineMessage);
 
                     if (action === 'remove') {
-                        txt += `🚫 Message deleted \n 👤 @${auteurMessage.split("@")[0]} removed from group.`;
+                        txt += await translateTextWithCache("🚫 Message deleted. You have been removed from the group.", lang);
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         (0, baileys_1.delay)(800);
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
@@ -682,7 +748,7 @@ zk.ev.on('group-participants.update', async (group) => {
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
                     } else if (action === 'delete') {
-                        txt += `🚫 Message deleted \n 👤 @${auteurMessage.split("@")[0]} avoid sending links.`;
+                        txt += await translateTextWithCache("🚫 Message deleted. Please avoid sending links.", lang);
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
@@ -691,13 +757,13 @@ zk.ev.on('group-participants.update', async (group) => {
                         let warn = await getWarnCountByJID(auteurMessage); 
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = `⚠️ LINK DETECTED! You will be removed because of reaching warn-limit`;
+                            var kikmsg = await translateTextWithCache("⚠️ LINK DETECTED! You will be removed because of reaching warn-limit", lang);
                             await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = `⚠️ LINK DETECTED! Your warn count was upgraded.\n Remaining warnings: ${rest}`;
+                            var msg = await translateTextWithCache(`⚠️ LINK DETECTED! Your warn count was upgraded.\nRemaining warnings: ${rest}`, lang);
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
                             await zk.sendMessage(origineMessage, { text: msg, mentions: [auteurMessage] }, { quoted: ms });
                             await zk.sendMessage(origineMessage, { delete: key });
@@ -727,7 +793,7 @@ zk.ev.on('group-participants.update', async (group) => {
                         id: ms.key.id,
                         participant: auteurMessage
                     };
-                    var txt = "🤖 BOT DETECTED, \n";
+                    var txt = await translateTextWithCache("🤖 BOT DETECTED", lang) + "\n";
                     const gifLink = "https://raw.githubusercontent.com/djalega8000/Zokou-MD/main/media/remover.gif";
                     var sticker = new Sticker(gifLink, {
                         pack: 'Njabulo-MD',
@@ -742,7 +808,7 @@ zk.ev.on('group-participants.update', async (group) => {
                     var action = await atbrecupererActionJid(origineMessage);
 
                     if (action === 'remove') {
-                        txt += `🚫 Message deleted \n 👤 @${auteurMessage.split("@")[0]} removed from group.`;
+                        txt += await translateTextWithCache("🚫 Message deleted. You have been removed from the group.", lang);
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         (0, baileys_1.delay)(800);
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
@@ -754,7 +820,7 @@ zk.ev.on('group-participants.update', async (group) => {
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
                     } else if (action === 'delete') {
-                        txt += `🚫 Message deleted \n 👤 @${auteurMessage.split("@")[0]} avoid sending bot messages.`;
+                        txt += await translateTextWithCache("🚫 Message deleted. Please avoid sending bot messages.", lang);
                         await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
@@ -763,13 +829,13 @@ zk.ev.on('group-participants.update', async (group) => {
                         let warn = await getWarnCountByJID(auteurMessage); 
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = `🤖 BOT DETECTED! You will be removed because of reaching warn-limit`;
+                            var kikmsg = await translateTextWithCache("🤖 BOT DETECTED! You will be removed because of reaching warn-limit", lang);
                             await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = `🤖 BOT DETECTED! Your warn count was upgraded.\n Remaining warnings: ${rest}`;
+                            var msg = await translateTextWithCache(`🤖 BOT DETECTED! Your warn count was upgraded.\nRemaining warnings: ${rest}`, lang);
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
                             await zk.sendMessage(origineMessage, { text: msg, mentions: [auteurMessage] }, { quoted: ms });
                             await zk.sendMessage(origineMessage, { delete: key });
@@ -907,13 +973,17 @@ zk.ev.on('group-participants.update', async (group) => {
 
                 await activateCrons();
                 
+                // ========== STARTUP MESSAGE WITH LANGUAGE ==========
+                const currentLang = conf.LANGUAGE || "en";
+                const langName = languageNames[currentLang] || "English";
+                
                 if((conf.DP || "").toLowerCase() === 'yes') {
-                    let cmsg = `⁠⁠⁠⁠
-╭─────────────━┈⊷ 
+                    let cmsg = `╭─────────────━┈⊷ 
 │ *NJABULO-JB BOT CONNECTED*
 ╰─────────────━┈⊷
 │ ᴘʀᴇғɪx: *[ ${prefixe} ]*
 │ ᴍᴏᴅᴇ: *${md}*
+│ ʟᴀɴɢᴜᴀɢᴇ: *${langName}*
 ╰─────────────━┈⊷`;
                     
                     await zk.sendMessage(zk.user.id, { text: cmsg });
