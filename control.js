@@ -183,7 +183,8 @@ async function loadSession() {
 
 loadSession();
 
-var session = conf.session.replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
+// ========== FIX: Handle undefined session ==========
+var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE;
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
@@ -407,350 +408,450 @@ let handleButtons = async (zk, msg) => {
     }
 };
 
-// ========== ANTI-DELETE ==========
-zk.ev.on("messages.upsert", async (m) => {
-    if (conf.ANTIDELETE1 === "yes") {
-        const { messages } = m;
-        const ms = messages[0];
-        if (!ms.message) return;
+// ========== WELCOME & GOODBYE WITH IMAGE ==========
+const { recupevents } = require('./bdd/welcome');
 
-        const messageKey = ms.key;
-        const remoteJid = messageKey.remoteJid;
+zk.ev.on('group-participants.update', async (group) => {
+    console.log('Group update detected:', group);
 
-        if (!store.chats) store.chats = {};
-        if (!store.chats[remoteJid]) {
-            store.chats[remoteJid] = [];
-        }
+    let ppgroup;
+    try {
+        ppgroup = await zk.profilePictureUrl(group.id, 'image');
+    } catch {
+        ppgroup = 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png';
+    }
 
-        store.chats[remoteJid].push(ms);
+    const lang = conf.LANGUAGE || "en";
 
-        if (ms.message.protocolMessage && ms.message.protocolMessage.type === 0) {
-            const deletedKey = ms.message.protocolMessage.key;
-            const chatMessages = store.chats[remoteJid];
-            const deletedMessage = chatMessages.find(
-                (msg) => msg.key.id === deletedKey.id
-            );
+    try {
+        const metadata = await zk.groupMetadata(group.id);
+        const groupName = metadata.subject;
+        const participantCount = metadata.participants.length;
 
-            if (deletedMessage) {
-                try {
-                    const participant = deletedMessage.key.participant || deletedMessage.key.remoteJid;
-                    const notification = `*🛑 This message was deleted by @${participant.split("@")[0]}*`;
-                    const botOwnerJid = `${conf.NUMERO_OWNER}@s.whatsapp.net`;
-
-                    if (deletedMessage.message.conversation) {
-                        await zk.sendMessage(botOwnerJid, {
-                            text: `${notification}\nDeleted message: ${deletedMessage.message.conversation}`,
-                            mentions: [participant],
-                        });
-                    }
-                    else if (deletedMessage.message.imageMessage) {
-                        const caption = deletedMessage.message.imageMessage.caption || '';
-                        const imagePath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.imageMessage);
-                        await zk.sendMessage(botOwnerJid, {
-                            image: { url: imagePath },
-                            caption: `${notification}\n${caption}`,
-                            mentions: [participant],
-                        });
-                    }
-                    else if (deletedMessage.message.videoMessage) {
-                        const caption = deletedMessage.message.videoMessage.caption || '';
-                        const videoPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.videoMessage);
-                        await zk.sendMessage(botOwnerJid, {
-                            video: { url: videoPath },
-                            caption: `${notification}\n${caption}`,
-                            mentions: [participant],
-                        });
-                    }
-                    else if (deletedMessage.message.audioMessage) {
-                        const audioPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.audioMessage);
-                        await zk.sendMessage(botOwnerJid, {
-                            audio: { url: audioPath },
-                            ptt: true,
-                            caption: notification,
-                            mentions: [participant],
-                        });
-                    }
-                    else if (deletedMessage.message.stickerMessage) {
-                        const stickerPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.stickerMessage);
-                        await zk.sendMessage(botOwnerJid, {
-                            sticker: { url: stickerPath },
-                            caption: notification,
-                            mentions: [participant],
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error handling deleted message:', error);
-                }
+        if (group.action === 'add' && (await recupevents(group.id, "welcome") === 'on')) {
+            const translated = await getTranslatedWelcome(lang);
+            let membres = group.participants;
+            let msg = `*${translated.welcomeTitle}*\n\n`;
+            
+            for (let membre of membres) {
+                msg += `┃ ${translated.welcomeHey} @${membre.split("@")[0]}!\n`;
             }
+            
+            msg += `\n┃ 📱 *Group:* ${groupName}\n`;
+            msg += `┃ 👥 *Members:* ${participantCount}\n\n`;
+            msg += `┃ ${translated.welcomeRules}\n\n`;
+            msg += `┃ ${translated.welcomeEnjoy}\n`;
+            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+            zk.sendMessage(group.id, { 
+                image: { url: ppgroup }, 
+                caption: msg, 
+                mentions: membres 
+            });
+            
+        } else if (group.action === 'remove' && (await recupevents(group.id, "goodbye") === 'on')) {
+            const translated = await getTranslatedGoodbye(lang);
+            let membres = group.participants;
+            let msg = `*${translated.goodbyeTitle}*\n\n`;
+            
+            for (let membre of membres) {
+                msg += `┃ 😢 @${membre.split("@")[0]} ${translated.goodbyeLeft}\n`;
+            }
+            
+            msg += `\n┃ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}\n`;
+            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+            zk.sendMessage(group.id, { 
+                image: { url: ppgroup }, 
+                caption: msg, 
+                mentions: membres 
+            });
+            
+        } else if (group.action === 'promote' && (await recupevents(group.id, "antipromote") === 'on')) {
+            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
+                console.log('Cas de superUser je fais rien'); 
+                return; 
+            }
+
+            await zk.groupParticipantsUpdate(group.id, [group.author, group.participants[0]], "demote");
+
+            zk.sendMessage(group.id, {
+                text: `@${(group.author).split("@")[0]} has violated the anti-promotion rule, therefore both ${group.author.split("@")[0]} and @${(group.participants[0]).split("@")[0]} have been removed from administrative rights.`,
+                mentions: [group.author, group.participants[0]]
+            });
+
+        } else if (group.action === 'demote' && (await recupevents(group.id, "antidemote") === 'on')) {
+            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
+                console.log('Cas de superUser je fais rien'); 
+                return; 
+            }
+
+            await zk.groupParticipantsUpdate(group.id, [group.author], "demote");
+            await zk.groupParticipantsUpdate(group.id, [group.participants[0]], "promote");
+
+            zk.sendMessage(group.id, {
+                text: `@${(group.author).split("@")[0]} has violated the anti-demotion rule by removing @${(group.participants[0]).split("@")[0]}. Consequently, he has been stripped of administrative rights.`,
+                mentions: [group.author, group.participants[0]]
+            });
         }
+
+    } catch (e) {
+        console.error(e);
     }
 });
 
-// ========== UTILITY FUNCTION FOR DELAY ==========
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        // ========== BUTTONS RESPONSE HANDLER ==========
+        zk.ev.on("messages.upsert", async (m) => {
+            const msg = m.messages[0];
+            if (!msg.message) return;
+            
+            const isButton = msg.message?.buttonsResponseMessage || 
+                            msg.message?.listResponseMessage ||
+                            msg.message?.templateButtonReplyMessage ||
+                            msg.message?.interactiveResponseMessage;
+            
+            if (isButton) {
+                console.log("🎯 Button interaction detected!");
+                await handleButtons(zk, msg);
+                return;
+            }
+        });
 
-// ========== TRACK LAST REACTION TIME ==========
-let lastReactionTime = 0;
+        // ========== ANTI-DELETE ==========
+        zk.ev.on("messages.upsert", async (m) => {
+            if (conf.ANTIDELETE1 === "yes") {
+                const { messages } = m;
+                const ms = messages[0];
+                if (!ms.message) return;
 
-// ========== AUTO-REACT TO STATUS UPDATES ==========
-if (conf.AUTO_REACT_STATUS === "yes") {
-    console.log("AUTO_REACT_STATUS is enabled. Listening for status updates...");
+                const messageKey = ms.key;
+                const remoteJid = messageKey.remoteJid;
 
-    zk.ev.on("messages.upsert", async (m) => {
-        const { messages } = m;
-
-        for (const message of messages) {
-            if (message.key && message.key.remoteJid === "status@broadcast") {
-                console.log("Detected status update from:", message.key.remoteJid);
-
-                const now = Date.now();
-                if (now - lastReactionTime < 5000) {
-                    console.log("Throttling reactions to prevent overflow.");
-                    continue;
+                if (!store.chats) store.chats = {};
+                if (!store.chats[remoteJid]) {
+                    store.chats[remoteJid] = [];
                 }
 
-                const adams = zk.user && zk.user.id ? zk.user.id.split(":")[0] + "@s.whatsapp.net" : null;
-                if (!adams) {
-                    console.log("Bot's user ID not available. Skipping reaction.");
-                    continue;
-                }
+                store.chats[remoteJid].push(ms);
 
-                await zk.sendMessage(message.key.remoteJid, {
-                    react: {
-                        key: message.key,
-                        text: "💙",
-                    },
-                }, {
-                    statusJidList: [message.key.participant, adams],
+                if (ms.message.protocolMessage && ms.message.protocolMessage.type === 0) {
+                    const deletedKey = ms.message.protocolMessage.key;
+                    const chatMessages = store.chats[remoteJid];
+                    const deletedMessage = chatMessages.find(
+                        (msg) => msg.key.id === deletedKey.id
+                    );
+
+                    if (deletedMessage) {
+                        try {
+                            const participant = deletedMessage.key.participant || deletedMessage.key.remoteJid;
+                            const notification = `*🛑 This message was deleted by @${participant.split("@")[0]}*`;
+                            const botOwnerJid = `${conf.NUMERO_OWNER}@s.whatsapp.net`;
+
+                            if (deletedMessage.message.conversation) {
+                                await zk.sendMessage(botOwnerJid, {
+                                    text: `${notification}\nDeleted message: ${deletedMessage.message.conversation}`,
+                                    mentions: [participant],
+                                });
+                            }
+                            else if (deletedMessage.message.imageMessage) {
+                                const caption = deletedMessage.message.imageMessage.caption || '';
+                                const imagePath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.imageMessage);
+                                await zk.sendMessage(botOwnerJid, {
+                                    image: { url: imagePath },
+                                    caption: `${notification}\n${caption}`,
+                                    mentions: [participant],
+                                });
+                            }
+                            else if (deletedMessage.message.videoMessage) {
+                                const caption = deletedMessage.message.videoMessage.caption || '';
+                                const videoPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.videoMessage);
+                                await zk.sendMessage(botOwnerJid, {
+                                    video: { url: videoPath },
+                                    caption: `${notification}\n${caption}`,
+                                    mentions: [participant],
+                                });
+                            }
+                            else if (deletedMessage.message.audioMessage) {
+                                const audioPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.audioMessage);
+                                await zk.sendMessage(botOwnerJid, {
+                                    audio: { url: audioPath },
+                                    ptt: true,
+                                    caption: notification,
+                                    mentions: [participant],
+                                });
+                            }
+                            else if (deletedMessage.message.stickerMessage) {
+                                const stickerPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.stickerMessage);
+                                await zk.sendMessage(botOwnerJid, {
+                                    sticker: { url: stickerPath },
+                                    caption: notification,
+                                    mentions: [participant],
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error handling deleted message:', error);
+                        }
+                    }
+                }
+            }
+        });
+
+        // ========== UTILITY FUNCTION FOR DELAY ==========
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // ========== TRACK LAST REACTION TIME ==========
+        let lastReactionTime = 0;
+
+        // ========== AUTO-REACT TO STATUS UPDATES ==========
+        if (conf.AUTO_REACT_STATUS === "yes") {
+            console.log("AUTO_REACT_STATUS is enabled. Listening for status updates...");
+
+            zk.ev.on("messages.upsert", async (m) => {
+                const { messages } = m;
+
+                for (const message of messages) {
+                    if (message.key && message.key.remoteJid === "status@broadcast") {
+                        console.log("Detected status update from:", message.key.remoteJid);
+
+                        const now = Date.now();
+                        if (now - lastReactionTime < 5000) {
+                            console.log("Throttling reactions to prevent overflow.");
+                            continue;
+                        }
+
+                        const adams = zk.user && zk.user.id ? zk.user.id.split(":")[0] + "@s.whatsapp.net" : null;
+                        if (!adams) {
+                            console.log("Bot's user ID not available. Skipping reaction.");
+                            continue;
+                        }
+
+                        await zk.sendMessage(message.key.remoteJid, {
+                            react: {
+                                key: message.key,
+                                text: "💙",
+                            },
+                        }, {
+                            statusJidList: [message.key.participant, adams],
+                        });
+
+                        lastReactionTime = Date.now();
+                        console.log(`Successfully reacted to status update by ${message.key.remoteJid}`);
+                        await delay(2000);
+                    }
+                }
+            });
+        }
+
+        const googleTTS = require('google-tts-api');
+        const ai = require('unlimited-ai');
+
+        // ========== AI CHATBOT ==========
+        zk.ev.on("messages.upsert", async (m) => {
+          const { messages } = m;
+          const ms = messages[0];
+
+          if (!ms.message) return;
+
+          const messageType = Object.keys(ms.message)[0];
+          const remoteJid = ms.key.remoteJid;
+          const messageContent = ms.message.conversation || ms.message.extendedTextMessage?.text;
+
+          if (ms.key.fromMe || remoteJid === conf.NUMERO_OWNER + "@s.whatsapp.net") return;
+          if (conf.CHATBOT1 !== "yes") return;
+
+          if (messageType === "conversation" || messageType === "extendedTextMessage") {
+            const alpha = messageContent.trim();
+            if (!alpha) return;
+
+            let conversationData = [];
+
+            try {
+              const rawData = fs.readFileSync('store.json', 'utf8');
+              if (rawData) {
+                conversationData = JSON.parse(rawData);
+                if (!Array.isArray(conversationData)) {
+                  conversationData = [];
+                }
+              }
+            } catch (err) {
+              console.log('No previous conversation found, starting new one.');
+            }
+
+            const model = 'gpt-4-turbo-2024-04-09';
+            const userMessage = { role: 'user', content: alpha };
+            const systemMessage = { role: 'system', content: 'You are called Njabulo-Jb bot. Developed by Njabulo-Jb. You respond to user commands. Only mention developer name if someone asks.' };
+
+            conversationData.push(userMessage);
+            conversationData.push(systemMessage);
+
+            try {
+              const aiResponse = await ai.generate(model, conversationData);
+              conversationData.push({ role: 'assistant', content: aiResponse });
+              fs.writeFileSync('store.json', JSON.stringify(conversationData, null, 2));
+
+              const language = /[^\x00-\x7F]/.test(aiResponse) ? 'sw' : 'en';
+              const voice = language === 'sw' ? 'sw-TZ-Wavenet-B' : 'en-US-Wavenet-F';
+
+              const chunkText = (text, limit = 200) => {
+                const words = text.split(' ');
+                let chunks = [], currentChunk = '';
+
+                words.forEach(word => {
+                  if ((currentChunk + word).length > limit) {
+                    chunks.push(currentChunk.trim());
+                    currentChunk = '';
+                  }
+                  currentChunk += ' ' + word;
                 });
 
-                lastReactionTime = Date.now();
-                console.log(`Successfully reacted to status update by ${message.key.remoteJid}`);
-                await delay(2000);
+                if (currentChunk) chunks.push(currentChunk.trim());
+                return chunks;
+              };
+
+              const textChunks = chunkText(aiResponse);
+              let audioFiles = [];
+
+              for (let i = 0; i < textChunks.length; i++) {
+                const url = googleTTS.getAudioUrl(textChunks[i], {
+                  lang: language,
+                  slow: false,
+                  host: 'https://translate.google.com',
+                  voice: voice
+                });
+
+                const outputFile = `audio_${i}.mp3`;
+                await downloadAudio(url, outputFile);
+                audioFiles.push(outputFile);
+              }
+
+              if (audioFiles.length === 0) {
+                console.error("No audio files generated.");
+                return;
+              }
+
+              const finalAudio = "enhanced_audio.mp3";
+              await enhanceAudio(audioFiles, finalAudio);
+
+              if (!fs.existsSync(finalAudio)) {
+                console.error("Enhanced audio file not found.");
+                return;
+              }
+
+              await zk.sendMessage(remoteJid, {
+                audio: { url: finalAudio },
+                mimetype: 'audio/mp4',
+                ptt: true
+              });
+
+              audioFiles.forEach(file => fs.unlinkSync(file));
+              fs.unlinkSync(finalAudio);
+
+            } catch (error) {
+              console.error("Error with AI generation:", error);
             }
-        }
-    });
-}
-
-const googleTTS = require('google-tts-api');
-const ai = require('unlimited-ai');
-
-// ========== AI CHATBOT ==========
-zk.ev.on("messages.upsert", async (m) => {
-  const { messages } = m;
-  const ms = messages[0];
-
-  if (!ms.message) return;
-
-  const messageType = Object.keys(ms.message)[0];
-  const remoteJid = ms.key.remoteJid;
-  const messageContent = ms.message.conversation || ms.message.extendedTextMessage?.text;
-
-  if (ms.key.fromMe || remoteJid === conf.NUMERO_OWNER + "@s.whatsapp.net") return;
-  if (conf.CHATBOT1 !== "yes") return;
-
-  if (messageType === "conversation" || messageType === "extendedTextMessage") {
-    const alpha = messageContent.trim();
-    if (!alpha) return;
-
-    let conversationData = [];
-
-    try {
-      const rawData = fs.readFileSync('store.json', 'utf8');
-      if (rawData) {
-        conversationData = JSON.parse(rawData);
-        if (!Array.isArray(conversationData)) {
-          conversationData = [];
-        }
-      }
-    } catch (err) {
-      console.log('No previous conversation found, starting new one.');
-    }
-
-    const model = 'gpt-4-turbo-2024-04-09';
-    const userMessage = { role: 'user', content: alpha };
-    const systemMessage = { role: 'system', content: 'You are called Njabulo-Jb bot. Developed by Njabulo-Jb. You respond to user commands. Only mention developer name if someone asks.' };
-
-    conversationData.push(userMessage);
-    conversationData.push(systemMessage);
-
-    try {
-      const aiResponse = await ai.generate(model, conversationData);
-      conversationData.push({ role: 'assistant', content: aiResponse });
-      fs.writeFileSync('store.json', JSON.stringify(conversationData, null, 2));
-
-      const language = /[^\x00-\x7F]/.test(aiResponse) ? 'sw' : 'en';
-      const voice = language === 'sw' ? 'sw-TZ-Wavenet-B' : 'en-US-Wavenet-F';
-
-      const chunkText = (text, limit = 200) => {
-        const words = text.split(' ');
-        let chunks = [], currentChunk = '';
-
-        words.forEach(word => {
-          if ((currentChunk + word).length > limit) {
-            chunks.push(currentChunk.trim());
-            currentChunk = '';
           }
-          currentChunk += ' ' + word;
         });
 
-        if (currentChunk) chunks.push(currentChunk.trim());
-        return chunks;
-      };
+        // ========== DOWNLOAD AUDIO FUNCTION ==========
+        const downloadAudio = (url, outputFile) => {
+          return new Promise((resolve, reject) => {
+            exec(`curl -s "${url}" -o ${outputFile}`, (error) => {
+              if (error) reject(error);
+              else resolve();
+            });
+          });
+        };
 
-      const textChunks = chunkText(aiResponse);
-      let audioFiles = [];
+        // ========== ENHANCE AUDIO FUNCTION ==========
+        const enhanceAudio = (inputFiles, outputFile) => {
+          return new Promise((resolve, reject) => {
+            const inputList = inputFiles.map(file => `-i ${file}`).join(' ');
+            const filter = `"volume=1.4, bass=g=6, treble=g=5, equalizer=f=1000:t=q:w=1:g=3, afftdn"`;
 
-      for (let i = 0; i < textChunks.length; i++) {
-        const url = googleTTS.getAudioUrl(textChunks[i], {
-          lang: language,
-          slow: false,
-          host: 'https://translate.google.com',
-          voice: voice
+            exec(`ffmpeg ${inputList} -filter_complex ${filter} -b:a 192k -y ${outputFile}`, (error) => {
+              if (error) reject(error);
+              else resolve();
+            });
+          });
+        };
+
+        // ========== CHATBOT TEXT RESPONSE ==========
+        zk.ev.on("messages.upsert", async (m) => {
+          const { messages } = m;
+          const ms = messages[0];
+
+          if (!ms.message) return;
+
+          const messageType = Object.keys(ms.message)[0];
+          const remoteJid = ms.key.remoteJid;
+          const messageContent = ms.message.conversation || ms.message.extendedTextMessage?.text;
+
+          if (ms.key.fromMe || remoteJid === conf.NUMERO_OWNER + "@s.whatsapp.net") return;
+
+          if (conf.CHATBOT !== "yes") return;
+
+          if (messageType === "conversation" || messageType === "extendedTextMessage") {
+            const alpha = messageContent.trim();
+
+            if (!alpha) return;
+
+            let conversationData = [];
+
+            try {
+              const rawData = fs.readFileSync('store.json', 'utf8');
+              if (rawData) {
+                conversationData = JSON.parse(rawData);
+                if (!Array.isArray(conversationData)) {
+                  conversationData = [];
+                }
+              }
+            } catch (err) {
+              console.log('No previous conversation found, starting new one.');
+            }
+
+            const model = 'gpt-4-turbo-2024-04-09';
+            const userMessage = { role: 'user', content: alpha };  
+            const systemMessage = { role: 'system', content: 'You are called Njabulo-Jb bot. Developed by Njabulo-Jb. You respond to user commands. Only mention developer name if someone asks.' };
+
+            conversationData.push(userMessage);
+            conversationData.push(systemMessage);
+
+            try {
+              const aiResponse = await ai.generate(model, conversationData);
+              conversationData.push({ role: 'assistant', content: aiResponse });
+              fs.writeFileSync('store.json', JSON.stringify(conversationData, null, 2));
+              await zk.sendMessage(remoteJid, { text: aiResponse });
+            } catch (error) {
+              console.error("Error with AI generation:", error);
+            }
+          }
         });
-
-        const outputFile = `audio_${i}.mp3`;
-        await downloadAudio(url, outputFile);
-        audioFiles.push(outputFile);
-      }
-
-      if (audioFiles.length === 0) {
-        console.error("No audio files generated.");
-        return;
-      }
-
-      const finalAudio = "enhanced_audio.mp3";
-      await enhanceAudio(audioFiles, finalAudio);
-
-      if (!fs.existsSync(finalAudio)) {
-        console.error("Enhanced audio file not found.");
-        return;
-      }
-
-      await zk.sendMessage(remoteJid, {
-        audio: { url: finalAudio },
-        mimetype: 'audio/mp4',
-        ptt: true
-      });
-
-      audioFiles.forEach(file => fs.unlinkSync(file));
-      fs.unlinkSync(finalAudio);
-
-    } catch (error) {
-      console.error("Error with AI generation:", error);
-    }
-  }
-});
-
-// ========== DOWNLOAD AUDIO FUNCTION ==========
-const downloadAudio = (url, outputFile) => {
-  return new Promise((resolve, reject) => {
-    exec(`curl -s "${url}" -o ${outputFile}`, (error) => {
-      if (error) reject(error);
-      else resolve();
-    });
-  });
-};
-
-// ========== ENHANCE AUDIO FUNCTION ==========
-const enhanceAudio = (inputFiles, outputFile) => {
-  return new Promise((resolve, reject) => {
-    const inputList = inputFiles.map(file => `-i ${file}`).join(' ');
-    const filter = `"volume=1.4, bass=g=6, treble=g=5, equalizer=f=1000:t=q:w=1:g=3, afftdn"`;
-
-    exec(`ffmpeg ${inputList} -filter_complex ${filter} -b:a 192k -y ${outputFile}`, (error) => {
-      if (error) reject(error);
-      else resolve();
-    });
-  });
-};
-
-// ========== CHATBOT TEXT RESPONSE ==========
-zk.ev.on("messages.upsert", async (m) => {
-  const { messages } = m;
-  const ms = messages[0];
-
-  if (!ms.message) return;
-
-  const messageType = Object.keys(ms.message)[0];
-  const remoteJid = ms.key.remoteJid;
-  const messageContent = ms.message.conversation || ms.message.extendedTextMessage?.text;
-
-  if (ms.key.fromMe || remoteJid === conf.NUMERO_OWNER + "@s.whatsapp.net") return;
-
-  if (conf.CHATBOT !== "yes") return;
-
-  if (messageType === "conversation" || messageType === "extendedTextMessage") {
-    const alpha = messageContent.trim();
-
-    if (!alpha) return;
-
-    let conversationData = [];
-
-    try {
-      const rawData = fs.readFileSync('store.json', 'utf8');
-      if (rawData) {
-        conversationData = JSON.parse(rawData);
-        if (!Array.isArray(conversationData)) {
-          conversationData = [];
-        }
-      }
-    } catch (err) {
-      console.log('No previous conversation found, starting new one.');
-    }
-
-    const model = 'gpt-4-turbo-2024-04-09';
-    const userMessage = { role: 'user', content: alpha };  
-    const systemMessage = { role: 'system', content: 'You are called Njabulo-Jb bot. Developed by Njabulo-Jb. You respond to user commands. Only mention developer name if someone asks.' };
-
-    conversationData.push(userMessage);
-    conversationData.push(systemMessage);
-
-    try {
-      const aiResponse = await ai.generate(model, conversationData);
-      conversationData.push({ role: 'assistant', content: aiResponse });
-      fs.writeFileSync('store.json', JSON.stringify(conversationData, null, 2));
-      await zk.sendMessage(remoteJid, { text: aiResponse });
-    } catch (error) {
-      console.error("Error with AI generation:", error);
-    }
-  }
-});
 
 // ========== ARRAY OF REACTION EMOJIS ==========
 const emojiMap = {
-    // General Greetings
     "hello": ["👋", "🙂", "😊", "🙋‍♂️", "🙋‍♀️"],
     "hi": ["👋", "🙂", "😁", "🙋‍♂️", "🙋‍♀️"],
-    "good morning": ["🌅", "🌞", "☀️", "🌻", "🌼"],
-    "good night": ["🌙", "🌜", "⭐", "🌛", "💫"],
     "thanks": ["🙏", "😊", "💖", "❤️", "💐"],
-    "thank you": ["🙏", "😊", "🙌", "💖", "💝"],
     "love": ["❤️", "💖", "💘", "😍", "😘", "💍", "💑"],
     "miss you": ["😢", "💔", "😔", "😭", "💖"],
     "sorry": ["😔", "🙏", "😓", "💔", "🥺"],
-    "congratulations": ["🎉", "🎊", "🏆", "🎁", "👏"],
-    "well done": ["👏", "💪", "🎉", "🎖️", "👍"],
-    "good job": ["👏", "💯", "👍", "🌟", "🎉"],
     "happy": ["😁", "😊", "🎉", "🎊", "💃", "🕺"],
     "sad": ["😢", "😭", "😞", "💔", "😓"],
     "angry": ["😡", "🤬", "😤", "💢", "😾"],
     "excited": ["🤩", "🎉", "😆", "🤗", "🥳"],
     "surprised": ["😲", "😳", "😯", "😮", "😲"],
     "help": ["🆘", "❓", "🙏", "💡", "👨‍💻", "👩‍💻"],
-    "how": ["❓", "🤔", "😕", "😳", "🧐"],
-    "what": ["❓", "🤷‍♂️", "🤷‍♀️", "😕", "😲"],
-    "where": ["❓", "🌍", "🗺️", "🏙️", "🌎"],
-    "party": ["🎉", "🥳", "🍾", "🍻", "🎤", "💃", "🕺"],
-    "fun": ["🤣", "😂", "🥳", "🎉", "🎮", "🎲"],
-    "hangout": ["🍕", "🍔", "🍻", "🎮", "🍿", "😆"],
     "good": ["👍", "👌", "😊", "💯", "🌟"],
     "awesome": ["🔥", "🚀", "🤩", "👏", "💥"],
     "cool": ["😎", "👌", "🎮", "🎸", "💥"],
-    "boring": ["😴", "🥱", "🙄", "😑", "🤐"],
-    "tired": ["😴", "🥱", "😌", "💤", "🛌"],
     "bot": ["🤖", "💻", "⚙️", "🧠", "🔧"],
-    "robot": ["🤖", "⚙️", "💻", "🔋", "🤓"],
+    "party": ["🎉", "🥳", "🍾", "🍻", "🎤", "💃", "🕺"],
+    "fun": ["🤣", "😂", "🥳", "🎉", "🎮", "🎲"],
+    "good morning": ["🌅", "🌞", "☀️", "🌻", "🌼"],
+    "good night": ["🌙", "🌜", "⭐", "🌛", "💫"],
+    "congratulations": ["🎉", "🎊", "🏆", "🎁", "👏"],
+    "well done": ["👏", "💪", "🎉", "🎖️", "👍"],
+    "good job": ["👏", "💯", "👍", "🌟", "🎉"],
     "pizza": ["🍕", "🥖", "🍟", "🍔", "🍝"],
     "burger": ["🍔", "🍟", "🥓", "🥪", "🌭"],
     "coffee": ["☕", "🥤", "🍵", "🫖", "🥄"],
@@ -770,27 +871,21 @@ const emojiMap = {
     "tree": ["🌳", "🌲", "🌴", "🎄", "🌱"],
     "dog": ["🐶", "🐕", "🐾", "🐩", "🦮"],
     "cat": ["🐱", "😺", "😸", "🐾", "🦁"],
-    "lion": ["🦁", "🐯", "🐱", "🐾", "🐅"],
     "bird": ["🐦", "🐧", "🦅", "🦢", "🦜"],
     "fish": ["🐟", "🐠", "🐡", "🐬", "🐳"],
     "unicorn": ["🦄", "✨", "🌈", "🌸", "💫"],
-    "butterfly": ["🦋", "🌸", "💐", "🌷", "🌼"],
     "soccer": ["⚽", "🥅", "🏟️", "🎉", "👏"],
     "basketball": ["🏀", "⛹️‍♂️", "🏆", "🎉", "🥇"],
     "tennis": ["🎾", "🏸", "🥇", "🏅", "💪"],
     "running": ["🏃‍♂️", "🏃‍♀️", "👟", "🏅", "🔥"],
-    "swimming": ["🏊‍♂️", "🏊‍♀️", "🌊", "🏆", "👏"],
     "dancing": ["💃", "🕺", "🎶", "🥳", "🎉"],
-    "singing": ["🎤", "🎶", "🎙️", "🎉", "🎵"],
-    "guitar": ["🎸", "🎶", "🎼", "🎵", "🎉"],
-    "piano": ["🎹", "🎶", "🎼", "🎵", "🎉"],
+    "music": ["🎶", "🎵", "🎼", "🎸", "🎧"],
     "money": ["💸", "💰", "💵", "💳", "🤑"],
     "rocket": ["🚀", "🌌", "🛸", "🛰️", "✨"],
     "computer": ["💻", "🖥️", "📱", "⌨️", "🖱️"],
     "phone": ["📱", "📲", "☎️", "📞", "📳"],
     "camera": ["📷", "📸", "🎥", "📹", "🎞️"],
     "book": ["📚", "📖", "✏️", "📘", "📕"],
-    "music": ["🎶", "🎵", "🎼", "🎸", "🎧"],
     "gift": ["🎁", "💝", "🎉", "🎊", "🎈"],
     "car": ["🚗", "🚘", "🚙", "🚕", "🛣️"],
     "train": ["🚆", "🚄", "🚅", "🚞", "🚂"],
@@ -799,8 +894,6 @@ const emojiMap = {
     "city": ["🏙️", "🌆", "🌇", "🏢", "🌃"],
     "beach": ["🏖️", "🌴", "🌊", "☀️", "🏄‍♂️"],
     "mountain": ["🏔️", "⛰️", "🗻", "🌄", "🌞"],
-    "forest": ["🌲", "🌳", "🍃", "🏞️", "🐾"],
-    "desert": ["🏜️", "🌵", "🐪", "🌞", "🏖️"],
     "birthday": ["🎂", "🎉", "🎈", "🎊", "🍰"],
     "christmas": ["🎄", "🎅", "🤶", "🎁", "⛄"],
     "new year": ["🎉", "🎊", "🎇", "🍾", "✨"],
@@ -921,115 +1014,6 @@ Please try again later or leave a message. Cheers! 😊`
     }, 1000);
   }
 });
-
-// ========== WELCOME & GOODBYE WITH IMAGE ==========
-const { recupevents } = require('./bdd/welcome');
-
-zk.ev.on('group-participants.update', async (group) => {
-    console.log('Group update detected:', group);
-
-    let ppgroup;
-    try {
-        ppgroup = await zk.profilePictureUrl(group.id, 'image');
-    } catch {
-        ppgroup = 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png';
-    }
-
-    const lang = conf.LANGUAGE || "en";
-
-    try {
-        const metadata = await zk.groupMetadata(group.id);
-        const groupName = metadata.subject;
-        const participantCount = metadata.participants.length;
-
-        if (group.action === 'add' && (await recupevents(group.id, "welcome") === 'on')) {
-            const translated = await getTranslatedWelcome(lang);
-            let membres = group.participants;
-            let msg = `*${translated.welcomeTitle}*\n\n`;
-            
-            for (let membre of membres) {
-                msg += `┃ ${translated.welcomeHey} @${membre.split("@")[0]}!\n`;
-            }
-            
-            msg += `\n┃ 📱 *Group:* ${groupName}\n`;
-            msg += `┃ 👥 *Members:* ${participantCount}\n\n`;
-            msg += `┃ ${translated.welcomeRules}\n\n`;
-            msg += `┃ ${translated.welcomeEnjoy}\n`;
-            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-            zk.sendMessage(group.id, { 
-                image: { url: ppgroup }, 
-                caption: msg, 
-                mentions: membres 
-            });
-            
-        } else if (group.action === 'remove' && (await recupevents(group.id, "goodbye") === 'on')) {
-            const translated = await getTranslatedGoodbye(lang);
-            let membres = group.participants;
-            let msg = `*${translated.goodbyeTitle}*\n\n`;
-            
-            for (let membre of membres) {
-                msg += `┃ 😢 @${membre.split("@")[0]} ${translated.goodbyeLeft}\n`;
-            }
-            
-            msg += `\n┃ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}\n`;
-            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-            zk.sendMessage(group.id, { 
-                image: { url: ppgroup }, 
-                caption: msg, 
-                mentions: membres 
-            });
-            
-        } else if (group.action === 'promote' && (await recupevents(group.id, "antipromote") === 'on')) {
-            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
-                console.log('Cas de superUser je fais rien'); 
-                return; 
-            }
-
-            await zk.groupParticipantsUpdate(group.id, [group.author, group.participants[0]], "demote");
-
-            zk.sendMessage(group.id, {
-                text: `@${(group.author).split("@")[0]} has violated the anti-promotion rule, therefore both ${group.author.split("@")[0]} and @${(group.participants[0]).split("@")[0]} have been removed from administrative rights.`,
-                mentions: [group.author, group.participants[0]]
-            });
-
-        } else if (group.action === 'demote' && (await recupevents(group.id, "antidemote") === 'on')) {
-            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
-                console.log('Cas de superUser je fais rien'); 
-                return; 
-            }
-
-            await zk.groupParticipantsUpdate(group.id, [group.author], "demote");
-            await zk.groupParticipantsUpdate(group.id, [group.participants[0]], "promote");
-
-            zk.sendMessage(group.id, {
-                text: `@${(group.author).split("@")[0]} has violated the anti-demotion rule by removing @${(group.participants[0]).split("@")[0]}. Consequently, he has been stripped of administrative rights.`,
-                mentions: [group.author, group.participants[0]]
-            });
-        }
-
-    } catch (e) {
-        console.error(e);
-    }
-});
-
-        // ========== BUTTONS RESPONSE HANDLER ==========
-        zk.ev.on("messages.upsert", async (m) => {
-            const msg = m.messages[0];
-            if (!msg.message) return;
-            
-            const isButton = msg.message?.buttonsResponseMessage || 
-                            msg.message?.listResponseMessage ||
-                            msg.message?.templateButtonReplyMessage ||
-                            msg.message?.interactiveResponseMessage;
-            
-            if (isButton) {
-                console.log("🎯 Button interaction detected!");
-                await handleButtons(zk, msg);
-                return;
-            }
-        });
 
         // ========== COMMAND HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
