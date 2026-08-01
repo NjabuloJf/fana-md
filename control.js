@@ -1475,10 +1475,10 @@ Please try again later or leave a message. Cheers! 😊`
                 console.log("Loading Commands ...\n");
                 
                 try {
-                    fs.readdirSync(__dirname + "/command").forEach((fichier) => {
+                    fs.readdirSync(__dirname + "/commandes").forEach((fichier) => {
                         if (path.extname(fichier).toLowerCase() == (".js")) {
                             try {
-                                require(__dirname + "/command/" + fichier);
+                                require(__dirname + "/commandes/" + fichier);
                                 console.log(fichier + " Installed Successfully✔️");
                             } catch (e) {
                                 console.log(`${fichier} could not be installed due to: ${e}`);
