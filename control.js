@@ -222,12 +222,15 @@ async function authentification() {
 }
 authentification();
 
-// ========== FIX: Use polyfilled store instead of makeInMemoryStore ==========
+// ========== STORE POLYFILL ==========
 const store = {
     chats: new Map(),
     contacts: new Map(),
     messages: new Map(),
-    bind: function(ev) { console.log("Store bound"); },
+    bind: function(ev) { 
+        console.log("Store bound");
+        // Bind to events if needed
+    },
     writeToFile: function(filename) {
         try {
             const data = {
@@ -291,10 +294,11 @@ setTimeout(() => {
             browser: ['Njabulo-MD', "safari", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            shouldSyncHistoryMessage: true,
-            downloadHistory: true,
-            syncFullHistory: true,
-            generateHighQualityLinkPreview: true,
+            // ========== FIX: Remove problematic options ==========
+            // REMOVED: shouldSyncHistoryMessage (causing error)
+            // REMOVED: downloadHistory (causing error)
+            // REMOVED: syncFullHistory (causing error)
+            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
