@@ -11,7 +11,9 @@ const DATABASE_URL = process.env.DATABASE_URL === undefined ? databasePath : pro
 
 module.exports = { 
     // ========== SESSION CONFIGURATION ==========
-    SESSION_ID: process.env.SESSION_ID || "njabulo~",
+    // IMPORTANT: Put your full session ID here with the njabulo~ prefix
+    // Example: "njabulo~eyJjcmVkcyI6eyJub2lzZUtleSI6eyJwcml2YXRlIjoi..."
+    SESSION_ID: process.env.SESSION_ID || "njabulo~", // Replace with your actual session
     
     // ========== PREFIX ==========
     PREFIXE: process.env.PREFIX || ".",
@@ -31,7 +33,7 @@ module.exports = {
     AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
     AUTO_STATUS_MSG: process.env.AUTO_STATUS_MSG || "Nice status! 👍",
-    AUTO_BIO: process.env.AUTO_BIO || 'yes',
+    AUTO_BIO: process.env.AUTO_BIO || 'no', // Changed to 'no' to prevent bio errors
     AUTOREACT_STATUS: process.env.AUTOREACT_STATUS || 'yes',
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
@@ -59,6 +61,7 @@ module.exports = {
     
     // ========== CHATBOT SETTINGS ==========
     CHATBOT: process.env.PM_CHATBOT || 'no',
+    CHATBOT1: process.env.CHATBOT1 || 'no',
     
     // ========== DISPLAY SETTINGS ==========
     DP: process.env.STARTING_BOT_MESSAGE || "yes",
