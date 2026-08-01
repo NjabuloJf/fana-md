@@ -11,9 +11,8 @@ const DATABASE_URL = process.env.DATABASE_URL === undefined ? databasePath : pro
 
 module.exports = { 
     // ========== SESSION CONFIGURATION ==========
-    // IMPORTANT: Put your full session ID here with the njabulo~ prefix
-    // Example: "njabulo~eyJjcmVkcyI6eyJub2lzZUtleSI6eyJwcml2YXRlIjoi..."
-    SESSION_ID: process.env.SESSION_ID || "njabulo~", // Replace with your actual session
+    // Use environment variable for session
+    SESSION_ID: process.env.SESSION_ID || "",
     
     // ========== PREFIX ==========
     PREFIXE: process.env.PREFIX || ".",
@@ -23,9 +22,6 @@ module.exports = {
     NUMERO_OWNER: process.env.NUMERO_OWNER || "26777821911",
     
     // ========== LANGUAGE SETTINGS ==========
-    // Supported: en, sn, nd, af, zu, xh, pt, vmw, seh, ts, sw, ki, luo, luh, kal,
-    // ha, ig, yo, hi, bn, ta, te, mr, gu, ar, ku, fa, he, tr, fr, es, de, it, ru, nl, el, pl,
-    // zh, ja, ko, th, vi, id, tl, ms, qu
     LANGUAGE: process.env.LANGUAGE || "en",
     
     // ========== STATUS SETTINGS ==========
@@ -33,7 +29,7 @@ module.exports = {
     AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
     AUTO_STATUS_MSG: process.env.AUTO_STATUS_MSG || "Nice status! 👍",
-    AUTO_BIO: process.env.AUTO_BIO || 'no', // Changed to 'no' to prevent bio errors
+    AUTO_BIO: process.env.AUTO_BIO || 'no',
     AUTOREACT_STATUS: process.env.AUTOREACT_STATUS || 'yes',
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
     
