@@ -1015,13 +1015,31 @@ function getCurrentDateTime() {
     return dateTime;
 }
 
-// ========== AUTO BIO UPDATE ==========
+// ========== TRACK CONNECTION STATUS ==========
+let isConnected = false;
+
+// ========== AUTO BIO UPDATE WITH CONNECTION CHECK ==========
+zk.ev.on("connection.update", async (con) => {
+    const { connection } = con;
+    if (connection === 'open') {
+        isConnected = true;
+        console.log("✅ Bot is connected!");
+    } else if (connection === 'close') {
+        isConnected = false;
+        console.log("❌ Bot disconnected!");
+    }
+});
+
 setInterval(async () => {
-    if (conf.AUTO_BIO === "yes") {
-        const currentDateTime = getCurrentDateTime();
-        const bioText = `NJABULO-JB is online! 🚀\n${currentDateTime}`;
-        await zk.updateProfileStatus(bioText);
-        console.log(`Updated Bio: ${bioText}`);
+    if (conf.AUTO_BIO === "yes" && isConnected) {
+        try {
+            const currentDateTime = getCurrentDateTime();
+            const bioText = `NJABULO-JB is online! 🚀\n${currentDateTime}`;
+            await zk.updateProfileStatus(bioText);
+            console.log(`Updated Bio: ${bioText}`);
+        } catch (error) {
+            console.log('Bio update error:', error.message);
+        }
     }
 }, 60000);
 
