@@ -266,10 +266,34 @@ async function authentification() {
 }
 authentification();
 
-// ========== STORE ==========
-const store = baileys_1.makeInMemoryStore({
-    logger: pino().child({ level: "silent", stream: "store" }),
-});
+// ========== FIX: Use polyfilled store instead of makeInMemoryStore ==========
+const store = {
+    chats: new Map(),
+    contacts: new Map(),
+    messages: new Map(),
+    bind: function(ev) { 
+        console.log("Store bound");
+    },
+    writeToFile: function(filename) {
+        try {
+            const data = {
+                chats: Array.from(this.chats.entries()),
+                contacts: Array.from(this.contacts.entries()),
+                messages: Array.from(this.messages.entries())
+            };
+            fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+        } catch (e) {}
+    },
+    loadMessage: async function(jid, id) {
+        if (this.messages.has(jid)) {
+            const messages = this.messages.get(jid);
+            if (messages && Array.isArray(messages)) {
+                return messages.find(msg => msg.key && msg.key.id === id);
+            }
+        }
+        return undefined;
+    }
+};
 
 // ========== BUTTON HANDLER ==========
 const { handleButtons } = require("./commands/play0");
@@ -320,10 +344,6 @@ setTimeout(() => {
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            shouldSyncHistoryMessage: true,
-            downloadHistory: true,
-            syncFullHistory: true,
-            generateHighQualityLinkPreview: true,
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -332,8 +352,8 @@ setTimeout(() => {
             },
             getMessage: async (key) => {
                 if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id, undefined);
-                    return msg.message || undefined;
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg?.message || undefined;
                 }
                 return {
                     conversation: 'An Error Occurred, Repeat Command!'
