@@ -120,13 +120,31 @@ const languageNames = {
     ru: "Russian"
 };
 
-// ========== SESSION HANDLER WITH njabulo~ SUPPORT ==========
-const sessionDir = __dirname + '/scan';
+// ========== TRANSLATED WELCOME FUNCTION ==========
+async function getTranslatedWelcome(lang) {
+    const welcomeTitle = await translateTextWithCache("🎉 WELCOME TO THE GROUP!", lang);
+    const welcomeHey = await translateTextWithCache("Hey", lang);
+    const welcomeRules = await translateTextWithCache("📜 Read the group description to avoid getting removed", lang);
+    const welcomeEnjoy = await translateTextWithCache("💫 Enjoy your stay!", lang);
+    return { welcomeTitle, welcomeHey, welcomeRules, welcomeEnjoy };
+}
+
+async function getTranslatedGoodbye(lang) {
+    const goodbyeTitle = await translateTextWithCache("👋 GOODBYE", lang);
+    const goodbyeLeft = await translateTextWithCache("has left the group", lang);
+    const goodbyeRemaining = await translateTextWithCache("Remaining members", lang);
+    return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
+}
+
+console.log("✅ Using Baileys from github:xhclintohn/Baileys");
+
+// ========== SESSION HANDLER ==========
+const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
 if (!fs.existsSync(sessionDir)) {
     fs.mkdirSync(sessionDir, { recursive: true });
-    console.log("📁 Created scan directory");
+    console.log("📁 Created sessions directory");
 }
 
 async function loadSession() {
@@ -164,6 +182,48 @@ async function loadSession() {
             }
         }
         
+        if (sessionId.includes('mega') || sessionId.includes('#') || sessionId.length > 100) {
+            console.log("📁 Attempting to download session from Mega.nz...");
+            
+            try {
+                let megaFileId = sessionId;
+                
+                if (megaFileId.includes('njabulo-jb~')) {
+                    megaFileId = megaFileId.replace('njabulo-jb~', '');
+                }
+                if (megaFileId.includes('mega.nz')) {
+                    const megaMatch = megaFileId.match(/#!([a-zA-Z0-9_-]+)/);
+                    if (megaMatch) {
+                        megaFileId = megaMatch[1];
+                    }
+                }
+                
+                console.log("📁 Mega file ID:", megaFileId);
+                
+                const file = File.fromURL(`https://mega.nz/file/${megaFileId}`);
+                
+                file.download((err, data) => {
+                    if (err) {
+                        console.log("❌ Mega.nz download error:", err.message);
+                        return;
+                    }
+                    if (data) {
+                        fs.writeFileSync(credsPath, data);
+                        console.log("✅ Session downloaded from Mega.nz successfully!");
+                    }
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 100) {
+                    console.log("✅ Mega.nz session file saved!");
+                    return;
+                }
+            } catch (err) {
+                console.log("❌ Mega.nz download error:", err.message);
+            }
+        }
+        
         try {
             const decoded = Buffer.from(sessionId, 'base64').toString('utf-8');
             if (decoded.includes('creds') || decoded.includes('noiseKey')) {
@@ -189,30 +249,14 @@ const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
 const readmore = more.repeat(4001)
 
-// ========== TRANSLATED WELCOME FUNCTION ==========
-async function getTranslatedWelcome(lang) {
-    const welcomeTitle = await translateTextWithCache("🎉 WELCOME TO THE GROUP!", lang);
-    const welcomeHey = await translateTextWithCache("Hey", lang);
-    const welcomeRules = await translateTextWithCache("📜 Read the group description to avoid getting removed", lang);
-    const welcomeEnjoy = await translateTextWithCache("💫 Enjoy your stay!", lang);
-    return { welcomeTitle, welcomeHey, welcomeRules, welcomeEnjoy };
-}
-
-async function getTranslatedGoodbye(lang) {
-    const goodbyeTitle = await translateTextWithCache("👋 GOODBYE", lang);
-    const goodbyeLeft = await translateTextWithCache("has left the group", lang);
-    const goodbyeRemaining = await translateTextWithCache("Remaining members", lang);
-    return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
-}
-
 async function authentification() {
     try {
-        if (!fs.existsSync(__dirname + "/scan/creds.json")) {
+        if (!fs.existsSync(__dirname + "/auth/creds.json")) {
             console.log("connexion en cour ...");
-            await fs.writeFileSync(__dirname + "/scan/creds.json", atob(session), "utf8");
+            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
         }
-        else if (fs.existsSync(__dirname + "/scan/creds.json") && session != "zokk") {
-            await fs.writeFileSync(__dirname + "/scan/creds.json", atob(session), "utf8");
+        else if (fs.existsSync(__dirname + "/auth/creds.json") && session != "zokk") {
+            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
         }
     }
     catch (e) {
@@ -222,34 +266,13 @@ async function authentification() {
 }
 authentification();
 
-// ========== STORE POLYFILL ==========
-const store = {
-    chats: new Map(),
-    contacts: new Map(),
-    messages: new Map(),
-    bind: function(ev) { 
-        console.log("Store bound");
-    },
-    writeToFile: function(filename) {
-        try {
-            const data = {
-                chats: Array.from(this.chats.entries()),
-                contacts: Array.from(this.contacts.entries()),
-                messages: Array.from(this.messages.entries())
-            };
-            fs.writeFileSync(filename, JSON.stringify(data, null, 2));
-        } catch (e) {}
-    },
-    loadMessage: async function(jid, id) {
-        if (this.messages.has(jid)) {
-            const messages = this.messages.get(jid);
-            if (messages && Array.isArray(messages)) {
-                return messages.find(msg => msg.key && msg.key.id === id);
-            }
-        }
-        return undefined;
-    }
-};
+// ========== STORE ==========
+const store = baileys_1.makeInMemoryStore({
+    logger: pino().child({ level: "silent", stream: "store" }),
+});
+
+// ========== BUTTON HANDLER ==========
+const { handleButtons } = require("./commands/play0");
 
 // Queue for processing messages
 const processingQueue = [];
@@ -284,20 +307,23 @@ async function processMessageQueue() {
 }
 
 async function processSingleMessage(from, message) {
-    // This is a placeholder - the actual message processing happens in the main event handler
     console.log(`Processing message from ${from}`);
 }
 
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
-        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(__dirname + "/scan");
+        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
-            browser: ['Njabulo-MD', "safari", "1.0.0"],
+            browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
+            shouldSyncHistoryMessage: true,
+            downloadHistory: true,
+            syncFullHistory: true,
+            generateHighQualityLinkPreview: true,
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -306,8 +332,8 @@ setTimeout(() => {
             },
             getMessage: async (key) => {
                 if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id);
-                    return msg?.message || undefined;
+                    const msg = await store.loadMessage(key.remoteJid, key.id, undefined);
+                    return msg.message || undefined;
                 }
                 return {
                     conversation: 'An Error Occurred, Repeat Command!'
@@ -407,33 +433,6 @@ zk.ev.on("groups.update", async (updates) => {
         }
     }
 });
-
-// ========== BUTTON HANDLER ==========
-let handleButtons = async (zk, msg) => {
-    console.log("Button handler triggered");
-    try {
-        if (msg.message?.buttonsResponseMessage) {
-            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
-            const from = msg.key.remoteJid;
-            console.log(`Button clicked: ${buttonId}`);
-            
-            if (buttonId === "backup channel") {
-                const lang = conf.LANGUAGE || "en";
-                const channelText = await translateTextWithCache("📢 Channel Link", lang);
-                await zk.sendMessage(from, { 
-                    text: `${channelText}\n\n${conf.GURL || "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"}` 
-                });
-            }
-        }
-        
-        if (msg.message?.listResponseMessage) {
-            const selectedRowId = msg.message.listResponseMessage.singleSelectReply?.selectedRowId;
-            console.log(`List selected: ${selectedRowId}`);
-        }
-    } catch (error) {
-        console.error("Button handler error:", error);
-    }
-};
 
 // ========== WELCOME & GOODBYE WITH IMAGE ==========
 const { recupevents } = require('./bdd/welcome');
