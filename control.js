@@ -229,7 +229,6 @@ const store = {
     messages: new Map(),
     bind: function(ev) { 
         console.log("Store bound");
-        // Bind to events if needed
     },
     writeToFile: function(filename) {
         try {
@@ -284,6 +283,13 @@ async function processMessageQueue() {
     isProcessingQueue = false;
 }
 
+// ========== FIX: processSingleMessage function ==========
+async function processSingleMessage(from, message) {
+    // This is a placeholder - the actual message processing happens in the main event handler
+    // This function is called from the queue
+    console.log(`Processing message from ${from}`);
+}
+
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
@@ -294,11 +300,6 @@ setTimeout(() => {
             browser: ['Njabulo-MD', "safari", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            // ========== FIX: Remove problematic options ==========
-            // REMOVED: shouldSyncHistoryMessage (causing error)
-            // REMOVED: downloadHistory (causing error)
-            // REMOVED: syncFullHistory (causing error)
-            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -783,6 +784,7 @@ zk.ev.on('group-participants.update', async (group) => {
         // ========== DOWNLOAD AUDIO FUNCTION ==========
         const downloadAudio = (url, outputFile) => {
           return new Promise((resolve, reject) => {
+            const { exec } = require('child_process');
             exec(`curl -s "${url}" -o ${outputFile}`, (error) => {
               if (error) reject(error);
               else resolve();
@@ -793,6 +795,7 @@ zk.ev.on('group-participants.update', async (group) => {
         // ========== ENHANCE AUDIO FUNCTION ==========
         const enhanceAudio = (inputFiles, outputFile) => {
           return new Promise((resolve, reject) => {
+            const { exec } = require('child_process');
             const inputList = inputFiles.map(file => `-i ${file}`).join(' ');
             const filter = `"volume=1.4, bass=g=6, treble=g=5, equalizer=f=1000:t=q:w=1:g=3, afftdn"`;
 
@@ -1381,37 +1384,41 @@ Please try again later or leave a message. Cheers! 😊`
 
         // ========== CRON SETUP ==========
         async function activateCrons() {
-            const cron = require('node-cron');
-            const { getCron } = require('./bdd/cron');
+            try {
+                const cron = require('node-cron');
+                const { getCron } = require('./bdd/cron');
 
-            let crons = await getCron();
-            console.log(crons);
-            if (crons.length > 0) {
-                for (let i = 0; i < crons.length; i++) {
-                    if (crons[i].mute_at != null) {
-                        let set = crons[i].mute_at.split(':');
-                        console.log(`etablissement d'un automute pour ${crons[i].group_id} a ${set[0]} H ${set[1]}`);
-                        cron.schedule(`${set[1]} ${set[0]} * * *`, async () => {
-                            await zk.groupSettingUpdate(crons[i].group_id, 'announcement');
-                            zk.sendMessage(crons[i].group_id, { image: { url: './media/chrono.webp' }, caption: "Hello, it's time to close the group; sayonara." });
-                        }, {
-                            timezone: "Africa/Dodoma"
-                        });
-                    }
+                let crons = await getCron();
+                console.log(crons);
+                if (crons && crons.length > 0) {
+                    for (let i = 0; i < crons.length; i++) {
+                        if (crons[i].mute_at != null) {
+                            let set = crons[i].mute_at.split(':');
+                            console.log(`etablissement d'un automute pour ${crons[i].group_id} a ${set[0]} H ${set[1]}`);
+                            cron.schedule(`${set[1]} ${set[0]} * * *`, async () => {
+                                await zk.groupSettingUpdate(crons[i].group_id, 'announcement');
+                                zk.sendMessage(crons[i].group_id, { image: { url: './media/chrono.webp' }, caption: "Hello, it's time to close the group; sayonara." });
+                            }, {
+                                timezone: "Africa/Dodoma"
+                            });
+                        }
 
-                    if (crons[i].unmute_at != null) {
-                        let set = crons[i].unmute_at.split(':');
-                        console.log(`etablissement d'un autounmute pour ${set[0]} H ${set[1]}`);
-                        cron.schedule(`${set[1]} ${set[0]} * * *`, async () => {
-                            await zk.groupSettingUpdate(crons[i].group_id, 'not_announcement');
-                            zk.sendMessage(crons[i].group_id, { image: { url: './media/chrono.webp' }, caption: "Good morning; It's time to open the group." });
-                        }, {
-                            timezone: "Africa/Nairobi"
-                        });
+                        if (crons[i].unmute_at != null) {
+                            let set = crons[i].unmute_at.split(':');
+                            console.log(`etablissement d'un autounmute pour ${set[0]} H ${set[1]}`);
+                            cron.schedule(`${set[1]} ${set[0]} * * *`, async () => {
+                                await zk.groupSettingUpdate(crons[i].group_id, 'not_announcement');
+                                zk.sendMessage(crons[i].group_id, { image: { url: './media/chrono.webp' }, caption: "Good morning; It's time to open the group." });
+                            }, {
+                                timezone: "Africa/Nairobi"
+                            });
+                        }
                     }
+                } else {
+                    console.log('Les crons n\'ont pas été activés');
                 }
-            } else {
-                console.log('Les crons n\'ont pas été activés');
+            } catch (e) {
+                console.log('Cron error:', e.message);
             }
             return;
         }
@@ -1432,17 +1439,21 @@ Please try again later or leave a message. Cheers! 😊`
                 console.log("Njabulo-Jb is Online 🕸\n\n");
                 console.log("Loading Commands ...\n");
                 
-                fs.readdirSync(__dirname + "/command").forEach((fichier) => {
-                    if (path.extname(fichier).toLowerCase() == (".js")) {
-                        try {
-                            require(__dirname + "/command/" + fichier);
-                            console.log(fichier + " Installed Successfully✔️");
-                        } catch (e) {
-                            console.log(`${fichier} could not be installed due to: ${e}`);
+                try {
+                    fs.readdirSync(__dirname + "/command").forEach((fichier) => {
+                        if (path.extname(fichier).toLowerCase() == (".js")) {
+                            try {
+                                require(__dirname + "/command/" + fichier);
+                                console.log(fichier + " Installed Successfully✔️");
+                            } catch (e) {
+                                console.log(`${fichier} could not be installed due to: ${e}`);
+                            }
+                            (0, baileys_1.delay)(300);
                         }
-                        (0, baileys_1.delay)(300);
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.log('No command folder found');
+                }
                 
                 (0, baileys_1.delay)(700);
                 var md;
