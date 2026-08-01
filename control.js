@@ -283,10 +283,8 @@ async function processMessageQueue() {
     isProcessingQueue = false;
 }
 
-// ========== FIX: processSingleMessage function ==========
 async function processSingleMessage(from, message) {
     // This is a placeholder - the actual message processing happens in the main event handler
-    // This function is called from the queue
     console.log(`Processing message from ${from}`);
 }
 
@@ -347,7 +345,7 @@ async function getGroupMetadata(zk, groupId) {
         setTimeout(() => groupMetadataCache.delete(groupId), 60000);
         return metadata;
     } catch (error) {
-        if (error.message.includes("rate-overlimit")) {
+        if (error.message && error.message.includes("rate-overlimit")) {
             await new Promise(res => setTimeout(res, 5000));
         }
         return null;
