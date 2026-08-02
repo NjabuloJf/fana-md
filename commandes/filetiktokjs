@@ -92,6 +92,7 @@ async function getTranslatedTexts() {
         errorAudio: await translateTextWithCache("❌ Failed to extract audio. Please try again.", lang),
         noVideoFound: await translateTextWithCache("❌ No video found for this link.", lang),
         fetchingInfo: await translateTextWithCache("📡 Fetching video info...", lang),
+        apiFailed: await translateTextWithCache("⚠️ API is currently unavailable. Please try again later.", lang),
     };
 }
 
@@ -114,21 +115,108 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH TIKTOK INFO ==========
+// ========== FETCH TIKTOK INFO WITH MULTIPLE APIS ==========
 async function fetchTikTokInfo(url) {
-    try {
-        const apiUrl = `https://api.nexray.web.id/downloader/tiktok?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl, { timeout: 30000 });
-        
-        if (!response.data || !response.data.result) {
-            throw new Error('No data received');
+    // Try multiple APIs
+    const apis = [
+        {
+            name: 'Nexray',
+            url: `https://api.nexray.web.id/downloader/tiktok?url=${encodeURIComponent(url)}`,
+            parse: (data) => {
+                if (!data || !data.result) return null;
+                const r = data.result;
+                return {
+                    title: r.title || r.desc || "TikTok Video",
+                    author: r.author?.unique_id || r.author?.username || "Unknown",
+                    duration: r.duration || "0:00",
+                    views: r.views || r.play_count || 0,
+                    likes: r.likes || r.digg_count || 0,
+                    comments: r.comments || r.comment_count || 0,
+                    shares: r.shares || r.share_count || 0,
+                    thumbnail: r.cover || r.thumbnail || randomNjabulourl,
+                    videoUrl: r.video_url || r.video,
+                    videoUrlHd: r.video_url_hd || r.video_hd || r.video_url,
+                    videoUrlSd: r.video_url_sd || r.video_sd || r.video_url,
+                    audioUrl: r.audio_url || r.music_url || r.audio,
+                };
+            }
+        },
+        {
+            name: 'TikTok API',
+            url: `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+            parse: (data) => {
+                if (!data || !data.data) return null;
+                const r = data.data;
+                return {
+                    title: r.title || "TikTok Video",
+                    author: r.author?.unique_id || r.author?.username || "Unknown",
+                    duration: r.duration || "0:00",
+                    views: r.play_count || 0,
+                    likes: r.digg_count || 0,
+                    comments: r.comment_count || 0,
+                    shares: r.share_count || 0,
+                    thumbnail: r.cover || r.thumbnail || randomNjabulourl,
+                    videoUrl: r.play || r.video,
+                    videoUrlHd: r.hd_play || r.video_hd || r.play,
+                    videoUrlSd: r.play || r.video,
+                    audioUrl: r.music || r.audio,
+                };
+            }
+        },
+        {
+            name: 'SSSTikTok',
+            url: `https://ssstik.io/api/convert?url=${encodeURIComponent(url)}`,
+            parse: (data) => {
+                if (!data || !data.result) return null;
+                const r = data.result;
+                return {
+                    title: r.title || "TikTok Video",
+                    author: r.author || "Unknown",
+                    duration: r.duration || "0:00",
+                    views: r.views || 0,
+                    likes: r.likes || 0,
+                    comments: 0,
+                    shares: 0,
+                    thumbnail: r.thumbnail || randomNjabulourl,
+                    videoUrl: r.video || r.url,
+                    videoUrlHd: r.video_hd || r.video,
+                    videoUrlSd: r.video || r.video_sd,
+                    audioUrl: r.music || r.audio,
+                };
+            }
         }
-        
-        return response.data.result;
-    } catch (error) {
-        console.error('TikTok API error:', error.message);
-        throw error;
+    ];
+
+    let lastError = null;
+
+    for (const api of apis) {
+        try {
+            console.log(`🔄 Trying TikTok API: ${api.name}`);
+            const response = await axios.get(api.url, { 
+                timeout: 30000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            
+            console.log(`📡 ${api.name} response status:`, response.status);
+            
+            if (response.status === 200) {
+                const parsed = api.parse(response.data);
+                if (parsed && parsed.videoUrl) {
+                    console.log(`✅ ${api.name} API successful!`);
+                    return parsed;
+                }
+            }
+        } catch (error) {
+            console.log(`❌ ${api.name} API failed:`, error.message);
+            lastError = error;
+            continue;
+        }
     }
+
+    console.error('❌ All TikTok APIs failed');
+    throw new Error(lastError?.message || 'All APIs failed');
 }
 
 // ========== CREATE CARDS WITH BUTTONS ==========
@@ -144,24 +232,31 @@ async function createTikTokCards(videoInfo, zk, ms, lang) {
         },
     ];
 
-    // Get video details
-    const title = videoInfo.title || videoInfo.desc || t.unknown;
-    const author = videoInfo.author?.unique_id || videoInfo.author?.username || t.unknown;
-    const duration = videoInfo.duration || '0:00';
-    const views = videoInfo.views || videoInfo.play_count || 0;
-    const likes = videoInfo.likes || videoInfo.digg_count || 0;
-    const comments = videoInfo.comments || videoInfo.comment_count || 0;
-    const shares = videoInfo.shares || videoInfo.share_count || 0;
-    const thumbnail = videoInfo.cover || videoInfo.thumbnail || randomNjabulourl;
+    const title = videoInfo.title || "TikTok Video";
+    const author = videoInfo.author || "Unknown";
+    const duration = videoInfo.duration || "0:00";
+    const views = videoInfo.views || 0;
+    const likes = videoInfo.likes || 0;
+    const comments = videoInfo.comments || 0;
+    const shares = videoInfo.shares || 0;
+    const thumbnail = videoInfo.thumbnail || randomNjabulourl;
 
     // Card 1: Video Info
+    let imageMessage = null;
+    try {
+        if (thumbnail) {
+            imageMessage = (await generateWAMessageContent({ image: { url: thumbnail } }, { upload: zk.waUploadToServer })).imageMessage;
+        }
+    } catch (e) {
+        console.log('⚠️ Could not load thumbnail');
+        imageMessage = (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage;
+    }
+
     const card1 = {
         header: {
             title: `📥 ${t.tiktokVideo}`,
             hasMediaAttachment: true,
-            imageMessage: thumbnail ? 
-                (await generateWAMessageContent({ image: { url: thumbnail } }, { upload: zk.waUploadToServer })).imageMessage :
-                (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: imageMessage,
         },
         body: {
             text: `${t.title} ${title}\n` +
@@ -192,9 +287,7 @@ async function createTikTokCards(videoInfo, zk, ms, lang) {
         header: {
             title: `📥 ${t.tiktokVideo}`,
             hasMediaAttachment: true,
-            imageMessage: thumbnail ? 
-                (await generateWAMessageContent({ image: { url: thumbnail } }, { upload: zk.waUploadToServer })).imageMessage :
-                (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: imageMessage,
         },
         body: {
             text: `📌 *Quick Download*\n\n` +
@@ -214,7 +307,7 @@ async function createTikTokCards(videoInfo, zk, ms, lang) {
                     name: "cta_copy",
                     buttonParamsJson: JSON.stringify({
                         display_text: "📋 Copy Link",
-                        copy_code: videoInfo.video_url || videoInfo.url || "Link not available",
+                        copy_code: videoInfo.videoUrl || "Link not available",
                     }),
                 },
                 {
@@ -322,7 +415,7 @@ fana({
     try {
         const result = await fetchTikTokInfo(queryURL);
 
-        if (!result || !result.video_url) {
+        if (!result || !result.videoUrl) {
             throw new Error(t.noVideoFound);
         }
 
@@ -330,13 +423,19 @@ fana({
         const senderJid = ms.key.remoteJid;
         activeDownloads[senderJid] = {
             videoInfo: result,
-            title: result.title || result.desc || "TikTok Video",
+            title: result.title || "TikTok Video",
             url: queryURL,
-            thumbnail: result.cover || result.thumbnail,
-            videoUrl: result.video_url,
-            audioUrl: result.audio_url,
-            hdUrl: result.video_url_hd || result.video_url,
-            sdUrl: result.video_url_sd || result.video_url,
+            thumbnail: result.thumbnail || randomNjabulourl,
+            videoUrl: result.videoUrl,
+            videoUrlHd: result.videoUrlHd || result.videoUrl,
+            videoUrlSd: result.videoUrlSd || result.videoUrl,
+            audioUrl: result.audioUrl,
+            author: result.author,
+            duration: result.duration,
+            views: result.views,
+            likes: result.likes,
+            comments: result.comments,
+            shares: result.shares,
             timestamp: Date.now()
         };
 
@@ -422,7 +521,7 @@ fana({
 
     } catch (error) {
         console.error("Error:", error);
-        await repondre(`${t.errorDownloading}\n\n${t.checkLink}`);
+        await repondre(`${t.apiFailed}\n\n${t.errorDownloading}\n\n${t.checkLink}`);
     }
 });
 
@@ -434,11 +533,11 @@ async function downloadTikTokVideo(zk, dest, ms, data, lang, isDocument, quality
         let qualityText = '';
 
         if (quality === 'hd') {
-            videoUrl = data.hdUrl || data.videoUrl;
+            videoUrl = data.videoUrlHd || data.videoUrl;
             qualityText = 'HD';
             await zk.sendMessage(dest, { text: await translateTextWithCache("📤 Sending HD video...", lang) }, { quoted: ms });
         } else if (quality === 'sd') {
-            videoUrl = data.sdUrl || data.videoUrl;
+            videoUrl = data.videoUrlSd || data.videoUrl;
             qualityText = 'SD';
             await zk.sendMessage(dest, { text: await translateTextWithCache("📤 Sending SD video...", lang) }, { quoted: ms });
         } else {
@@ -456,7 +555,6 @@ async function downloadTikTokVideo(zk, dest, ms, data, lang, isDocument, quality
         const title = data.title || "TikTok Video";
         const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_${qualityText}.mp4`;
 
-        // Try to get thumbnail
         const thumbnail = data.thumbnail || randomNjabulourl;
 
         if (isDocument) {
@@ -570,4 +668,4 @@ async function downloadTikTokAudio(zk, dest, ms, data, lang) {
             text: await translateTextWithCache("❌ Failed to extract audio. Please try again.", lang)
         }, { quoted: ms });
     }
-    } 
+        }
