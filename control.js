@@ -357,16 +357,18 @@ setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
         const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
+        
+        // ========== FIX: REMOVED PROBLEMATIC OPTIONS ==========
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            shouldSyncHistoryMessage: true,
-            downloadHistory: true,
-            syncFullHistory: true,
-            generateHighQualityLinkPreview: true,
+            // REMOVED: shouldSyncHistoryMessage (causing error)
+            // REMOVED: downloadHistory (causing error)
+            // REMOVED: syncFullHistory (causing error)
+            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
