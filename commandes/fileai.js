@@ -28,7 +28,7 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = config.LANGUAGE || "en";
-    return await translateText("channel", lang);
+    return await translateText("bot channels", lang);
 }
 
 const buttons = [
@@ -300,84 +300,4 @@ fana({
     categorie: "AI"
 }, async (dest, zk, params) => {
     handleAiCommand(dest, zk, params, "📌 *.genius <message>*\n\nExample: .genius Complex problem solving");
-});
-
-// ── AI HELP COMMAND ───────────────────────────────────────────────
-fana({
-    nomCom: "aihelp",
-    alias: ["aide", "helpai", "aicommands"],
-    reaction: '📚',
-    categorie: "AI"
-}, async (dest, zk, params) => {
-    const { repondre } = params;
-    const lang = config.LANGUAGE || "en";
-    
-    const aiCommandsText = await translateText("AI COMMANDS MENU", lang);
-    const generalText = await translateText("General AI chat", lang);
-    const chatbotText = await translateText("Chatbot assistant", lang);
-    const njabuloText = await translateText("Njabulo AI", lang);
-    const gptText = await translateText("GPT AI", lang);
-    const gptMiniText = await translateText("GPT 5.4 Mini", lang);
-    const miniGptText = await translateText("Mini GPT", lang);
-    const geminiText = await translateText("Gemini AI", lang);
-    const llamaText = await translateText("Llama AI", lang);
-    const askText = await translateText("Ask questions", lang);
-    const botText = await translateText("Bot assistant", lang);
-    const smartText = await translateText("Smart AI", lang);
-    const quickText = await translateText("Quick response", lang);
-    const proText = await translateText("Pro AI", lang);
-    const ultraText = await translateText("Ultra AI", lang);
-    const brainText = await translateText("Brain AI", lang);
-    const wisdomText = await translateText("Wisdom AI", lang);
-    const geniusText = await translateText("Genius AI", lang);
-    const showMenuText = await translateText("Show this menu", lang);
-    const poweredByText = await translateText("Powered by NJABULO MD", lang);
-    
-    const helpMessage = `╭━━━━━━━━━━━━━━━━━━━━╮
-┃   🤖 *${aiCommandsText}* 🤖
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃
-┃ 📌 *.ai* - ${generalText}
-┃ 📌 *.chat* - ${chatbotText}
-┃ 📌 *.njabulo* - ${njabuloText}
-┃ 📌 *.gpt* - ${gptText}
-┃ 📌 *.gpt-5.4-mini* - ${gptMiniText}
-┃ 📌 *.gptmini* - ${miniGptText}
-┃ 📌 *.gemini* - ${geminiText}
-┃ 📌 *.ilama* - ${llamaText}
-┃ 📌 *.ask* - ${askText}
-┃ 📌 *.bot* - ${botText}
-┃ 📌 *.smart* - ${smartText}
-┃ 📌 *.quick* - ${quickText}
-┃ 📌 *.pro* - ${proText}
-┃ 📌 *.ultra* - ${ultraText}
-┃ 📌 *.brain* - ${brainText}
-┃ 📌 *.wisdom* - ${wisdomText}
-┃ 📌 *.genius* - ${geniusText}
-┃
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃ 📌 *.aihelp* - ${showMenuText}
-┣━━━━━━━━━━━━━━━━━━━━┫
-┃ ✨ ${poweredByText}
-╰━━━━━━━━━━━━━━━━━━━━╯`;
-    
-    await repondre(helpMessage);
-});
-
-// ── AI TEST COMMAND ───────────────────────────────────────────────
-fana({
-    nomCom: "aitest",
-    alias: ["testai", "checkai"],
-    reaction: '🔧',
-    categorie: "AI"
-}, async (dest, zk, params) => {
-    const { repondre } = params;
-    const lang = config.LANGUAGE || "en";
-    
-    const aiSystemReady = await translateText("AI System Ready", lang);
-    const allWorking = await translateText("All AI commands are working!", lang);
-    const tryText = await translateText("Try", lang);
-    const njabuloText = await translateText("NJABULO MD", lang);
-    
-    await repondre(`🔧 *${aiSystemReady}* 🔧\n\n✅ ${allWorking}\n\n📌 ${tryText}: .ai Hello\n\n> ${njabuloText}`);
 });
