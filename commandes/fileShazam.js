@@ -30,12 +30,12 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = config.LANGUAGE || "en";
-    return await translateText("🌐 Channel", lang);
+    return await translateText("bot Channels", lang);
 }
 
 async function getTranslatedButtons() {
     const lang = config.LANGUAGE || "en";
-    const waChannel = await translateText("🌐 WA Channel", lang);
+    const waChannel = await translateText("bot Channels", lang);
     return { waChannel };
 }
 
