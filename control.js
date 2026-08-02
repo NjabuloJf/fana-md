@@ -1472,114 +1472,28 @@ Please try again later or leave a message. Cheers! 😊`
                         // Use reliable image URL
                         const startupImage = randomNjabulourl || "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
                         
-                        let imageMessage = null;
-                        try {
-                            imageMessage = (await generateWAMessageContent({ image: { url: startupImage } }, { upload: zk.waUploadToServer })).imageMessage;
-                        } catch (imgError) {
-                            console.log('⚠️ Could not load image for startup message');
-                        }
-                        
-                        const cards = [
-                            {
-                                header: {
-                                    title: `📊 ▢ *WhatsApp bot connected*`,
-                                    hasMediaAttachment: true,
-                                    imageMessage: imageMessage,
-                                },
-                                body: {
-                                    text: `❒│▸ ▢ *WhatsApp bot connected* \n\n` +
-                                          `❒│▸ ▢ *Prefix:* ${prefixe}\n` +
-                                          `❒│▸ ▢ *Date:* ${new Date().toLocaleDateString()}\n` +
-                                          `❒│▸ ▢ *Time:* ${new Date().toLocaleTimeString()}\n` +
-                                          `❒│▸ ▢ *Mode:* ${md}\n` +
-                                          `❒│▸ ▢ *WhatsApp:* (ʀᴏʙᴏᴛ)\n` +
-                                          `❒│▸ ▢ *Owner:* (ɴᴊᴀʙᴜʟᴏ)`,
-                                },
-                                footer: {
-                                    text: "",
-                                },
-                                nativeFlowMessage: {
-                                    buttons: [
-                                        {
-                                            buttonId: ".menu",
-                                            buttonText: { displayText: "Available" },
-                                            type: 1
-                                        },
-                                        {
-                                            name: "cta_url",
-                                            buttonParamsJson: JSON.stringify({
-                                                display_text: "Bot Channel",
-                                                url: conf.GURL || "https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509"
-                                            }),
-                                        },
-                                    ],
-                                },
-                            },
-                            {
-                                header: {
-                                    title: `📊 ▢ *WhatsApp bot language set*`,
-                                    hasMediaAttachment: true,
-                                    imageMessage: imageMessage,
-                                },
-                                body: {
-                                    text: `❒│▸ ▢ *WhatsApp bot language set* \n` +
-                                          `❒│▸ ▢ *Use: (setlang)*\n` +
-                                          `❒│▸ ▢ *Use: language*\n` +
-                                          `❒│▸ ▢ *Use (settings)*\n` +
-                                          `❒│▸ ▢ *Google language v.....*\n` +
-                                          `❒│▸ ▢ *Language (${langName})*\n` +
-                                          `❒│▸ ▢ *Owner:* (ɴᴊᴀʙᴜʟᴏ)`,
-                                },
-                                footer: {
-                                    text: "",
-                                },
-                                nativeFlowMessage: {
-                                    buttons: [
-                                        {
-                                            name: "cta_url",
-                                            buttonParamsJson: JSON.stringify({
-                                                display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
-                                                url: conf.GURL || "https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509"
-                                            }),
-                                        },
-                                    ],
-                                },
-                            },
-                        ];
+                        // Create a simple text message instead of complex carousel
+                        const startupText = `╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃   📊 *NJABULO-JB BOT ONLINE*
+┃
+┃ ✅ *Bot:* WhatsApp Bot Connected
+┃ 📌 *Prefix:* ${prefixe}
+┃ 📅 *Date:* ${new Date().toLocaleDateString()}
+┃ 🕐 *Time:* ${new Date().toLocaleTimeString()}
+┃ 📊 *Mode:* ${md}
+┃ 🌍 *Language:* ${langName}
+┃ 👤 *Owner:* Njabulo JB
+┃
+┃ 💡 *Commands:* Use .menu
+┃ 📢 *Channel:* ${conf.GURL || "Available"}
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-                        const message = generateWAMessageFromContent(
-                            zk.user.id,
-                            {
-                                viewOnceMessage: {
-                                    message: {
-                                        messageContextInfo: {
-                                            deviceListMetadata: {},
-                                            deviceListMetadataVersion: 2,
-                                        },
-                                        interactiveMessage: {
-                                            header: { text: `🔍 System Info` },
-                                            body: { text: `*📂 Njabulo Jb has been connected*` },
-                                            headerType: 1,
-                                            carouselMessage: { cards },
-                                        },
-                                    },
-                                },
-                            }
-                        );
-                        
-                        await zk.relayMessage(zk.user.id, message.message, { messageId: message.key.id });
+                        await zk.sendMessage(zk.user.id, { 
+                            text: startupText 
+                        });
                         console.log("✅ Startup message sent to bot DM");
                     } catch (e) {
                         console.log("❌ Failed to send startup message:", e.message);
-                        // Fallback: Send simple text
-                        try {
-                            await zk.sendMessage(zk.user.id, { 
-                                text: `✅ Njabulo-Jb Bot Connected!\n\nPrefix: ${prefixe}\nMode: ${md}\nLanguage: ${langName}\nTime: ${new Date().toLocaleString()}`
-                            });
-                            console.log("✅ Fallback startup text sent");
-                        } catch (fallbackError) {
-                            console.log("❌ Failed to send fallback startup message");
-                        }
                     }
                 }
             }
