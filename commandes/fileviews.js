@@ -31,7 +31,7 @@ let translateText = async (text, targetLang) => {
 // ========== GET TRANSLATED BUTTONS ==========
 async function getTranslatedButtons() {
     const lang = config.LANGUAGE || "en";
-    const waChannel = await translateText("🌐WA channel", lang);
+    const waChannel = await translateText("bot channel", lang);
     const mentionMessage = await translateText("*Mention the message that you want to save*", lang);
     const errorMessage = await translateText("Error sending message", lang);
     const unsupportedMessage = await translateText("Unsupported message type", lang);
@@ -130,9 +130,9 @@ fana({
             const media = await zk.downloadAndSaveMediaMessage(msgRepondu.stickerMessage);
             
             // Translate sticker pack name
-            let packName = '𝚃𝙸𝙼𝙽𝙰𝚂𝙰 𝚃𝙼𝙳';
+            let packName = 'Njabulo Jb';
             if (lang !== 'en') {
-                const translatedPack = await translateText('TIMNASA TMD', lang);
+                const translatedPack = await translateText('Njabulo Jb', lang);
                 packName = translatedPack;
             }
             
