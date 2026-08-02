@@ -47,17 +47,31 @@ const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = 
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
-// ========== GOOGLE TRANSLATE API ==========
+// ========== GOOGLE TRANSLATE API WITH FIX ==========
 let translateText = async (text, targetLang) => {
     try {
-        if (!targetLang || targetLang === 'en') return text;
+        // Validate targetLang
+        if (!targetLang || targetLang === 'en' || typeof targetLang !== 'string') {
+            return text;
+        }
+        
+        // Clean the language code
+        targetLang = targetLang.toString().toLowerCase().trim();
+        
+        // Only allow valid language codes (2-5 characters)
+        if (targetLang.length > 5 || targetLang.length < 2) {
+            console.log(`⚠️ Invalid language code: ${targetLang}, falling back to English`);
+            return text;
+        }
+        
         if (!text) return text;
+        
         try {
             const { translate } = require('@vitalets/google-translate-api');
             const result = await translate(text, { to: targetLang });
             return result.text;
         } catch (e) {
-            console.log('⚠️ Google Translate failed, using fallback...');
+            console.log('⚠️ Google Translate failed:', e.message);
             try {
                 const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
                     timeout: 5000
@@ -81,7 +95,9 @@ let translateText = async (text, targetLang) => {
 const translationCache = new Map();
 
 let translateTextWithCache = async (text, targetLang) => {
-    if (!targetLang || targetLang === 'en') return text;
+    if (!targetLang || targetLang === 'en' || typeof targetLang !== 'string') return text;
+    targetLang = targetLang.toString().toLowerCase().trim();
+    if (targetLang.length > 5 || targetLang.length < 2) return text;
     if (!text) return text;
     
     const cacheKey = `${text}_${targetLang}`;
@@ -1188,17 +1204,44 @@ Please try again later or leave a message. Cheers! 😊`
                 }
             }
 
-            // ========== ANTI-LINK ==========
+            // ========== FIXED ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
-                if (texte && (texte.includes('https://') || texte.includes('http://') || texte.includes('chat.whatsapp.com')) && verifGroupe && yes) {
+                const containsLink = texte && (
+                    texte.includes('https://') || 
+                    texte.includes('http://') || 
+                    texte.includes('chat.whatsapp.com') ||
+                    texte.includes('www.')
+                );
+                
+                if (containsLink && verifGroupe && yes) {
                     console.log("🔗 LINK DETECTED");
-                    var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
                     
-                    if(superUser || verifAdmin || !verifZokAdmin) { 
-                        console.log('je fais rien'); 
+                    // Check if bot is admin
+                    var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
+                    console.log(`Bot is admin: ${verifZokAdmin}`);
+                    console.log(`User is admin: ${verifAdmin}`);
+                    console.log(`User is superUser: ${superUser}`);
+                    
+                    // Skip only if user is superUser (bot owner)
+                    if(superUser) {
+                        console.log('⏭️ Skipping action - User is superUser (bot owner)');
                         return;
                     }
+                    
+                    // If bot is not admin, just warn but don't take action
+                    if(!verifZokAdmin) {
+                        console.log('⚠️ Bot is not admin, cannot take action');
+                        const userPP = await getProfilePic(auteurMessage);
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
+                        return;
+                    }
+                    
+                    const userPP = await getProfilePic(auteurMessage);
                     
                     const key = {
                         remoteJid: origineMessage,
@@ -1206,7 +1249,7 @@ Please try again later or leave a message. Cheers! 😊`
                         id: ms.key.id,
                         participant: auteurMessage
                     };
-                    var txt = await translateTextWithCache("⚠️ LINK DETECTED", lang) + "\n";
+                    
                     const gifLink = "https://raw.githubusercontent.com/djalega8000/Zokou-MD/main/media/remover.gif";
                     var sticker = new Sticker(gifLink, {
                         pack: 'Njabulo-MD',
@@ -1219,47 +1262,78 @@ Please try again later or leave a message. Cheers! 😊`
                     });
                     await sticker.toFile("st1.webp");
                     var action = await recupererActionJid(origineMessage);
-
+                    
+                    // Translate messages
+                    const linkDetected = await translateTextWithCache("⚠️ LINK DETECTED", lang);
+                    const msgDeleted = await translateTextWithCache("🚫 Message deleted", lang);
+                    const removedFromGroup = await translateTextWithCache("You have been removed from the group.", lang);
+                    const avoidLinks = await translateTextWithCache("Please avoid sending links.", lang);
+                    const warnLimitReached = await translateTextWithCache("⚠️ LINK DETECTED! You will be removed because of reaching warn-limit", lang);
+                    const warnUpgraded = await translateTextWithCache("⚠️ LINK DETECTED! Your warn count was upgraded.", lang);
+                    const remainingWarnings = await translateTextWithCache("Remaining warnings", lang);
+                    
+                    let txt = linkDetected + "\n";
+                    
                     if (action === 'remove') {
-                        txt += await translateTextWithCache("🚫 Message deleted. You have been removed from the group.", lang);
+                        txt += msgDeleted + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ${removedFromGroup}`;
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         (0, baileys_1.delay)(800);
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: txt, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
                         try {
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                         } catch (e) {
-                            console.log("anti-link error: " + e);
+                            console.log("Failed to remove user:", e.message);
                         }
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
-                    } else if (action === 'delete') {
-                        txt += await translateTextWithCache("🚫 Message deleted. Please avoid sending links.", lang);
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
+                    } 
+                    else if (action === 'delete') {
+                        txt += msgDeleted + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ${avoidLinks}`;
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: txt, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
-                    } else if(action === 'warn') {
+                    } 
+                    else if(action === 'warn') {
                         const {getWarnCountByJID, ajouterUtilisateurAvecWarnCount} = require('./bdd/warn');
                         let warn = await getWarnCountByJID(auteurMessage); 
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = await translateTextWithCache("⚠️ LINK DETECTED! You will be removed because of reaching warn-limit", lang);
-                            await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
+                            var kikmsg = warnLimitReached;
+                            await zk.sendMessage(origineMessage, { 
+                                image: { url: userPP || randomNjabulourl }, 
+                                caption: kikmsg, 
+                                mentions: [auteurMessage] 
+                            }, { quoted: ms });
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = await translateTextWithCache(`⚠️ LINK DETECTED! Your warn count was upgraded.\nRemaining warnings: ${rest}`, lang);
+                            var msg = `${warnUpgraded}\n${remainingWarnings}: ${rest}`;
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                            await zk.sendMessage(origineMessage, { text: msg, mentions: [auteurMessage] }, { quoted: ms });
+                            await zk.sendMessage(origineMessage, { 
+                                image: { url: userPP || randomNjabulourl }, 
+                                caption: msg, 
+                                mentions: [auteurMessage] 
+                            }, { quoted: ms });
                             await zk.sendMessage(origineMessage, { delete: key });
                         }
                     }
                 }
             } catch (e) {
-                console.log("Anti-link error: " + e);
+                console.log("Anti-link error:", e);
             }
 
-            // ========== ANTI-BOT ==========
+            // ========== FIXED ANTI-BOT ==========
             try {
                 const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
                 const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
@@ -1278,57 +1352,67 @@ Please try again later or leave a message. Cheers! 😊`
                         id: ms.key.id,
                         participant: auteurMessage
                     };
-                    var txt = await translateTextWithCache("🤖 BOT DETECTED", lang) + "\n";
-                    const gifLink = "https://raw.githubusercontent.com/djalega8000/Zokou-MD/main/media/remover.gif";
-                    var sticker = new Sticker(gifLink, {
-                        pack: 'Njabulo-MD',
-                        author: conf.OWNER_NAME,
-                        type: StickerTypes.FULL,
-                        categories: ['🤩', '🎉'],
-                        id: '12345',
-                        quality: 50,
-                        background: '#000000'
-                    });
-                    await sticker.toFile("st1.webp");
+                    
+                    const botDetected = await translateTextWithCache("🤖 BOT DETECTED", lang);
+                    const msgDeleted = await translateTextWithCache("🚫 Message deleted", lang);
+                    const removedFromGroup = await translateTextWithCache("You have been removed from the group.", lang);
+                    const avoidBot = await translateTextWithCache("Please avoid sending bot messages.", lang);
+                    const warnLimitReached = await translateTextWithCache("🤖 BOT DETECTED! You will be removed because of reaching warn-limit", lang);
+                    const warnUpgraded = await translateTextWithCache("🤖 BOT DETECTED! Your warn count was upgraded.", lang);
+                    const remainingWarnings = await translateTextWithCache("Remaining warnings", lang);
+                    
+                    var txt = botDetected + "\n";
                     var action = await atbrecupererActionJid(origineMessage);
 
                     if (action === 'remove') {
-                        txt += await translateTextWithCache("🚫 Message deleted. You have been removed from the group.", lang);
-                        await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
-                        (0, baileys_1.delay)(800);
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
-                        try {
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        } catch (e) {
-                            console.log("antibot error: " + e);
-                        }
+                        txt += msgDeleted + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ${removedFromGroup}`;
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: txt, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
+                        await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                         await zk.sendMessage(origineMessage, { delete: key });
-                        await fs.unlink("st1.webp");
-                    } else if (action === 'delete') {
-                        txt += await translateTextWithCache("🚫 Message deleted. Please avoid sending bot messages.", lang);
-                        await zk.sendMessage(origineMessage, { text: txt, mentions: [auteurMessage] }, { quoted: ms });
+                    } 
+                    else if (action === 'delete') {
+                        txt += msgDeleted + "\n";
+                        txt += `👤 @${auteurMessage.split("@")[0]} ${avoidBot}`;
+                        await zk.sendMessage(origineMessage, { 
+                            image: { url: userPP || randomNjabulourl }, 
+                            caption: txt, 
+                            mentions: [auteurMessage] 
+                        }, { quoted: ms });
                         await zk.sendMessage(origineMessage, { delete: key });
-                        await fs.unlink("st1.webp");
-                    } else if(action === 'warn') {
+                    } 
+                    else if(action === 'warn') {
                         const {getWarnCountByJID, ajouterUtilisateurAvecWarnCount} = require('./bdd/warn');
                         let warn = await getWarnCountByJID(auteurMessage); 
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
-                            var kikmsg = await translateTextWithCache("🤖 BOT DETECTED! You will be removed because of reaching warn-limit", lang);
-                            await zk.sendMessage(origineMessage, { text: kikmsg, mentions: [auteurMessage] }, { quoted: ms });
+                            var kikmsg = warnLimitReached;
+                            await zk.sendMessage(origineMessage, { 
+                                image: { url: userPP || randomNjabulourl }, 
+                                caption: kikmsg, 
+                                mentions: [auteurMessage] 
+                            }, { quoted: ms });
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                             await zk.sendMessage(origineMessage, { delete: key });
                         } else {
                             var rest = warnlimit - warn;
-                            var msg = await translateTextWithCache(`🤖 BOT DETECTED! Your warn count was upgraded.\nRemaining warnings: ${rest}`, lang);
+                            var msg = `${warnUpgraded}\n${remainingWarnings}: ${rest}`;
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                            await zk.sendMessage(origineMessage, { text: msg, mentions: [auteurMessage] }, { quoted: ms });
+                            await zk.sendMessage(origineMessage, { 
+                                image: { url: userPP || randomNjabulourl }, 
+                                caption: msg, 
+                                mentions: [auteurMessage] 
+                            }, { quoted: ms });
                             await zk.sendMessage(origineMessage, { delete: key });
                         }
                     }
                 }
             } catch (er) {
-                console.log('Anti-bot error: ' + er);
+                console.log('Anti-bot error:', er);
             }
 
             // ========== COMMAND EXECUTION ==========
@@ -1469,10 +1553,6 @@ Please try again later or leave a message. Cheers! 😊`
                 
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
-                        // Use reliable image URL
-                        const startupImage = randomNjabulourl || "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
-                        
-                        // Create a simple text message instead of complex carousel
                         const startupText = `╭━━━━━━━━━━━━━━━━━━━━━━╮
 ┃   📊 *NJABULO-JB BOT ONLINE*
 ┃
