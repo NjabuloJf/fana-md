@@ -1,10 +1,10 @@
 {
   "name": "Njabulo_Jb",
-  "description": "Njabulo AI",
+  "description": "Njabulo AI WhatsApp Bot",
   "keywords": ["bot", "node", "baileys", "whatsapp"],
-  "logo": "https://files.catbox.moe/ety154.jpg",
+  "logo": "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
   "repository": "https://github.com/NjabuloJf/fana-md",
-  "succes_url": "/",
+  "success_url": "/",
   "stack": "container",
   "env": {
     "PREFIX": {
@@ -19,7 +19,7 @@
     },
     "AUTO_READ_STATUS": {
       "description": "♻️ Your contact status will be read automatically",
-      "value": "yes",
+      "value": "no",
       "required": false
     },
     "AUTO_DOWNLOAD_STATUS": {
@@ -29,17 +29,32 @@
     },
     "AUTOREACT_STATUS": {
       "description": "🎊 Enter yes for your bot to auto like status",
-      "value": "yes",
-      "required": true
+      "value": "no",
+      "required": false
+    },
+    "AUTO_REACT": {
+      "description": "🎭 Auto react to messages (yes/no)",
+      "value": "no",
+      "required": false
+    },
+    "CHATBOT": {
+      "description": "🤖 Enable AI chatbot (yes/no)",
+      "value": "no",
+      "required": false
+    },
+    "CHATBOT1": {
+      "description": "🤖 Enable AI chatbot with voice (yes/no)",
+      "value": "no",
+      "required": false
     },
     "BOT_NAME": {
       "description": "👤 Put a name for your bot",
-      "value": "Njabulo_Jb",
+      "value": "NJABULO JB",
       "required": false
     },
     "BOT_MENU_LINKS": {
       "description": "🖼️ Add one or many link for your bot menu",
-      "value": "https://files.catbox.moe/mh36c7.jpg",
+      "value": "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
       "required": false
     },
     "PUBLIC_MODE": {
@@ -50,36 +65,36 @@
     "HEROKU_APY_KEY": {
       "description": "📡 Insert your heroku api-key",
       "value": "",
-      "required": true
+      "required": false
     },
     "HEROKU_APP_NAME": {
       "description": "👥 Insert your heroku APP NAME",
       "value": "",
-      "required": true
+      "required": false
     },
     "SESSION_ID": {
-      "description": "📃 Put your session ID, the code you received after pairing code",
+      "description": "📃 Put your session ID with njabulo~ prefix",
       "value": "",
       "required": true
     },
     "OWNER_NAME": {
-      "desc": "👤 Your Name",
+      "description": "👤 Your Name",
       "required": false,
       "value": "Njabulo Jb"
     },
     "NUMERO_OWNER": {
-      "desc": "🍥 Your number, don't put '+' and put your area code",
-      "required": false,
+      "description": "🍥 Your number, don't put '+' and put your area code",
+      "required": true,
       "value": "26777821911"
     },
     "WARN_COUNT": {
-      "desc": "🚫 This is the limit of warn for warning commandes",
+      "description": "🚫 This is the limit of warn for warning commandes",
       "required": false,
       "value": "3"
     },
     "STARTING_BOT_MESSAGE": {
       "description": "💬 If you don't want starting bot message put no else put yes",
-      "required": true,
+      "required": false,
       "value": "yes"
     },
     "PRESENCE": {
@@ -89,7 +104,17 @@
     },
     "ANTI_DELETE_MESSAGE": {
       "description": "🚮 If you want to enable anti delete message put yes else put no",
+      "value": "no",
+      "required": false
+    },
+    "ANTI_CALL": {
+      "description": "📞 Block calls (yes/no)",
       "value": "yes",
+      "required": false
+    },
+    "PM_PERMIT": {
+      "description": "🔒 Allow PM commands (yes/no)",
+      "value": "no",
       "required": false
     }
   },
