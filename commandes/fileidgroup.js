@@ -33,7 +33,7 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = config.LANGUAGE || "en";
-    return await translateText("🌐 Channel", lang);
+    return await translateText("bot Channel", lang);
 }
 
 // ── Random image list ─────────────────────────────────────────────
