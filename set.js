@@ -11,7 +11,6 @@ const DATABASE_URL = process.env.DATABASE_URL === undefined ? databasePath : pro
 
 module.exports = { 
     // ========== SESSION CONFIGURATION ==========
-    // IMPORTANT: Set to empty to generate new QR
     SESSION_ID: process.env.SESSION_ID || "njabulo~",
     
     // ========== PREFIX ==========
