@@ -25,7 +25,7 @@ async function translateText(text, targetLang) {
 
 async function getTranslatedButton() {
     const lang = conf.LANGUAGE || "en";
-    const text = await translateText("🌐 WA Channel", lang);
+    const text = await translateText("bot Channel", lang);
     return text;
 }
 
