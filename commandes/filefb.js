@@ -79,13 +79,20 @@ async function getTranslatedTexts() {
         audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
         videoOption: await translateTextWithCache("2️⃣ Video (MP4)", lang),
         videoDocOption: await translateTextWithCache("3️⃣ Video Document", lang),
-        chooseOption: await translateTextWithCache("Reply with number 1, 2, or 3 to choose:", lang),
-        invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, or 3.", lang),
+        hdVideoOption: await translateTextWithCache("4️⃣ HD Video", lang),
+        sdVideoOption: await translateTextWithCache("5️⃣ SD Video", lang),
+        chooseOption: await translateTextWithCache("Reply with number 1, 2, 3, 4, or 5 to choose:", lang),
+        invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
         processingVideo: await translateTextWithCache("⏳ Processing video...", lang),
         downloadingAudio: await translateTextWithCache("⏳ Downloading audio...", lang),
         audioTitle: await translateTextWithCache("🎵 *Audio extracted from Facebook video*", lang),
         errorAudio: await translateTextWithCache("❌ Failed to extract audio. Please try again.", lang),
+        hdAvailable: await translateTextWithCache("✅ HD video available", lang),
+        sdAvailable: await translateTextWithCache("✅ SD video available", lang),
+        hdNotAvailable: await translateTextWithCache("⚠️ HD video not available, sending SD", lang),
+        sendingHd: await translateTextWithCache("📤 Sending HD video...", lang),
+        sendingSd: await translateTextWithCache("📤 Sending SD video...", lang),
     };
 }
 
@@ -101,6 +108,12 @@ const njabulox = [
     "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png"
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
+
+// ========== IS NUMBER SELECTION ==========
+const isNumberSelection = (text) => {
+    const num = parseInt(text);
+    return num >= 1 && num <= 5 && !isNaN(num);
+};
 
 // ========== CREATE CARDS WITH BUTTONS ==========
 async function createVideoCards(videoInfo, zk, ms, lang) {
@@ -125,7 +138,15 @@ async function createVideoCards(videoInfo, zk, ms, lang) {
                 (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
         },
         body: {
-            text: `${t.title} ${videoInfo.title || t.unknown}\n${t.quality} ${t.hdQuality}\n\n${t.selectFormat}\n\n${t.audioOption}\n${t.videoOption}\n${t.videoDocOption}\n\n${t.chooseOption}`,
+            text: `${t.title} ${videoInfo.title || t.unknown}\n` +
+                  `${t.quality} ${t.hdQuality}\n\n` +
+                  `${t.selectFormat}\n\n` +
+                  `${t.audioOption}\n` +
+                  `${t.videoOption}\n` +
+                  `${t.videoDocOption}\n` +
+                  `${t.hdVideoOption}\n` +
+                  `${t.sdVideoOption}\n\n` +
+                  `${t.chooseOption}`,
         },
         footer: {
             text: `🔹 Facebook Downloader`,
@@ -148,11 +169,13 @@ async function createVideoCards(videoInfo, zk, ms, lang) {
             text: `📌 *Quick Download*\n\n` +
                   `🔹 ${t.audioOption} - MP3 Audio\n` +
                   `🔹 ${t.videoOption} - MP4 Video\n` +
-                  `🔹 ${t.videoDocOption} - Video Document\n\n` +
+                  `🔹 ${t.videoDocOption} - Video Document\n` +
+                  `🔹 ${t.hdVideoOption} - Best Quality\n` +
+                  `🔹 ${t.sdVideoOption} - Standard Quality\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 Reply with 1, 2, or 3`,
+            text: `🔹 Reply with 1, 2, 3, 4, or 5`,
         },
         nativeFlowMessage: {
             buttons: [
@@ -214,12 +237,6 @@ fana({
     const lang = config.LANGUAGE || "en";
     const t = await getTranslatedTexts();
 
-    // Check if it's a number selection reply
-    const isNumberSelection = (text) => {
-        const num = parseInt(text);
-        return num >= 1 && num <= 3 && !isNaN(num);
-    };
-
     // Check if this is a reply with format selection
     const replyText = arg ? arg.join(' ') : '';
     if (replyText && isNumberSelection(replyText)) {
@@ -242,16 +259,19 @@ fana({
 
         switch(selectedNumber) {
             case 1:
-                // Download Audio
                 await downloadFacebookAudio(zk, dest, ms, data, lang);
                 break;
             case 2:
-                // Download Video (MP4)
-                await downloadFacebookVideo(zk, dest, ms, data, lang, false);
+                await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'mp4');
                 break;
             case 3:
-                // Download Video Document
-                await downloadFacebookVideo(zk, dest, ms, data, lang, true);
+                await downloadFacebookVideo(zk, dest, ms, data, lang, true, 'mp4');
+                break;
+            case 4:
+                await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'hd');
+                break;
+            case 5:
+                await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'sd');
                 break;
             default:
                 await repondre(t.invalidChoice);
@@ -285,7 +305,7 @@ fana({
             url: queryURL,
             thumbnail: result.thumbnail,
             hd: result.hd,
-            sd: result.sd,
+            sd: result.sd || result.hd,
             timestamp: Date.now()
         };
 
@@ -296,7 +316,6 @@ fana({
         await sendCarouselMessage(zk, dest, cards, ms);
 
         // ========== SETUP REPLY COLLECTOR ==========
-        // Remove old listener if exists
         if (zk._replyListener) {
             zk.ev.off('messages.upsert', zk._replyListener);
         }
@@ -309,23 +328,16 @@ fana({
                 const sender = msg.key.remoteJid;
                 const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
                 
-                // Check if sender has active download
                 if (!activeDownloads[sender]) return;
-                
-                // Check if it's a number selection (1-3)
                 if (!isNumberSelection(content)) return;
                 
                 const selectedNumber = parseInt(content);
                 const data = activeDownloads[sender];
                 
-                // Remove from active downloads
                 delete activeDownloads[sender];
-                
-                // Remove listener
                 zk.ev.off('messages.upsert', zk._replyListener);
                 zk._replyListener = null;
 
-                // Add reaction to the reply
                 try {
                     await zk.sendMessage(dest, {
                         react: { text: "📥", key: msg.key }
@@ -337,10 +349,16 @@ fana({
                         await downloadFacebookAudio(zk, dest, ms, data, lang);
                         break;
                     case 2:
-                        await downloadFacebookVideo(zk, dest, ms, data, lang, false);
+                        await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'mp4');
                         break;
                     case 3:
-                        await downloadFacebookVideo(zk, dest, ms, data, lang, true);
+                        await downloadFacebookVideo(zk, dest, ms, data, lang, true, 'mp4');
+                        break;
+                    case 4:
+                        await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'hd');
+                        break;
+                    case 5:
+                        await downloadFacebookVideo(zk, dest, ms, data, lang, false, 'sd');
                         break;
                     default:
                         await repondre(t.invalidChoice);
@@ -369,7 +387,7 @@ fana({
                 zk.ev.off('messages.upsert', zk._replyListener);
                 zk._replyListener = null;
             }
-        }, 60000); // 60 seconds timeout
+        }, 60000);
 
     } catch (error) {
         console.error("Error:", error);
@@ -378,28 +396,47 @@ fana({
 });
 
 // ========== DOWNLOAD FACEBOOK VIDEO ==========
-async function downloadFacebookVideo(zk, dest, ms, data, lang, isDocument) {
+async function downloadFacebookVideo(zk, dest, ms, data, lang, isDocument, quality) {
     try {
         const t = await getTranslatedTexts();
-        const videoUrl = data.hd || data.sd;
+        let videoUrl;
+        let qualityText = '';
+
+        if (quality === 'hd') {
+            videoUrl = data.hd;
+            qualityText = t.hdQuality;
+            await zk.sendMessage(dest, { text: t.sendingHd }, { quoted: ms });
+        } else if (quality === 'sd') {
+            videoUrl = data.sd || data.hd;
+            qualityText = t.sdQuality;
+            await zk.sendMessage(dest, { text: t.sendingSd }, { quoted: ms });
+        } else {
+            videoUrl = data.hd || data.sd;
+            qualityText = t.hdQuality;
+        }
         
         if (!videoUrl) {
-            await repondre(t.errorDownloading);
-            return;
+            if (quality === 'hd' && data.sd) {
+                // Fallback to SD if HD not available
+                videoUrl = data.sd;
+                qualityText = t.sdQuality;
+                await zk.sendMessage(dest, { text: t.hdNotAvailable }, { quoted: ms });
+            } else {
+                await repondre(t.errorDownloading);
+                return;
+            }
         }
 
         await zk.sendPresenceUpdate('recording', dest);
-        await zk.sendMessage(dest, { text: t.processingVideo }, { quoted: ms });
 
-        const fileName = `${data.title || 'facebook_video'}.mp4`;
+        const fileName = `${data.title || 'facebook_video'}_${qualityText}.mp4`;
 
         if (isDocument) {
-            // Send as video document
             await zk.sendMessage(dest, {
                 document: { url: videoUrl },
                 mimetype: 'video/mp4',
                 fileName: fileName,
-                caption: `${t.facebookVideo}\n\n${t.title} ${data.title || t.unknown}\n\n${t.downloadComplete}`,
+                caption: `${t.facebookVideo}\n\n${t.title} ${data.title || t.unknown}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${data.title || 'Facebook Video'}`,
@@ -411,10 +448,9 @@ async function downloadFacebookVideo(zk, dest, ms, data, lang, isDocument) {
                 },
             }, { quoted: ms });
         } else {
-            // Send as video
             await zk.sendMessage(dest, {
                 video: { url: videoUrl },
-                caption: `${t.videoReady}\n\n${t.title} ${data.title || t.unknown}\n\n${t.downloadComplete}`,
+                caption: `${t.videoReady}\n\n${t.title} ${data.title || t.unknown}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${data.title || 'Facebook Video'}`,
@@ -451,7 +487,6 @@ async function downloadFacebookAudio(zk, dest, ms, data, lang) {
         await zk.sendPresenceUpdate('recording', dest);
         await zk.sendMessage(dest, { text: t.downloadingAudio }, { quoted: ms });
 
-        // Download video as buffer and extract audio
         const response = await axios.get(videoUrl, { 
             responseType: 'arraybuffer',
             timeout: 60000
@@ -461,13 +496,11 @@ async function downloadFacebookAudio(zk, dest, ms, data, lang) {
             throw new Error('Failed to download video');
         }
 
-        // Create temp file
         const tempFile = `./temp_${Date.now()}.mp4`;
         const audioFile = `./audio_${Date.now()}.mp3`;
         
         fs.writeFileSync(tempFile, response.data);
 
-        // Convert to audio using ffmpeg
         const ffmpeg = require('fluent-ffmpeg');
         await new Promise((resolve, reject) => {
             ffmpeg(tempFile)
@@ -477,8 +510,6 @@ async function downloadFacebookAudio(zk, dest, ms, data, lang) {
                 .save(audioFile);
         });
 
-        // Send audio
-        const audioBuffer = fs.readFileSync(audioFile);
         const fileName = `${data.title || 'facebook_audio'}.mp3`;
 
         await zk.sendMessage(dest, {
@@ -497,7 +528,6 @@ async function downloadFacebookAudio(zk, dest, ms, data, lang) {
             },
         }, { quoted: ms });
 
-        // Clean up temp files
         try {
             fs.unlinkSync(tempFile);
             fs.unlinkSync(audioFile);
@@ -511,4 +541,4 @@ async function downloadFacebookAudio(zk, dest, ms, data, lang) {
             text: t.errorAudio 
         }, { quoted: ms });
     }
-            }
+                    }
