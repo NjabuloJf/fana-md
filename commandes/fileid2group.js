@@ -35,7 +35,7 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = conf.LANGUAGE || "en";
-    return await translateText("🌐 WA Channel", lang);
+    return await translateText("bot Channel", lang);
 }
 
 // ── Random image list ─────────────────────────────────────────────
@@ -263,7 +263,7 @@ fana({
     const errorOccurred = await translateText("❌ An error occurred while fetching the group invite link. Please try again.", lang);
     const hello = await translateText("👋 Hello", lang);
     const hereIsLink = await translateText("here is the group link of", lang);
-    const njabulo = await translateText("💫 NJABULO MD", lang);
+    const njabulo = await translateText("💫 sir njabulo Jb group link", lang);
 
     if (!verifGroupe) {
         await sendFormattedMessage(zk, origineMessage, groupsOnly, ms);
