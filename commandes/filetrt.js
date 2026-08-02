@@ -52,7 +52,7 @@ const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
 // ── Translate command with 3 cards ─────────────────────────────────────────────
 fana({
-    nomCom: "translate",
+    nomCom: "trt",
     alias: ["trt", "traduire", "tl"],
     categorie: "Use",
     reaction: "💗",
