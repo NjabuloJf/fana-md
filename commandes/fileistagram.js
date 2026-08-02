@@ -114,165 +114,126 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH INSTAGRAM INFO ==========
+// ========== FETCH INSTAGRAM INFO USING RELIABLE API ==========
 async function fetchInstagramInfo(url) {
-    // Try multiple free APIs
-    const apis = [
-        {
-            name: 'InstaDownloader',
-            url: `https://api.instadownloader.org/api/convert?url=${encodeURIComponent(url)}`,
-            parse: (data) => {
-                if (!data || !data.success) return null;
-                const r = data.result || data;
-                return {
-                    title: r.title || r.caption || "Instagram Post",
-                    author: r.owner_username || r.username || "Unknown",
-                    likes: r.like_count || 0,
-                    comments: r.comment_count || 0,
-                    thumbnail: r.thumbnail || r.cover || randomNjabulourl,
-                    videoUrl: r.video || r.url || r.download_url,
-                    images: r.images || r.image_urls || (r.thumbnail ? [r.thumbnail] : []),
-                    isVideo: r.video || r.is_video || false,
-                    isCarousel: r.is_carousel || (r.images && r.images.length > 1) || false,
-                    audioUrl: r.audio || null,
-                };
+    try {
+        // Use vxTwitter/Instagram API - Very reliable and free
+        const apiUrl = `https://api.vx.town/instagram?url=${encodeURIComponent(url)}`;
+        console.log(`🔄 Fetching Instagram: ${apiUrl}`);
+        
+        const response = await axios.get(apiUrl, { 
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
-        },
-        {
-            name: 'Instagram API',
-            url: `https://www.instagram.com/p/${extractCode(url)}/?__a=1&__d=1`,
-            parse: (data) => {
-                if (!data || !data.graphql) return null;
-                const r = data.graphql.shortcode_media;
-                if (!r) return null;
-                const isVideo = r.is_video || false;
-                const images = [];
-                if (r.edge_sidecar_to_children) {
-                    const edges = r.edge_sidecar_to_children.edges || [];
-                    for (const edge of edges) {
-                        const node = edge.node;
-                        if (node.is_video) {
-                            images.push({ type: 'video', url: node.video_url });
-                        } else {
-                            images.push({ type: 'image', url: node.display_url });
-                        }
-                    }
-                } else if (isVideo) {
-                    images.push({ type: 'video', url: r.video_url });
-                } else {
-                    images.push({ type: 'image', url: r.display_url });
-                }
-                return {
-                    title: r.edge_media_to_caption?.edges?.[0]?.node?.text || "Instagram Post",
-                    author: r.owner?.username || "Unknown",
-                    likes: r.edge_media_preview_like?.count || 0,
-                    comments: r.edge_media_to_comment?.count || 0,
-                    thumbnail: r.thumbnail_src || r.display_url || randomNjabulourl,
-                    videoUrl: r.video_url || null,
-                    images: images,
-                    isVideo: isVideo,
-                    isCarousel: r.edge_sidecar_to_children ? true : false,
-                    audioUrl: null,
-                };
+        });
+        
+        console.log(`📡 Response status:`, response.status);
+        
+        if (response.status === 200 && response.data) {
+            const data = response.data;
+            console.log('📡 Data received:', Object.keys(data));
+            
+            // Parse the response
+            const result = {
+                title: data.title || data.caption || "Instagram Post",
+                author: data.author || data.username || "Unknown",
+                likes: data.likes || data.like_count || 0,
+                comments: data.comments || data.comment_count || 0,
+                thumbnail: data.thumbnail || data.cover || randomNjabulourl,
+                videoUrl: data.video || data.video_url || data.url || null,
+                images: data.images || data.image_urls || (data.thumbnail ? [data.thumbnail] : []),
+                isVideo: data.is_video || (data.video && data.video.length > 0) || false,
+                isCarousel: data.is_carousel || (data.images && data.images.length > 1) || false,
+                audioUrl: data.audio || data.audio_url || null,
+                raw: data
+            };
+            
+            // If no images found but we have a thumbnail, use it
+            if (result.images.length === 0 && result.thumbnail) {
+                result.images = [result.thumbnail];
             }
-        },
-        {
-            name: 'SnapInsta',
-            url: `https://snapinsta.app/api/convert?url=${encodeURIComponent(url)}`,
-            parse: (data) => {
-                if (!data || !data.success) return null;
-                const r = data.result || data;
-                return {
-                    title: r.title || r.caption || "Instagram Post",
-                    author: r.author || r.username || "Unknown",
-                    likes: r.likes || 0,
-                    comments: r.comments || 0,
-                    thumbnail: r.thumbnail || r.cover || randomNjabulourl,
-                    videoUrl: r.video || r.url || r.download_url,
-                    images: r.images || r.image_urls || (r.thumbnail ? [r.thumbnail] : []),
-                    isVideo: r.video || r.is_video || false,
-                    isCarousel: r.is_carousel || (r.images && r.images.length > 1) || false,
-                    audioUrl: r.audio || null,
-                };
+            
+            // Check if it's a video post
+            if (result.videoUrl) {
+                result.isVideo = true;
             }
+            
+            console.log(`✅ Instagram data parsed: Video=${result.isVideo}, Images=${result.images.length}`);
+            return result;
         }
-    ];
-
-    // Helper to extract code from Instagram URL
-    function extractCode(url) {
-        const match = url.match(/\/p\/([^/?]+)/);
-        if (match) return match[1];
-        const match2 = url.match(/\/reel\/([^/?]+)/);
-        if (match2) return match2[1];
-        const match3 = url.match(/\/tv\/([^/?]+)/);
-        if (match3) return match3[1];
-        return null;
-    }
-
-    let lastError = null;
-
-    for (const api of apis) {
+        
+        throw new Error('No data received');
+        
+    } catch (error) {
+        console.error('❌ Instagram API error:', error.message);
+        
+        // Try backup API
         try {
-            console.log(`🔄 Trying Instagram API: ${api.name}`);
-            let apiUrl = api.url;
-            
-            // For Instagram API, we need the code
-            if (api.name === 'Instagram API') {
-                const code = extractCode(url);
-                if (!code) continue;
-                apiUrl = `https://www.instagram.com/p/${code}/?__a=1&__d=1`;
-            }
-            
-            const response = await axios.get(apiUrl, { 
-                timeout: 30000,
+            console.log('🔄 Trying backup API...');
+            const backupUrl = `https://www.instagram.com/p/${extractCode(url)}/?__a=1&__d=1`;
+            const response = await axios.get(backupUrl, {
+                timeout: 15000,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Accept': 'application/json',
                 }
             });
             
-            console.log(`📡 ${api.name} response status:`, response.status);
-            
-            if (response.status === 200) {
-                const parsed = api.parse(response.data);
-                if (parsed && (parsed.videoUrl || (parsed.images && parsed.images.length > 0))) {
-                    console.log(`✅ ${api.name} API successful!`);
-                    return parsed;
+            if (response.status === 200 && response.data && response.data.graphql) {
+                const r = response.data.graphql.shortcode_media;
+                if (r) {
+                    const isVideo = r.is_video || false;
+                    const images = [];
+                    if (r.edge_sidecar_to_children) {
+                        const edges = r.edge_sidecar_to_children.edges || [];
+                        for (const edge of edges) {
+                            const node = edge.node;
+                            if (node.is_video) {
+                                images.push({ type: 'video', url: node.video_url });
+                            } else {
+                                images.push({ type: 'image', url: node.display_url });
+                            }
+                        }
+                    } else if (isVideo) {
+                        images.push({ type: 'video', url: r.video_url });
+                    } else {
+                        images.push({ type: 'image', url: r.display_url });
+                    }
+                    
+                    const imageUrls = images.map(i => i.url || i);
+                    
+                    return {
+                        title: r.edge_media_to_caption?.edges?.[0]?.node?.text || "Instagram Post",
+                        author: r.owner?.username || "Unknown",
+                        likes: r.edge_media_preview_like?.count || 0,
+                        comments: r.edge_media_to_comment?.count || 0,
+                        thumbnail: r.thumbnail_src || r.display_url || randomNjabulourl,
+                        videoUrl: r.video_url || null,
+                        images: imageUrls,
+                        isVideo: isVideo,
+                        isCarousel: r.edge_sidecar_to_children ? true : false,
+                        audioUrl: null,
+                    };
                 }
             }
-        } catch (error) {
-            console.log(`❌ ${api.name} API failed:`, error.message);
-            lastError = error;
-            continue;
+        } catch (backupError) {
+            console.log('❌ Backup API also failed:', backupError.message);
         }
+        
+        throw error;
     }
+}
 
-    // If all APIs fail, try a final fallback using a simpler approach
-    try {
-        console.log('🔄 Trying final fallback...');
-        const response = await axios.get(`https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`, {
-            timeout: 15000
-        });
-        if (response.data && response.data.thumbnail_url) {
-            return {
-                title: response.data.title || "Instagram Post",
-                author: response.data.author_name || "Unknown",
-                likes: 0,
-                comments: 0,
-                thumbnail: response.data.thumbnail_url,
-                videoUrl: null,
-                images: [response.data.thumbnail_url],
-                isVideo: false,
-                isCarousel: false,
-                audioUrl: null,
-            };
-        }
-    } catch (e) {
-        console.log('Fallback failed:', e.message);
-    }
-
-    console.error('❌ All Instagram APIs failed');
-    throw new Error(lastError?.message || 'All APIs failed');
+// Helper to extract code from Instagram URL
+function extractCode(url) {
+    const match = url.match(/\/p\/([^/?]+)/);
+    if (match) return match[1];
+    const match2 = url.match(/\/reel\/([^/?]+)/);
+    if (match2) return match2[1];
+    const match3 = url.match(/\/tv\/([^/?]+)/);
+    if (match3) return match3[1];
+    return null;
 }
 
 // ========== CREATE CARDS WITH BUTTONS ==========
@@ -297,7 +258,6 @@ async function createInstagramCards(mediaInfo, zk, ms, lang) {
     const isCarousel = mediaInfo.isCarousel || (mediaInfo.images && mediaInfo.images.length > 1);
     const imageCount = mediaInfo.images ? mediaInfo.images.length : 0;
 
-    // Card 1: Media Info
     let imageMessage = null;
     try {
         if (thumbnail) {
@@ -337,7 +297,6 @@ async function createInstagramCards(mediaInfo, zk, ms, lang) {
         },
     };
 
-    // Card 2: Download Options
     const card2 = {
         header: {
             title: `📥 ${t.instagramPost}`,
@@ -644,7 +603,6 @@ async function downloadInstagramImage(zk, dest, ms, data, lang) {
         const t = await getTranslatedTexts();
         let imageUrl = null;
         
-        // Get the first image
         if (data.images && data.images.length > 0) {
             const firstImage = data.images[0];
             imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url || firstImage;
@@ -703,7 +661,7 @@ async function downloadInstagramCarousel(zk, dest, ms, data, lang) {
         await zk.sendMessage(dest, { text: t.sendingImages }, { quoted: ms });
 
         const title = data.title || "Instagram Carousel";
-        const totalImages = Math.min(images.length, 10); // Max 10 images
+        const totalImages = Math.min(images.length, 10);
 
         for (let i = 0; i < totalImages; i++) {
             const img = images[i];
@@ -725,7 +683,6 @@ async function downloadInstagramCarousel(zk, dest, ms, data, lang) {
                 },
             }, { quoted: ms });
             
-            // Small delay between images
             if (i < totalImages - 1) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
@@ -812,4 +769,4 @@ async function downloadInstagramAudio(zk, dest, ms, data, lang) {
             text: t.errorAudio 
         }, { quoted: ms });
     }
-                  } 
+        }
