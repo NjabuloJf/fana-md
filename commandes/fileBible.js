@@ -111,12 +111,12 @@ fana({
     const length = await translateText("📏 *Length:*", lang);
     const characters = await translateText("characters", lang);
     const date = await translateText("📅 *Date:*", lang);
-    const poweredBy = await translateText("💫 *Powered by:* NJABULO MD", lang);
+    const poweredBy = await translateText("💫 *Powered by:* hollpower Bible", lang);
     const mayThisVerse = await translateText("🕊️ *May this verse bless your day!*", lang);
     const shareWithOthers = await translateText("✨ *Share this verse with others*", lang);
     const letGodWord = await translateText("💫 *Let God's word guide you*", lang);
     const dailyBibleVerse = await translateText("📖 *Daily Bible Verse*", lang);
-    const bibleName = await translateText("💒 *NJABULO MD Bible*", lang);
+    const bibleName = await translateText("💒 *sir njabulo Jb Bible*", lang);
 
     await zk.sendPresenceUpdate('composing', chatId);
 
