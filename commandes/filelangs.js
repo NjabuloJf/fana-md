@@ -28,7 +28,7 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = conf.LANGUAGE || "en";
-    return await translateText("🌐 WA Channel", lang);
+    return await translateText("bot Channel", lang);
 }
 
 // ========== LANGUAGE NAMES ==========
