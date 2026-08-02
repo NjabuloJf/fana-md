@@ -29,7 +29,7 @@ let translateText = async (text, targetLang) => {
 // ========== TRANSLATED BUTTON FUNCTION ==========
 async function getTranslatedButton() {
     const lang = config.LANGUAGE || "en";
-    return await translateText("Copy", lang);
+    return await translateText("Copy fancy", lang);
 }
 
 // ── Random image list ─────────────────────────────────────────────
