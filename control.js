@@ -358,17 +358,12 @@ setTimeout(() => {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
         const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
         
-        // ========== FIX: REMOVED PROBLEMATIC OPTIONS ==========
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
-            // REMOVED: shouldSyncHistoryMessage (causing error)
-            // REMOVED: downloadHistory (causing error)
-            // REMOVED: syncFullHistory (causing error)
-            // REMOVED: generateHighQualityLinkPreview (causing error)
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -388,13 +383,13 @@ setTimeout(() => {
         const zk = (0, baileys_1.default)(sockOptions);
         store.bind(zk.ev);
 
-// ========== IMAGE URLS ==========
+// ========== IMAGE URLS (Reliable GitHub URLs) ==========
 const njabulox = [
-    "https://files.catbox.moe/iii5jv.jpg",
-    "https://files.catbox.moe/xjeyjh.jpg",
-    "https://files.catbox.moe/mh36c7.jpg",
-    "https://files.catbox.moe/u6v5ir.jpg",
-    "https://files.catbox.moe/bnb3vx.jpg"
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+    "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png"
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
@@ -1474,13 +1469,22 @@ Please try again later or leave a message. Cheers! 😊`
                 
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
-                        // Create cards for startup message
+                        // Use reliable image URL
+                        const startupImage = randomNjabulourl || "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png";
+                        
+                        let imageMessage = null;
+                        try {
+                            imageMessage = (await generateWAMessageContent({ image: { url: startupImage } }, { upload: zk.waUploadToServer })).imageMessage;
+                        } catch (imgError) {
+                            console.log('⚠️ Could not load image for startup message');
+                        }
+                        
                         const cards = [
                             {
                                 header: {
                                     title: `📊 ▢ *WhatsApp bot connected*`,
                                     hasMediaAttachment: true,
-                                    imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+                                    imageMessage: imageMessage,
                                 },
                                 body: {
                                     text: `❒│▸ ▢ *WhatsApp bot connected* \n\n` +
@@ -1515,7 +1519,7 @@ Please try again later or leave a message. Cheers! 😊`
                                 header: {
                                     title: `📊 ▢ *WhatsApp bot language set*`,
                                     hasMediaAttachment: true,
-                                    imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+                                    imageMessage: imageMessage,
                                 },
                                 body: {
                                     text: `❒│▸ ▢ *WhatsApp bot language set* \n` +
@@ -1567,6 +1571,15 @@ Please try again later or leave a message. Cheers! 😊`
                         console.log("✅ Startup message sent to bot DM");
                     } catch (e) {
                         console.log("❌ Failed to send startup message:", e.message);
+                        // Fallback: Send simple text
+                        try {
+                            await zk.sendMessage(zk.user.id, { 
+                                text: `✅ Njabulo-Jb Bot Connected!\n\nPrefix: ${prefixe}\nMode: ${md}\nLanguage: ${langName}\nTime: ${new Date().toLocaleString()}`
+                            });
+                            console.log("✅ Fallback startup text sent");
+                        } catch (fallbackError) {
+                            console.log("❌ Failed to send fallback startup message");
+                        }
                     }
                 }
             }
