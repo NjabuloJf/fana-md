@@ -45,6 +45,7 @@ const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
 const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
 let { reagir } = require(__dirname + "/njabulo/app");
+const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
@@ -134,6 +135,24 @@ async function getTranslatedGoodbye(lang) {
     const goodbyeLeft = await translateTextWithCache("has left the group", lang);
     const goodbyeRemaining = await translateTextWithCache("Remaining members", lang);
     return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
+}
+
+// ========== GET NAME FROM JID ==========
+async function getName(jid) {
+    try {
+        if (!jid) return "Unknown";
+        if (typeof jid === 'object') {
+            if (jid.phoneNumber) return jid.phoneNumber.split('@')[0];
+            if (jid.id) return jid.id.split('@')[0];
+            return "Unknown";
+        }
+        if (typeof jid === 'string') {
+            return jid.split('@')[0];
+        }
+        return "Unknown";
+    } catch (e) {
+        return "Unknown";
+    }
 }
 
 console.log("✅ Using Baileys from github:xhclintohn/Baileys");
@@ -266,7 +285,7 @@ async function authentification() {
 }
 authentification();
 
-// ========== FIX: Use polyfilled store instead of makeInMemoryStore ==========
+// ========== STORE POLYFILL ==========
 const store = {
     chats: new Map(),
     contacts: new Map(),
@@ -344,6 +363,10 @@ setTimeout(() => {
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
+            shouldSyncHistoryMessage: true,
+            downloadHistory: true,
+            syncFullHistory: true,
+            generateHighQualityLinkPreview: true,
             markOnlineOnConnect: false,
             keepAliveIntervalMs: 30_000,
             auth: {
@@ -363,109 +386,30 @@ setTimeout(() => {
         const zk = (0, baileys_1.default)(sockOptions);
         store.bind(zk.ev);
 
-const rateLimit = new Map();
-
-function isRateLimited(jid) {
-    const now = Date.now();
-    if (!rateLimit.has(jid)) {
-        rateLimit.set(jid, now);
-        return false;
-    }
-    const lastRequestTime = rateLimit.get(jid);
-    if (now - lastRequestTime < 3000) {
-        return true;
-    }
-    rateLimit.set(jid, now);
-    return false;
-}
-
-const groupMetadataCache = new Map();
-async function getGroupMetadata(zk, groupId) {
-    if (groupMetadataCache.has(groupId)) {
-        return groupMetadataCache.get(groupId);
-    }
-
-    try {
-        const metadata = await zk.groupMetadata(groupId);
-        groupMetadataCache.set(groupId, metadata);
-        setTimeout(() => groupMetadataCache.delete(groupId), 60000);
-        return metadata;
-    } catch (error) {
-        if (error.message && error.message.includes("rate-overlimit")) {
-            await new Promise(res => setTimeout(res, 5000));
-        }
-        return null;
-    }
-}
-
-process.on("uncaughtException", (err) => {});
-process.on("unhandledRejection", (err) => {});
-
-// ========== SILENT MESSAGE HANDLING ==========
-zk.ev.on("messages.upsert", async (m) => {
-    const { messages } = m;
-    if (!messages || messages.length === 0) return;
-
-    for (const ms of messages) {
-        if (!ms.message) continue;
-        const from = ms.key.remoteJid;
-        if (isRateLimited(from)) continue;
-    }
-});
-
-// ========== GROUP MESSAGE HANDLER ==========
-zk.ev.on("groups.update", async (updates) => {
-    for (const update of updates) {
-        const { id } = update;
-        if (!id.endsWith("@g.us")) continue;
-        await getGroupMetadata(zk, id);
-    }
-});
-
-// ========== MESSAGE HANDLER QUEUE ==========
-zk.ev.on("messages.upsert", async (m) => {
-    const { messages } = m;
-    if (!messages || messages.length === 0) return;
-
-    for (const ms of messages) {
-        if (!ms.message) continue;
-
-        const from = ms.key.remoteJid;
-        if (isRateLimited(from)) continue;
-
-        processingQueue.push({ from, message: ms.message });
-
-        if (!isProcessingQueue) processMessageQueue();
-    }
-});
-
-// ========== GROUP UPDATE HANDLER ==========
-zk.ev.on("groups.update", async (updates) => {
-    for (const update of updates) {
-        const { id } = update;
-        if (!id.endsWith("@g.us")) continue;
-
-        console.log(`🔄 Group update detected: ${id}`);
-
-        const metadata = await getGroupMetadata(zk, id);
-        if (metadata) {
-            console.log(`📜 Updated group info:`, metadata.subject);
-        }
-    }
-});
+// ========== IMAGE URLS ==========
+const njabulox = [
+    "https://files.catbox.moe/iii5jv.jpg",
+    "https://files.catbox.moe/xjeyjh.jpg",
+    "https://files.catbox.moe/mh36c7.jpg",
+    "https://files.catbox.moe/u6v5ir.jpg",
+    "https://files.catbox.moe/bnb3vx.jpg"
+];
+const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
 // ========== WELCOME & GOODBYE WITH IMAGE ==========
 const { recupevents } = require('./bdd/welcome');
 
+async function getProfilePic(jid) {
+    try {
+        const pp = await zk.profilePictureUrl(jid, 'image');
+        return pp;
+    } catch {
+        return randomNjabulourl;
+    }
+}
+
 zk.ev.on('group-participants.update', async (group) => {
     console.log('Group update detected:', group);
-
-    let ppgroup;
-    try {
-        ppgroup = await zk.profilePictureUrl(group.id, 'image');
-    } catch {
-        ppgroup = 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png';
-    }
 
     const lang = conf.LANGUAGE || "en";
 
@@ -473,76 +417,96 @@ zk.ev.on('group-participants.update', async (group) => {
         const metadata = await zk.groupMetadata(group.id);
         const groupName = metadata.subject;
         const participantCount = metadata.participants.length;
+        const currentTime = new Date();
+        const joinTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const joinDate = currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+        // ========== WELCOME ==========
         if (group.action === 'add' && (await recupevents(group.id, "welcome") === 'on')) {
             const translated = await getTranslatedWelcome(lang);
             let membres = group.participants;
-            let msg = `*${translated.welcomeTitle}*\n\n`;
             
             for (let membre of membres) {
-                msg += `┃ ${translated.welcomeHey} @${membre.split("@")[0]}!\n`;
-            }
-            
-            msg += `\n┃ 📱 *Group:* ${groupName}\n`;
-            msg += `┃ 👥 *Members:* ${participantCount}\n\n`;
-            msg += `┃ ${translated.welcomeRules}\n\n`;
-            msg += `┃ ${translated.welcomeEnjoy}\n`;
-            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+                try {
+                    const memberJid = membre.phoneNumber || membre.id;
+                    if (!memberJid) continue;
+                    
+                    const memberName = await getName(memberJid);
+                    const memberPP = await getProfilePic(memberJid);
+                    
+                    const msg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃     ${translated.welcomeTitle}
+┃
+┃ ${translated.welcomeHey} *${memberName}*!
+┃
+┃ 📱 *Number:* ${memberJid.split("@")[0]}
+┃ 📱 *Group:* ${groupName}
+┃ 👥 *Members:* ${participantCount}
+┃
+┃ 🕐 *Joined at:* ${joinTime}
+┃ 📅 *Date:* ${joinDate}
+┃
+┃ ${translated.welcomeRules}
+┃
+┃ ${translated.welcomeEnjoy}
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-            zk.sendMessage(group.id, { 
-                image: { url: ppgroup }, 
-                caption: msg, 
-                mentions: membres 
-            });
-            
-        } else if (group.action === 'remove' && (await recupevents(group.id, "goodbye") === 'on')) {
+                    await zk.sendMessage(group.id, { 
+                        image: { url: memberPP || randomNjabulourl }, 
+                        caption: msg, 
+                        mentions: [memberJid] 
+                    });
+                    
+                    console.log(`✅ Welcome message sent to ${memberName}`);
+                } catch (memberError) {
+                    console.error(`Welcome error for participant:`, memberError.message);
+                }
+            }
+        }
+        
+        // ========== GOODBYE ==========
+        if (group.action === 'remove' && (await recupevents(group.id, "goodbye") === 'on')) {
             const translated = await getTranslatedGoodbye(lang);
             let membres = group.participants;
-            let msg = `*${translated.goodbyeTitle}*\n\n`;
             
             for (let membre of membres) {
-                msg += `┃ 😢 @${membre.split("@")[0]} ${translated.goodbyeLeft}\n`;
+                try {
+                    const memberJid = membre.phoneNumber || membre.id;
+                    if (!memberJid) continue;
+                    
+                    const memberName = await getName(memberJid);
+                    const memberPP = await getProfilePic(memberJid);
+                    
+                    const msg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
+┃        ${translated.goodbyeTitle}
+┃
+┃ 😢 *${memberName}* ${translated.goodbyeLeft}
+┃
+┃ 📱 *Number:* ${memberJid.split("@")[0]}
+┃ 📱 *Group:* ${groupName}
+┃ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}
+┃
+┃ 🕐 *Left at:* ${joinTime}
+┃ 📅 *Date:* ${joinDate}
+┃
+┃ ${translated.goodbyeLeft}
+╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+                    await zk.sendMessage(group.id, { 
+                        image: { url: memberPP || randomNjabulourl }, 
+                        caption: msg, 
+                        mentions: [memberJid] 
+                    });
+                    
+                    console.log(`✅ Goodbye message sent for ${memberName}`);
+                } catch (memberError) {
+                    console.error(`Goodbye error for participant:`, memberError.message);
+                }
             }
-            
-            msg += `\n┃ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}\n`;
-            msg += `╰━━━━━━━━━━━━━━━━━━━━━━╯`;
-
-            zk.sendMessage(group.id, { 
-                image: { url: ppgroup }, 
-                caption: msg, 
-                mentions: membres 
-            });
-            
-        } else if (group.action === 'promote' && (await recupevents(group.id, "antipromote") === 'on')) {
-            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
-                console.log('Cas de superUser je fais rien'); 
-                return; 
-            }
-
-            await zk.groupParticipantsUpdate(group.id, [group.author, group.participants[0]], "demote");
-
-            zk.sendMessage(group.id, {
-                text: `@${(group.author).split("@")[0]} has violated the anti-promotion rule, therefore both ${group.author.split("@")[0]} and @${(group.participants[0]).split("@")[0]} have been removed from administrative rights.`,
-                mentions: [group.author, group.participants[0]]
-            });
-
-        } else if (group.action === 'demote' && (await recupevents(group.id, "antidemote") === 'on')) {
-            if (group.author == metadata.owner || group.author == conf.NUMERO_OWNER + '@s.whatsapp.net' || group.author == decodeJid(zk.user.id) || group.author == group.participants[0]) { 
-                console.log('Cas de superUser je fais rien'); 
-                return; 
-            }
-
-            await zk.groupParticipantsUpdate(group.id, [group.author], "demote");
-            await zk.groupParticipantsUpdate(group.id, [group.participants[0]], "promote");
-
-            zk.sendMessage(group.id, {
-                text: `@${(group.author).split("@")[0]} has violated the anti-demotion rule by removing @${(group.participants[0]).split("@")[0]}. Consequently, he has been stripped of administrative rights.`,
-                mentions: [group.author, group.participants[0]]
-            });
         }
 
     } catch (e) {
-        console.error(e);
+        console.error("Group update error:", e.message);
     }
 });
 
@@ -1507,15 +1471,101 @@ Please try again later or leave a message. Cheers! 😊`
                 const langName = languageNames[currentLang] || "English";
                 
                 if((conf.DP || "").toLowerCase() === 'yes') {
-                    let cmsg = `╭─────────────━┈⊷ 
-│ *NJABULO-JB BOT CONNECTED*
-╰─────────────━┈⊷
-│ ᴘʀᴇғɪx: *[ ${prefixe} ]*
-│ ᴍᴏᴅᴇ: *${md}*
-│ ʟᴀɴɢᴜᴀɢᴇ: *${langName}*
-╰─────────────━┈⊷`;
-                    
-                    await zk.sendMessage(zk.user.id, { text: cmsg });
+                    try {
+                        // Create cards for startup message
+                        const cards = [
+                            {
+                                header: {
+                                    title: `📊 ▢ *WhatsApp bot connected*`,
+                                    hasMediaAttachment: true,
+                                    imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+                                },
+                                body: {
+                                    text: `❒│▸ ▢ *WhatsApp bot connected* \n\n` +
+                                          `❒│▸ ▢ *Prefix:* ${prefixe}\n` +
+                                          `❒│▸ ▢ *Date:* ${new Date().toLocaleDateString()}\n` +
+                                          `❒│▸ ▢ *Time:* ${new Date().toLocaleTimeString()}\n` +
+                                          `❒│▸ ▢ *Mode:* ${md}\n` +
+                                          `❒│▸ ▢ *WhatsApp:* (ʀᴏʙᴏᴛ)\n` +
+                                          `❒│▸ ▢ *Owner:* (ɴᴊᴀʙᴜʟᴏ)`,
+                                },
+                                footer: {
+                                    text: "",
+                                },
+                                nativeFlowMessage: {
+                                    buttons: [
+                                        {
+                                            buttonId: ".menu",
+                                            buttonText: { displayText: "Available" },
+                                            type: 1
+                                        },
+                                        {
+                                            name: "cta_url",
+                                            buttonParamsJson: JSON.stringify({
+                                                display_text: "Bot Channel",
+                                                url: conf.GURL || "https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509"
+                                            }),
+                                        },
+                                    ],
+                                },
+                            },
+                            {
+                                header: {
+                                    title: `📊 ▢ *WhatsApp bot language set*`,
+                                    hasMediaAttachment: true,
+                                    imageMessage: (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage,
+                                },
+                                body: {
+                                    text: `❒│▸ ▢ *WhatsApp bot language set* \n` +
+                                          `❒│▸ ▢ *Use: (setlang)*\n` +
+                                          `❒│▸ ▢ *Use: language*\n` +
+                                          `❒│▸ ▢ *Use (settings)*\n` +
+                                          `❒│▸ ▢ *Google language v.....*\n` +
+                                          `❒│▸ ▢ *Language (${langName})*\n` +
+                                          `❒│▸ ▢ *Owner:* (ɴᴊᴀʙᴜʟᴏ)`,
+                                },
+                                footer: {
+                                    text: "",
+                                },
+                                nativeFlowMessage: {
+                                    buttons: [
+                                        {
+                                            name: "cta_url",
+                                            buttonParamsJson: JSON.stringify({
+                                                display_text: "𝗪𝗮 𝗖𝗵𝗮𝗻𝗻𝗲𝗹",
+                                                url: conf.GURL || "https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509"
+                                            }),
+                                        },
+                                    ],
+                                },
+                            },
+                        ];
+
+                        const message = generateWAMessageFromContent(
+                            zk.user.id,
+                            {
+                                viewOnceMessage: {
+                                    message: {
+                                        messageContextInfo: {
+                                            deviceListMetadata: {},
+                                            deviceListMetadataVersion: 2,
+                                        },
+                                        interactiveMessage: {
+                                            header: { text: `🔍 System Info` },
+                                            body: { text: `*📂 Njabulo Jb has been connected*` },
+                                            headerType: 1,
+                                            carouselMessage: { cards },
+                                        },
+                                    },
+                                },
+                            }
+                        );
+                        
+                        await zk.relayMessage(zk.user.id, message.message, { messageId: message.key.id });
+                        console.log("✅ Startup message sent to bot DM");
+                    } catch (e) {
+                        console.log("❌ Failed to send startup message:", e.message);
+                    }
                 }
             }
             else if (connection == "close") {
