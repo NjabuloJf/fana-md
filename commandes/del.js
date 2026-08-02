@@ -30,7 +30,7 @@ async function sendMessage(zk, chatId, text, ms) {
     const lang = conf.LANGUAGE || "en";
     
     // Translate button text
-    const buttonText = await translateText("🌐 WA Channel", lang);
+    const buttonText = await translateText("bot Channels", lang);
     
     const buttons = [
         {
@@ -38,7 +38,7 @@ async function sendMessage(zk, chatId, text, ms) {
             buttonParamsJson: JSON.stringify({
                 display_text: buttonText,
                 id: "backup channel",
-                url: "https://whatsapp.com/channel/0029VbAckOZ7tkj92um4KN3u"
+                url: config.GURL
             }),
         }
     ];
