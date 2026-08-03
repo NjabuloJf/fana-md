@@ -133,60 +133,41 @@ async function fetchInstagramInfo(url) {
             const data = response.data;
             console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
             
-            // Parse the response - Check different possible response formats
-            let result = null;
+            // Parse the response from Noobs API
+            let result = {
+                title: data.videoTitle || data.title || data.caption || "Instagram Post",
+                author: data.author || data.username || "Unknown",
+                likes: data.likes || data.like_count || 0,
+                comments: data.comments || data.comment_count || 0,
+                thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
+                videoUrl: data.result || data.video || data.video_url || null,
+                images: data.imageUrl ? [data.imageUrl] : (data.images || []),
+                isVideo: true,
+                isCarousel: false,
+                audioUrl: null,
+                raw: data
+            };
             
-            // Try to find the data in different possible formats
-            const rawData = data.data || data.result || data;
-            
-            if (rawData) {
-                // Check if it's a video
-                const isVideo = rawData.is_video || rawData.isVideo || 
-                               (rawData.video_url && rawData.video_url.length > 0) ||
-                               (rawData.video && rawData.video.length > 0);
-                
-                // Get images
-                let images = [];
-                if (rawData.images && Array.isArray(rawData.images)) {
-                    images = rawData.images.map(img => typeof img === 'string' ? img : img.url || img);
-                } else if (rawData.image_urls && Array.isArray(rawData.image_urls)) {
-                    images = rawData.image_urls;
-                } else if (rawData.thumbnail) {
-                    images = [rawData.thumbnail];
-                } else if (rawData.cover) {
-                    images = [rawData.cover];
-                } else if (rawData.display_url) {
-                    images = [rawData.display_url];
-                }
-                
-                // Get video URL
-                let videoUrl = rawData.video_url || rawData.video || rawData.video_download_url || 
-                              rawData.download_url || rawData.url || null;
-                
-                // If videoUrl is an array, get the first one
-                if (Array.isArray(videoUrl)) {
-                    videoUrl = videoUrl[0];
-                }
-                
-                result = {
-                    title: rawData.title || rawData.caption || rawData.description || "Instagram Post",
-                    author: rawData.author || rawData.username || rawData.owner_username || "Unknown",
-                    likes: rawData.likes || rawData.like_count || 0,
-                    comments: rawData.comments || rawData.comment_count || 0,
-                    thumbnail: rawData.thumbnail || rawData.cover || rawData.thumbnail_src || images[0] || randomNjabulourl,
-                    videoUrl: videoUrl,
-                    images: images,
-                    isVideo: isVideo,
-                    isCarousel: rawData.is_carousel || rawData.isCarousel || (images && images.length > 1) || false,
-                    audioUrl: rawData.audio_url || rawData.audio || rawData.music_url || null,
-                    raw: rawData
-                };
+            // If there's a result URL, that's the video
+            if (data.result) {
+                result.videoUrl = data.result;
             }
             
-            if (result && (result.videoUrl || (result.images && result.images.length > 0))) {
-                console.log(`✅ Instagram data parsed: Video=${result.isVideo}, Images=${result.images.length}`);
-                return result;
+            // Check if it's a carousel (multiple images)
+            if (data.images && data.images.length > 1) {
+                result.isCarousel = true;
+                result.isVideo = false;
+                result.videoUrl = null;
             }
+            
+            // If there's an imageUrl but no video, it's an image
+            if (data.imageUrl && !data.result) {
+                result.isVideo = false;
+                result.images = [data.imageUrl];
+            }
+            
+            console.log(`✅ Instagram data parsed: Video=${result.isVideo}, Images=${result.images.length}, VideoUrl=${result.videoUrl ? 'Yes' : 'No'}`);
+            return result;
         }
         
         throw new Error('No data received from API');
@@ -734,4 +715,4 @@ async function downloadInstagramAudio(zk, dest, ms, data, lang) {
             text: t.errorAudio 
         }, { quoted: ms });
     }
-            }
+        }
