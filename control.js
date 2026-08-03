@@ -886,6 +886,13 @@ zk.ev.on('group-participants.update', async (group) => {
           }
         });
 
+        if (conf.PERFORMANCE_LOG === "yes") {
+    const startTime = Date.now();
+    // ... process command ...
+    const endTime = Date.now();
+    console.log(`⏱️ Command ${com} took ${endTime - startTime}ms`);
+        }
+
 // ========== ARRAY OF REACTION EMOJIS ==========
 const emojiMap = {
     "hello": ["👋", "🙂", "😊", "🙋‍♂️", "🙋‍♀️"],
