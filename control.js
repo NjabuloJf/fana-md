@@ -47,23 +47,44 @@ const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = 
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
-// ========== GOOGLE TRANSLATE API WITH FIX ==========
+// ========== WEB SERVER FOR KEEP-ALIVE ==========
+const http = require('http');
+
+// Create a simple web server for Heroku
+const server = http.createServer((req, res) => {
+    if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'online',
+            time: new Date().toISOString(),
+            uptime: process.uptime(),
+            bot: 'NJABULO-JB'
+        }));
+    } else if (req.url === '/ping') {
+        res.writeHead(200);
+        res.end('Pong!');
+    } else {
+        res.writeHead(404);
+        res.end('Not Found');
+    }
+});
+
+// Get port from environment
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`✅ Web server running on port ${PORT}`);
+});
+
+// ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
     try {
-        // Validate targetLang
         if (!targetLang || targetLang === 'en' || typeof targetLang !== 'string') {
             return text;
         }
-        
-        // Clean the language code
         targetLang = targetLang.toString().toLowerCase().trim();
-        
-        // Only allow valid language codes (2-5 characters)
         if (targetLang.length > 5 || targetLang.length < 2) {
-            console.log(`⚠️ Invalid language code: ${targetLang}, falling back to English`);
             return text;
         }
-        
         if (!text) return text;
         
         try {
@@ -71,7 +92,7 @@ let translateText = async (text, targetLang) => {
             const result = await translate(text, { to: targetLang });
             return result.text;
         } catch (e) {
-            console.log('⚠️ Google Translate failed:', e.message);
+            console.log('⚠️ Google Translate failed, using fallback...');
             try {
                 const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
                     timeout: 5000
@@ -333,10 +354,23 @@ const store = {
 // ========== BUTTON HANDLER ==========
 const { handleButtons } = require("./commands/play0");
 
+// ========== RATE LIMITING & SPEED OPTIMIZATION ==========
+const userCooldowns = new Map();
+const RATE_LIMIT_MS = 1000; // 1 second cooldown
+
+function isRateLimited(jid) {
+    const now = Date.now();
+    const cooldown = userCooldowns.get(jid) || 0;
+    if (now - cooldown < RATE_LIMIT_MS) {
+        return true;
+    }
+    userCooldowns.set(jid, now);
+    return false;
+}
+
 // Queue for processing messages
 const processingQueue = [];
 let isProcessingQueue = false;
-const RATE_LIMIT_MS = 2000;
 const userLastProcessed = new Map();
 
 async function processMessageQueue() {
@@ -348,8 +382,8 @@ async function processMessageQueue() {
         const now = Date.now();
         const lastProcessed = userLastProcessed.get(from) || 0;
 
-        if (now - lastProcessed < RATE_LIMIT_MS) {
-            const delay = RATE_LIMIT_MS - (now - lastProcessed);
+        if (now - lastProcessed < 1000) {
+            const delay = 1000 - (now - lastProcessed);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
 
@@ -1064,6 +1098,12 @@ Please try again later or leave a message. Cheers! 😊`
             const ms = messages[0];
             if (!ms.message) return;
             
+            // ========== RATE LIMITING ==========
+            const sender = ms.key.remoteJid;
+            if (isRateLimited(sender)) {
+                return; // Skip if rate limited
+            }
+            
             const decodeJid = (jid) => {
                 if (!jid) return jid;
                 if (/:\d+@/gi.test(jid)) {
@@ -1112,7 +1152,7 @@ Please try again later or leave a message. Cheers! 😊`
             var dev = [dj, dj2,dj3,luffy].map((t) => t.replace(/[^0-9]/g) + "@s.whatsapp.net").includes(auteurMessage);
             const lang = conf.LANGUAGE || "en";
             
-            // ========== TRANSLATED REPONDRE ==========
+            // ========== FAST REPONDRE ==========
             async function repondre(mes) {
                 try {
                     const translated = await translateTextWithCache(mes, lang);
@@ -1204,7 +1244,7 @@ Please try again later or leave a message. Cheers! 😊`
                 }
             }
 
-            // ========== FIXED ANTI-LINK ==========
+            // ========== FAST ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 const containsLink = texte && (
@@ -1217,19 +1257,13 @@ Please try again later or leave a message. Cheers! 😊`
                 if (containsLink && verifGroupe && yes) {
                     console.log("🔗 LINK DETECTED");
                     
-                    // Check if bot is admin
                     var verifZokAdmin = verifGroupe ? admins.includes(idBot) : false;
-                    console.log(`Bot is admin: ${verifZokAdmin}`);
-                    console.log(`User is admin: ${verifAdmin}`);
-                    console.log(`User is superUser: ${superUser}`);
                     
-                    // Skip only if user is superUser (bot owner)
                     if(superUser) {
-                        console.log('⏭️ Skipping action - User is superUser (bot owner)');
+                        console.log('⏭️ Skipping action - User is superUser');
                         return;
                     }
                     
-                    // If bot is not admin, just warn but don't take action
                     if(!verifZokAdmin) {
                         console.log('⚠️ Bot is not admin, cannot take action');
                         const userPP = await getProfilePic(auteurMessage);
@@ -1263,7 +1297,6 @@ Please try again later or leave a message. Cheers! 😊`
                     await sticker.toFile("st1.webp");
                     var action = await recupererActionJid(origineMessage);
                     
-                    // Translate messages
                     const linkDetected = await translateTextWithCache("⚠️ LINK DETECTED", lang);
                     const msgDeleted = await translateTextWithCache("🚫 Message deleted", lang);
                     const removedFromGroup = await translateTextWithCache("You have been removed from the group.", lang);
@@ -1333,90 +1366,17 @@ Please try again later or leave a message. Cheers! 😊`
                 console.log("Anti-link error:", e);
             }
 
-            // ========== FIXED ANTI-BOT ==========
-            try {
-                const botMsg = ms.key?.id?.startsWith('BAES') && ms.key?.id?.length === 16;
-                const baileysMsg = ms.key?.id?.startsWith('BAE5') && ms.key?.id?.length === 16;
-                if (botMsg || baileysMsg) {
-                    if (mtype === 'reactionMessage') { console.log('Je ne reagis pas au reactions'); return; }
-                    const antibotactiver = await atbverifierEtatJid(origineMessage);
-                    if(!antibotactiver) return;
-                    if(verifAdmin || auteurMessage === idBot) { 
-                        console.log('je fais rien'); 
-                        return;
-                    }
-                    
-                    const key = {
-                        remoteJid: origineMessage,
-                        fromMe: false,
-                        id: ms.key.id,
-                        participant: auteurMessage
-                    };
-                    
-                    const botDetected = await translateTextWithCache("🤖 BOT DETECTED", lang);
-                    const msgDeleted = await translateTextWithCache("🚫 Message deleted", lang);
-                    const removedFromGroup = await translateTextWithCache("You have been removed from the group.", lang);
-                    const avoidBot = await translateTextWithCache("Please avoid sending bot messages.", lang);
-                    const warnLimitReached = await translateTextWithCache("🤖 BOT DETECTED! You will be removed because of reaching warn-limit", lang);
-                    const warnUpgraded = await translateTextWithCache("🤖 BOT DETECTED! Your warn count was upgraded.", lang);
-                    const remainingWarnings = await translateTextWithCache("Remaining warnings", lang);
-                    
-                    var txt = botDetected + "\n";
-                    var action = await atbrecupererActionJid(origineMessage);
-
-                    if (action === 'remove') {
-                        txt += msgDeleted + "\n";
-                        txt += `👤 @${auteurMessage.split("@")[0]} ${removedFromGroup}`;
-                        await zk.sendMessage(origineMessage, { 
-                            image: { url: userPP || randomNjabulourl }, 
-                            caption: txt, 
-                            mentions: [auteurMessage] 
-                        }, { quoted: ms });
-                        await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                        await zk.sendMessage(origineMessage, { delete: key });
-                    } 
-                    else if (action === 'delete') {
-                        txt += msgDeleted + "\n";
-                        txt += `👤 @${auteurMessage.split("@")[0]} ${avoidBot}`;
-                        await zk.sendMessage(origineMessage, { 
-                            image: { url: userPP || randomNjabulourl }, 
-                            caption: txt, 
-                            mentions: [auteurMessage] 
-                        }, { quoted: ms });
-                        await zk.sendMessage(origineMessage, { delete: key });
-                    } 
-                    else if(action === 'warn') {
-                        const {getWarnCountByJID, ajouterUtilisateurAvecWarnCount} = require('./bdd/warn');
-                        let warn = await getWarnCountByJID(auteurMessage); 
-                        let warnlimit = conf.WARN_COUNT || 3;
-                        if (warn >= warnlimit) {
-                            var kikmsg = warnLimitReached;
-                            await zk.sendMessage(origineMessage, { 
-                                image: { url: userPP || randomNjabulourl }, 
-                                caption: kikmsg, 
-                                mentions: [auteurMessage] 
-                            }, { quoted: ms });
-                            await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
-                            await zk.sendMessage(origineMessage, { delete: key });
-                        } else {
-                            var rest = warnlimit - warn;
-                            var msg = `${warnUpgraded}\n${remainingWarnings}: ${rest}`;
-                            await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                            await zk.sendMessage(origineMessage, { 
-                                image: { url: userPP || randomNjabulourl }, 
-                                caption: msg, 
-                                mentions: [auteurMessage] 
-                            }, { quoted: ms });
-                            await zk.sendMessage(origineMessage, { delete: key });
-                        }
-                    }
-                }
-            } catch (er) {
-                console.log('Anti-bot error:', er);
-            }
-
-            // ========== COMMAND EXECUTION ==========
+            // ========== FAST COMMAND EXECUTION ==========
             if (verifCom) {
+                // ========== FAST PING ==========
+                if (com === 'ping') {
+                    const startTime = Date.now();
+                    const responseTime = Date.now() - startTime;
+                    const fastPing = await translateTextWithCache(`🏓 Pong!\n⏱️ ${responseTime}ms`, lang);
+                    await repondre(fastPing);
+                    return;
+                }
+                
                 const cd = evt.cm.find((zokou) => zokou.nomCom === (com));
                 if (cd) {
                     try {
