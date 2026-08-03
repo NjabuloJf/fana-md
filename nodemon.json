@@ -1,0 +1,9 @@
+{
+  "watch": ["control.js", "commandes", "njabulo", "bdd"],
+  "ignore": ["sessions/*", "auth/*", "node_modules/*"],
+  "ext": "js,json",
+  "delay": 1000,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
