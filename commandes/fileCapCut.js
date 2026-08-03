@@ -74,16 +74,14 @@ async function getTranslatedTexts() {
         downloadComplete: await translateTextWithCache("✅ *Download complete!*", lang),
         errorDownloading: await translateTextWithCache("❌ *Error downloading*", lang),
         checkLink: await translateTextWithCache("Please check the link and try again.", lang),
-        pleaseInsert: await translateTextWithCache("⚠️ *Please insert a YouTube link!*", lang),
+        pleaseInsert: await translateTextWithCache("⚠️ *Please insert a CapCut link!*", lang),
         example: await translateTextWithCache("📌 Example:", lang),
         videoReady: await translateTextWithCache("🎬 *Your video is ready!*", lang),
-        audioReady: await translateTextWithCache("🎵 *Your audio is ready!*", lang),
-        youtubeVideo: await translateTextWithCache("📥 *YOUTUBE VIDEO*", lang),
+        capcutVideo: await translateTextWithCache("📥 *CAPCUT TEMPLATE*", lang),
         title: await translateTextWithCache("📹 *Title:*", lang),
-        channel: await translateTextWithCache("📺 *Channel:*", lang),
-        duration: await translateTextWithCache("⏱️ *Duration:*", lang),
-        views: await translateTextWithCache("👁️ *Views:*", lang),
+        author: await translateTextWithCache("👤 *Author:*", lang),
         likes: await translateTextWithCache("❤️ *Likes:*", lang),
+        uses: await translateTextWithCache("📊 *Uses:*", lang),
         unknown: await translateTextWithCache("Unknown", lang),
         selectFormat: await translateTextWithCache("📌 *Select format:*", lang),
         audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
@@ -95,7 +93,7 @@ async function getTranslatedTexts() {
         invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
         processing: await translateTextWithCache("⏳ Processing...", lang),
-        fetchingInfo: await translateTextWithCache("📡 Fetching video info...", lang),
+        fetchingInfo: await translateTextWithCache("📡 Fetching template info...", lang),
         apiFailed: await translateTextWithCache("⚠️ API is currently unavailable. Please try again later.", lang),
         noMediaFound: await translateTextWithCache("❌ No media found for this link.", lang),
         quality: await translateTextWithCache("📎 *Quality:*", lang),
@@ -121,11 +119,11 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH YOUTUBE INFO ==========
-async function fetchYouTubeInfo(url) {
+// ========== FETCH CAPCUT INFO ==========
+async function fetchCapCutInfo(url) {
     try {
         const apiUrl = `https://noobs-api.top/dipto/alldl?url=${encodeURIComponent(url)}`;
-        console.log(`🔄 Fetching YouTube: ${apiUrl}`);
+        console.log(`🔄 Fetching CapCut: ${apiUrl}`);
         
         const response = await axios.get(apiUrl, { 
             timeout: 30000,
@@ -139,11 +137,10 @@ async function fetchYouTubeInfo(url) {
             console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
             
             const result = {
-                title: data.videoTitle || data.title || "YouTube Video",
-                channel: data.author || data.channel || data.uploader || "Unknown",
-                duration: data.duration || "0:00",
-                views: data.views || data.viewCount || 0,
-                likes: data.likes || data.likeCount || 0,
+                title: data.videoTitle || data.title || data.caption || "CapCut Template",
+                author: data.author || data.username || "Unknown",
+                likes: data.likes || 0,
+                uses: data.uses || 0,
                 thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
                 videoUrl: data.result || data.video || data.video_url || null,
                 audioUrl: data.audio || data.audio_url || null,
@@ -151,18 +148,18 @@ async function fetchYouTubeInfo(url) {
                 raw: data
             };
             
-            console.log(`✅ YouTube data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}`);
+            console.log(`✅ CapCut data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}`);
             return result;
         }
         throw new Error('No data received from API');
     } catch (error) {
-        console.error('❌ YouTube API error:', error.message);
+        console.error('❌ CapCut API error:', error.message);
         throw error;
     }
 }
 
 // ========== CREATE CARDS ==========
-async function createYouTubeCards(mediaInfo, zk, ms, lang) {
+async function createCapCutCards(mediaInfo, zk, ms, lang) {
     const t = await getTranslatedTexts();
     const buttons = [
         {
@@ -174,11 +171,10 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
         },
     ];
 
-    const title = mediaInfo.title || "YouTube Video";
-    const channel = mediaInfo.channel || "Unknown";
-    const duration = mediaInfo.duration || "0:00";
-    const views = mediaInfo.views || 0;
+    const title = mediaInfo.title || "CapCut Template";
+    const author = mediaInfo.author || "Unknown";
     const likes = mediaInfo.likes || 0;
+    const uses = mediaInfo.uses || 0;
     const thumbnail = mediaInfo.thumbnail || randomNjabulourl;
 
     let imageMessage = null;
@@ -192,16 +188,15 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
 
     const card1 = {
         header: {
-            title: `📥 ${t.youtubeVideo}`,
+            title: `📥 ${t.capcutVideo}`,
             hasMediaAttachment: true,
             imageMessage: imageMessage,
         },
         body: {
             text: `${t.title} ${title}\n` +
-                  `${t.channel} ${channel}\n` +
-                  `${t.duration} ${duration}\n` +
-                  `${t.views} ${views.toLocaleString()}\n` +
-                  `${t.likes} ${likes.toLocaleString()}\n\n` +
+                  `${t.author} ${author}\n` +
+                  `${t.likes} ${likes.toLocaleString()}\n` +
+                  `${t.uses} ${uses.toLocaleString()}\n\n` +
                   `${t.selectFormat}\n\n` +
                   `${t.audioOption}\n` +
                   `${t.videoOption}\n` +
@@ -211,7 +206,7 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 YouTube Downloader`,
+            text: `🔹 CapCut Downloader`,
         },
         nativeFlowMessage: {
             buttons: buttons,
@@ -220,7 +215,7 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
 
     const card2 = {
         header: {
-            title: `📥 ${t.youtubeVideo}`,
+            title: `📥 ${t.capcutVideo}`,
             hasMediaAttachment: true,
             imageMessage: imageMessage,
         },
@@ -271,7 +266,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
                         deviceListMetadataVersion: 2,
                     },
                     interactiveMessage: {
-                        body: { text: `📥 *YouTube Downloader*` },
+                        body: { text: `📥 *CapCut Downloader*` },
                         footer: { text: `🔹 Choose your format` },
                         carouselMessage: { cards },
                     },
@@ -286,7 +281,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 // ========== DOWNLOAD FUNCTIONS ==========
-async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, quality) {
+async function downloadCapCutVideo(zk, dest, ms, data, lang, isDocument, quality) {
     try {
         const t = await getTranslatedTexts();
         let videoUrl = data.videoUrl;
@@ -307,7 +302,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
 
         await zk.sendPresenceUpdate('recording', dest);
 
-        const title = data.title || "YouTube Video";
+        const title = data.title || "CapCut Template";
         const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_${qualityText}.mp4`;
         const thumbnail = data.thumbnail || randomNjabulourl;
 
@@ -316,7 +311,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
                 document: { url: videoUrl },
                 mimetype: 'video/mp4',
                 fileName: fileName,
-                caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                caption: `${t.capcutVideo}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${title}`,
@@ -330,7 +325,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
         } else {
             await zk.sendMessage(dest, {
                 video: { url: videoUrl },
-                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${title}`,
@@ -353,7 +348,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
     }
 }
 
-async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
+async function downloadCapCutAudio(zk, dest, ms, data, lang) {
     try {
         const t = await getTranslatedTexts();
         const audioUrl = data.audioUrl || data.videoUrl;
@@ -389,7 +384,7 @@ async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
                 .save(audioFile);
         });
 
-        const title = data.title || "YouTube Audio";
+        const title = data.title || "CapCut Audio";
         const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
 
         await zk.sendMessage(dest, {
@@ -425,10 +420,10 @@ async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
 
 // ========== MAIN COMMAND ==========
 fana({
-    nomCom: "youtube",
-    alias: ["yt", "ytdl", "ytmp3", "ytmp4"],
+    nomCom: "capcut",
+    alias: ["capcutdl", "ccdl"],
     categorie: "Download",
-    reaction: "▶️"
+    reaction: "✂️"
 }, async (dest, zk, commandeOptions) => {
     const { repondre, ms, arg } = commandeOptions;
     const lang = config.LANGUAGE || "en";
@@ -455,19 +450,19 @@ fana({
 
         switch(selectedNumber) {
             case 1:
-                await downloadYouTubeAudio(zk, dest, ms, data, lang);
+                await downloadCapCutAudio(zk, dest, ms, data, lang);
                 break;
             case 2:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'mp4');
                 break;
             case 3:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, true, 'mp4');
+                await downloadCapCutVideo(zk, dest, ms, data, lang, true, 'mp4');
                 break;
             case 4:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'hd');
+                await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'hd');
                 break;
             case 5:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'sd');
+                await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'sd');
                 break;
             default:
                 await repondre(t.invalidChoice);
@@ -477,7 +472,7 @@ fana({
     }
 
     if (!arg[0]) {
-        return await repondre(`${t.pleaseInsert}\n\n${t.example} .youtube https://www.youtube.com/watch?v=xxxxx`);
+        return await repondre(`${t.pleaseInsert}\n\n${t.example} .capcut https://www.capcut.com/xxxxx`);
     }
 
     const queryURL = arg.join(" ");
@@ -485,26 +480,25 @@ fana({
     await zk.sendMessage(dest, { text: t.fetchingInfo }, { quoted: ms });
 
     try {
-        const result = await fetchYouTubeInfo(queryURL);
+        const result = await fetchCapCutInfo(queryURL);
         if (!result || !result.videoUrl) {
             throw new Error(t.noMediaFound);
         }
 
         const senderJid = ms.key.remoteJid;
         activeDownloads[senderJid] = {
-            title: result.title || "YouTube Video",
+            title: result.title || "CapCut Template",
             url: queryURL,
             thumbnail: result.thumbnail || randomNjabulourl,
             videoUrl: result.videoUrl,
             audioUrl: result.audioUrl,
-            channel: result.channel,
-            duration: result.duration,
-            views: result.views,
+            author: result.author,
             likes: result.likes,
+            uses: result.uses,
             timestamp: Date.now()
         };
 
-        const { cards } = await createYouTubeCards(result, zk, ms, lang);
+        const { cards } = await createCapCutCards(result, zk, ms, lang);
         await sendCarouselMessage(zk, dest, cards, ms);
 
         // Setup reply collector
@@ -538,19 +532,19 @@ fana({
 
                 switch(selectedNumber) {
                     case 1:
-                        await downloadYouTubeAudio(zk, dest, ms, data, lang);
+                        await downloadCapCutAudio(zk, dest, ms, data, lang);
                         break;
                     case 2:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                        await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'mp4');
                         break;
                     case 3:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, true, 'mp4');
+                        await downloadCapCutVideo(zk, dest, ms, data, lang, true, 'mp4');
                         break;
                     case 4:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'hd');
+                        await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'hd');
                         break;
                     case 5:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'sd');
+                        await downloadCapCutVideo(zk, dest, ms, data, lang, false, 'sd');
                         break;
                     default:
                         await repondre(t.invalidChoice);

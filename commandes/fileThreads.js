@@ -74,31 +74,31 @@ async function getTranslatedTexts() {
         downloadComplete: await translateTextWithCache("✅ *Download complete!*", lang),
         errorDownloading: await translateTextWithCache("❌ *Error downloading*", lang),
         checkLink: await translateTextWithCache("Please check the link and try again.", lang),
-        pleaseInsert: await translateTextWithCache("⚠️ *Please insert a YouTube link!*", lang),
+        pleaseInsert: await translateTextWithCache("⚠️ *Please insert a Threads link!*", lang),
         example: await translateTextWithCache("📌 Example:", lang),
         videoReady: await translateTextWithCache("🎬 *Your video is ready!*", lang),
-        audioReady: await translateTextWithCache("🎵 *Your audio is ready!*", lang),
-        youtubeVideo: await translateTextWithCache("📥 *YOUTUBE VIDEO*", lang),
+        imageReady: await translateTextWithCache("🖼️ *Your image is ready!*", lang),
+        threadsPost: await translateTextWithCache("📥 *THREADS POST*", lang),
         title: await translateTextWithCache("📹 *Title:*", lang),
-        channel: await translateTextWithCache("📺 *Channel:*", lang),
-        duration: await translateTextWithCache("⏱️ *Duration:*", lang),
-        views: await translateTextWithCache("👁️ *Views:*", lang),
+        author: await translateTextWithCache("👤 *Author:*", lang),
         likes: await translateTextWithCache("❤️ *Likes:*", lang),
+        replies: await translateTextWithCache("💬 *Replies:*", lang),
         unknown: await translateTextWithCache("Unknown", lang),
         selectFormat: await translateTextWithCache("📌 *Select format:*", lang),
         audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
         videoOption: await translateTextWithCache("2️⃣ Video (MP4)", lang),
         videoDocOption: await translateTextWithCache("3️⃣ Video Document", lang),
-        hdVideoOption: await translateTextWithCache("4️⃣ HD Video", lang),
-        sdVideoOption: await translateTextWithCache("5️⃣ SD Video", lang),
+        imageOption: await translateTextWithCache("4️⃣ Image", lang),
+        carouselOption: await translateTextWithCache("5️⃣ All Images (Carousel)", lang),
         chooseOption: await translateTextWithCache("Reply with number 1, 2, 3, 4, or 5 to choose:", lang),
         invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
         processing: await translateTextWithCache("⏳ Processing...", lang),
-        fetchingInfo: await translateTextWithCache("📡 Fetching video info...", lang),
+        fetchingInfo: await translateTextWithCache("📡 Fetching media info...", lang),
         apiFailed: await translateTextWithCache("⚠️ API is currently unavailable. Please try again later.", lang),
         noMediaFound: await translateTextWithCache("❌ No media found for this link.", lang),
-        quality: await translateTextWithCache("📎 *Quality:*", lang),
+        sendingImages: await translateTextWithCache("📤 Sending images...", lang),
+        imageCount: await translateTextWithCache("📸 Images found:", lang),
     };
 }
 
@@ -121,11 +121,11 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH YOUTUBE INFO ==========
-async function fetchYouTubeInfo(url) {
+// ========== FETCH THREADS INFO ==========
+async function fetchThreadsInfo(url) {
     try {
         const apiUrl = `https://noobs-api.top/dipto/alldl?url=${encodeURIComponent(url)}`;
-        console.log(`🔄 Fetching YouTube: ${apiUrl}`);
+        console.log(`🔄 Fetching Threads: ${apiUrl}`);
         
         const response = await axios.get(apiUrl, { 
             timeout: 30000,
@@ -139,30 +139,31 @@ async function fetchYouTubeInfo(url) {
             console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
             
             const result = {
-                title: data.videoTitle || data.title || "YouTube Video",
-                channel: data.author || data.channel || data.uploader || "Unknown",
-                duration: data.duration || "0:00",
-                views: data.views || data.viewCount || 0,
+                title: data.videoTitle || data.title || data.caption || "Threads Post",
+                author: data.author || data.username || "Unknown",
                 likes: data.likes || data.likeCount || 0,
+                replies: data.replies || data.replyCount || 0,
                 thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
                 videoUrl: data.result || data.video || data.video_url || null,
-                audioUrl: data.audio || data.audio_url || null,
-                isVideo: true,
+                images: data.imageUrl ? [data.imageUrl] : (data.images || []),
+                isVideo: data.result ? true : false,
+                isImage: data.imageUrl && !data.result ? true : false,
+                isCarousel: data.images && data.images.length > 1 ? true : false,
                 raw: data
             };
             
-            console.log(`✅ YouTube data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}`);
+            console.log(`✅ Threads data parsed: Video=${result.isVideo}, Images=${result.images.length}`);
             return result;
         }
         throw new Error('No data received from API');
     } catch (error) {
-        console.error('❌ YouTube API error:', error.message);
+        console.error('❌ Threads API error:', error.message);
         throw error;
     }
 }
 
 // ========== CREATE CARDS ==========
-async function createYouTubeCards(mediaInfo, zk, ms, lang) {
+async function createThreadsCards(mediaInfo, zk, ms, lang) {
     const t = await getTranslatedTexts();
     const buttons = [
         {
@@ -174,12 +175,15 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
         },
     ];
 
-    const title = mediaInfo.title || "YouTube Video";
-    const channel = mediaInfo.channel || "Unknown";
-    const duration = mediaInfo.duration || "0:00";
-    const views = mediaInfo.views || 0;
+    const title = mediaInfo.title || "Threads Post";
+    const author = mediaInfo.author || "Unknown";
     const likes = mediaInfo.likes || 0;
+    const replies = mediaInfo.replies || 0;
     const thumbnail = mediaInfo.thumbnail || randomNjabulourl;
+    const isVideo = mediaInfo.isVideo || false;
+    const isImage = mediaInfo.isImage || (!isVideo && mediaInfo.images && mediaInfo.images.length > 0);
+    const isCarousel = mediaInfo.isCarousel || (mediaInfo.images && mediaInfo.images.length > 1);
+    const imageCount = mediaInfo.images ? mediaInfo.images.length : 0;
 
     let imageMessage = null;
     try {
@@ -192,26 +196,27 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
 
     const card1 = {
         header: {
-            title: `📥 ${t.youtubeVideo}`,
+            title: `📥 ${t.threadsPost}`,
             hasMediaAttachment: true,
             imageMessage: imageMessage,
         },
         body: {
             text: `${t.title} ${title}\n` +
-                  `${t.channel} ${channel}\n` +
-                  `${t.duration} ${duration}\n` +
-                  `${t.views} ${views.toLocaleString()}\n` +
-                  `${t.likes} ${likes.toLocaleString()}\n\n` +
+                  `${t.author} ${author}\n` +
+                  `${t.likes} ${likes.toLocaleString()}\n` +
+                  `${t.replies} ${replies.toLocaleString()}\n` +
+                  `${isCarousel ? `📸 ${t.imageCount} ${imageCount}` : ''}\n` +
+                  `${isVideo ? '🎬 Video' : isImage ? '🖼️ Image' : '📌 Post'}\n\n` +
                   `${t.selectFormat}\n\n` +
                   `${t.audioOption}\n` +
                   `${t.videoOption}\n` +
                   `${t.videoDocOption}\n` +
-                  `${t.hdVideoOption}\n` +
-                  `${t.sdVideoOption}\n\n` +
+                  `${t.imageOption}\n` +
+                  `${isCarousel ? t.carouselOption : ''}\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 YouTube Downloader`,
+            text: `🔹 Threads Downloader`,
         },
         nativeFlowMessage: {
             buttons: buttons,
@@ -220,7 +225,7 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
 
     const card2 = {
         header: {
-            title: `📥 ${t.youtubeVideo}`,
+            title: `📥 ${t.threadsPost}`,
             hasMediaAttachment: true,
             imageMessage: imageMessage,
         },
@@ -229,8 +234,8 @@ async function createYouTubeCards(mediaInfo, zk, ms, lang) {
                   `🔹 ${t.audioOption} - MP3 Audio\n` +
                   `🔹 ${t.videoOption} - MP4 Video\n` +
                   `🔹 ${t.videoDocOption} - Video Document\n` +
-                  `🔹 ${t.hdVideoOption} - Best Quality\n` +
-                  `🔹 ${t.sdVideoOption} - Standard Quality\n\n` +
+                  `🔹 ${t.imageOption} - Image\n` +
+                  `${isCarousel ? `🔹 ${t.carouselOption} - All Images\n` : ''}\n` +
                   `${t.chooseOption}`,
         },
         footer: {
@@ -271,7 +276,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
                         deviceListMetadataVersion: 2,
                     },
                     interactiveMessage: {
-                        body: { text: `📥 *YouTube Downloader*` },
+                        body: { text: `📥 *Threads Downloader*` },
                         footer: { text: `🔹 Choose your format` },
                         carouselMessage: { cards },
                     },
@@ -286,19 +291,10 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 // ========== DOWNLOAD FUNCTIONS ==========
-async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, quality) {
+async function downloadThreadsVideo(zk, dest, ms, data, lang, isDocument) {
     try {
         const t = await getTranslatedTexts();
-        let videoUrl = data.videoUrl;
-        let qualityText = '';
-
-        if (quality === 'hd') {
-            qualityText = 'HD';
-        } else if (quality === 'sd') {
-            qualityText = 'SD';
-        } else {
-            qualityText = 'MP4';
-        }
+        const videoUrl = data.videoUrl;
         
         if (!videoUrl) {
             await repondre(t.errorDownloading);
@@ -307,8 +303,8 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
 
         await zk.sendPresenceUpdate('recording', dest);
 
-        const title = data.title || "YouTube Video";
-        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_${qualityText}.mp4`;
+        const title = data.title || "Threads Video";
+        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp4`;
         const thumbnail = data.thumbnail || randomNjabulourl;
 
         if (isDocument) {
@@ -316,7 +312,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
                 document: { url: videoUrl },
                 mimetype: 'video/mp4',
                 fileName: fileName,
-                caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                caption: `${t.threadsPost}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${title}`,
@@ -330,7 +326,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
         } else {
             await zk.sendMessage(dest, {
                 video: { url: videoUrl },
-                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
                 contextInfo: {
                     externalAdReply: {
                         title: `📹 ${title}`,
@@ -353,7 +349,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
     }
 }
 
-async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
+async function downloadThreadsAudio(zk, dest, ms, data, lang) {
     try {
         const t = await getTranslatedTexts();
         const audioUrl = data.audioUrl || data.videoUrl;
@@ -389,7 +385,7 @@ async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
                 .save(audioFile);
         });
 
-        const title = data.title || "YouTube Audio";
+        const title = data.title || "Threads Audio";
         const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
 
         await zk.sendMessage(dest, {
@@ -423,12 +419,104 @@ async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
     }
 }
 
+async function downloadThreadsImage(zk, dest, ms, data, lang) {
+    try {
+        const t = await getTranslatedTexts();
+        let imageUrl = data.images && data.images.length > 0 ? data.images[0] : data.thumbnail;
+        
+        if (!imageUrl) {
+            await repondre(t.errorDownloading);
+            return;
+        }
+
+        await zk.sendPresenceUpdate('composing', dest);
+
+        const title = data.title || "Threads Image";
+        const caption = `${t.imageReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`;
+
+        await zk.sendMessage(dest, {
+            image: { url: imageUrl },
+            caption: caption,
+            contextInfo: {
+                externalAdReply: {
+                    title: `🖼️ ${title}`,
+                    mediaType: 1,
+                    previewType: 0,
+                    thumbnailUrl: imageUrl,
+                    renderLargerThumbnail: true,
+                },
+            },
+        }, { quoted: ms });
+
+        await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
+
+    } catch (error) {
+        console.error("Image download error:", error);
+        await zk.sendMessage(dest, { 
+            text: await translateTextWithCache("❌ Failed to download image. Please try again.", lang)
+        }, { quoted: ms });
+    }
+}
+
+async function downloadThreadsCarousel(zk, dest, ms, data, lang) {
+    try {
+        const t = await getTranslatedTexts();
+        const images = data.images || [];
+        
+        if (images.length === 0) {
+            await repondre(t.errorDownloading);
+            return;
+        }
+
+        await zk.sendPresenceUpdate('composing', dest);
+        await zk.sendMessage(dest, { text: t.sendingImages }, { quoted: ms });
+
+        const title = data.title || "Threads Carousel";
+        const totalImages = Math.min(images.length, 10);
+
+        for (let i = 0; i < totalImages; i++) {
+            const img = images[i];
+            const imageUrl = typeof img === 'string' ? img : img.url || img;
+            
+            if (!imageUrl) continue;
+            
+            await zk.sendMessage(dest, {
+                image: { url: imageUrl },
+                caption: `${t.threadsPost}\n\n📸 *Image ${i+1}/${totalImages}*\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}`,
+                contextInfo: {
+                    externalAdReply: {
+                        title: `📸 Image ${i+1}/${totalImages}`,
+                        mediaType: 1,
+                        previewType: 0,
+                        thumbnailUrl: imageUrl,
+                        renderLargerThumbnail: true,
+                    },
+                },
+            }, { quoted: ms });
+            
+            if (i < totalImages - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        await zk.sendMessage(dest, { 
+            text: `${t.downloadComplete}\n📸 ${totalImages} images sent` 
+        }, { quoted: ms });
+
+    } catch (error) {
+        console.error("Carousel download error:", error);
+        await zk.sendMessage(dest, { 
+            text: await translateTextWithCache("❌ Failed to download carousel. Please try again.", lang)
+        }, { quoted: ms });
+    }
+}
+
 // ========== MAIN COMMAND ==========
 fana({
-    nomCom: "youtube",
-    alias: ["yt", "ytdl", "ytmp3", "ytmp4"],
+    nomCom: "threads",
+    alias: ["threadsdl", "thdl"],
     categorie: "Download",
-    reaction: "▶️"
+    reaction: "🧵"
 }, async (dest, zk, commandeOptions) => {
     const { repondre, ms, arg } = commandeOptions;
     const lang = config.LANGUAGE || "en";
@@ -453,21 +541,32 @@ fana({
             zk._replyListener = null;
         }
 
+        const isVideoPost = data.isVideo || false;
+        const isCarousel = data.isCarousel || (data.images && data.images.length > 1);
+
         switch(selectedNumber) {
             case 1:
-                await downloadYouTubeAudio(zk, dest, ms, data, lang);
+                await downloadThreadsAudio(zk, dest, ms, data, lang);
                 break;
             case 2:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                await downloadThreadsVideo(zk, dest, ms, data, lang, false);
                 break;
             case 3:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, true, 'mp4');
+                await downloadThreadsVideo(zk, dest, ms, data, lang, true);
                 break;
             case 4:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'hd');
+                if (isVideoPost) {
+                    await downloadThreadsVideo(zk, dest, ms, data, lang, false);
+                } else {
+                    await downloadThreadsImage(zk, dest, ms, data, lang);
+                }
                 break;
             case 5:
-                await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'sd');
+                if (isCarousel) {
+                    await downloadThreadsCarousel(zk, dest, ms, data, lang);
+                } else {
+                    await repondre(t.invalidChoice);
+                }
                 break;
             default:
                 await repondre(t.invalidChoice);
@@ -477,7 +576,7 @@ fana({
     }
 
     if (!arg[0]) {
-        return await repondre(`${t.pleaseInsert}\n\n${t.example} .youtube https://www.youtube.com/watch?v=xxxxx`);
+        return await repondre(`${t.pleaseInsert}\n\n${t.example} .threads https://www.threads.net/xxxxx`);
     }
 
     const queryURL = arg.join(" ");
@@ -485,26 +584,27 @@ fana({
     await zk.sendMessage(dest, { text: t.fetchingInfo }, { quoted: ms });
 
     try {
-        const result = await fetchYouTubeInfo(queryURL);
-        if (!result || !result.videoUrl) {
+        const result = await fetchThreadsInfo(queryURL);
+        if (!result || (!result.videoUrl && (!result.images || result.images.length === 0))) {
             throw new Error(t.noMediaFound);
         }
 
         const senderJid = ms.key.remoteJid;
         activeDownloads[senderJid] = {
-            title: result.title || "YouTube Video",
+            title: result.title || "Threads Post",
             url: queryURL,
             thumbnail: result.thumbnail || randomNjabulourl,
             videoUrl: result.videoUrl,
-            audioUrl: result.audioUrl,
-            channel: result.channel,
-            duration: result.duration,
-            views: result.views,
+            images: result.images || [],
+            isVideo: result.isVideo || false,
+            isCarousel: result.isCarousel || (result.images && result.images.length > 1),
+            author: result.author,
             likes: result.likes,
+            replies: result.replies,
             timestamp: Date.now()
         };
 
-        const { cards } = await createYouTubeCards(result, zk, ms, lang);
+        const { cards } = await createThreadsCards(result, zk, ms, lang);
         await sendCarouselMessage(zk, dest, cards, ms);
 
         // Setup reply collector
@@ -536,21 +636,32 @@ fana({
                     });
                 } catch (e) {}
 
+                const isVideoPost = data.isVideo || false;
+                const isCarousel = data.isCarousel || (data.images && data.images.length > 1);
+
                 switch(selectedNumber) {
                     case 1:
-                        await downloadYouTubeAudio(zk, dest, ms, data, lang);
+                        await downloadThreadsAudio(zk, dest, ms, data, lang);
                         break;
                     case 2:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                        await downloadThreadsVideo(zk, dest, ms, data, lang, false);
                         break;
                     case 3:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, true, 'mp4');
+                        await downloadThreadsVideo(zk, dest, ms, data, lang, true);
                         break;
                     case 4:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'hd');
+                        if (isVideoPost) {
+                            await downloadThreadsVideo(zk, dest, ms, data, lang, false);
+                        } else {
+                            await downloadThreadsImage(zk, dest, ms, data, lang);
+                        }
                         break;
                     case 5:
-                        await downloadYouTubeVideo(zk, dest, ms, data, lang, false, 'sd');
+                        if (isCarousel) {
+                            await downloadThreadsCarousel(zk, dest, ms, data, lang);
+                        } else {
+                            await repondre(t.invalidChoice);
+                        }
                         break;
                     default:
                         await repondre(t.invalidChoice);
