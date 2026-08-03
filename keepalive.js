@@ -2,17 +2,20 @@
 const axios = require('axios');
 const conf = require('./set');
 
-// Ping the bot every 3 minutes to keep it awake
-setInterval(async () => {
+async function keepAlive() {
     try {
-        // Try to ping your bot's URL
         const appName = conf.HEROKU_APP_NAME || process.env.HEROKU_APP_NAME;
         if (appName) {
             const url = `https://${appName}.herokuapp.com/`;
             await axios.get(url, { timeout: 5000 });
-            console.log('✅ Keep-alive ping sent');
+            console.log(`✅ Keep-alive ping sent at ${new Date().toLocaleTimeString()}`);
         }
     } catch (e) {
-        console.log('⚠️ Keep-alive ping failed:', e.message);
+        console.log('⚠️ Keep-alive ping failed');
     }
-}, 180000); // 3 minutes
+}
+
+// Ping every 2 minutes
+setInterval(keepAlive, 120000);
+keepAlive();
+console.log('🔄 Keep-alive service started');
