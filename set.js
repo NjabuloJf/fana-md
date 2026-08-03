@@ -23,21 +23,24 @@ module.exports = {
     // ========== LANGUAGE SETTINGS ==========
     LANGUAGE: process.env.LANGUAGE || "en",
     
-    // ========== STATUS SETTINGS ==========
-    AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "yes",
-    AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
+    // ========== SPEED OPTIMIZATION - DISABLE HEAVY FEATURES ==========
+    // Set to "no" for faster performance
+    AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "no",
+    AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "false",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
     AUTO_STATUS_MSG: process.env.AUTO_STATUS_MSG || "Nice status! 👍",
     AUTO_BIO: process.env.AUTO_BIO || 'no',
-    AUTOREACT_STATUS: process.env.AUTOREACT_STATUS || 'yes',
+    AUTOREACT_STATUS: process.env.AUTOREACT_STATUS || 'no',
     AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || 'no',
+    AUTO_REACT: process.env.AUTO_REACT || 'no',
     
     // ========== BOT INFORMATION ==========
     BOT_NAME: process.env.BOT_NAME || 'NJABULO JB',
     BOT: process.env.BOT_NAME || 'NJABULO JB',
     
     // ========== MEDIA LINKS ==========
-    URL: process.env.BOT_MENU_LINKS || 'https://files.catbox.moe/mh36c7.jpg',
+    // Use reliable GitHub URLs instead of Catbox
+    URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     
     // ========== MODE SETTINGS ==========
@@ -49,12 +52,14 @@ module.exports = {
     
     // ========== SECURITY SETTINGS ==========
     WARN_COUNT: process.env.WARN_COUNT || '3',
-    ADM: process.env.ANTI_DELETE_MESSAGE || "yes",
+    ADM: process.env.ANTI_DELETE_MESSAGE || "no",  // Disable for speed
     
     // ========== PRESENCE SETTINGS ==========
+    // 1 = online, 2 = typing, 3 = recording, empty = unavailable
     ETAT: process.env.PRESENCE || '',
     
     // ========== CHATBOT SETTINGS ==========
+    // Disable for faster performance
     CHATBOT: process.env.PM_CHATBOT || 'no',
     CHATBOT1: process.env.CHATBOT1 || 'no',
     
