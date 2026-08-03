@@ -114,12 +114,12 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH INSTAGRAM INFO USING FREE API ==========
+// ========== FETCH INSTAGRAM INFO - USING ALTERNATIVE APIS ==========
 async function fetchInstagramInfo(url) {
-    // Try multiple free APIs
+    // Try multiple working APIs
     const apis = [
         {
-            name: 'InstaDL API',
+            name: 'Insta DL API',
             url: `https://insta-dl.fly.dev/instagram/v1/post?url=${encodeURIComponent(url)}`,
             parse: (data) => {
                 if (!data || !data.success) return null;
@@ -140,7 +140,7 @@ async function fetchInstagramInfo(url) {
             }
         },
         {
-            name: 'InstaSave API',
+            name: 'Insta Save API',
             url: `https://instasave.xyz/api/v1/post?url=${encodeURIComponent(url)}`,
             parse: (data) => {
                 if (!data || !data.success) return null;
@@ -161,7 +161,28 @@ async function fetchInstagramInfo(url) {
             }
         },
         {
-            name: 'Instagram API',
+            name: 'Insta Download API',
+            url: `https://insta-downloader.com/api/convert?url=${encodeURIComponent(url)}`,
+            parse: (data) => {
+                if (!data || !data.success) return null;
+                const r = data.result || data;
+                const images = r.images || r.image_urls || (r.thumbnail ? [r.thumbnail] : []);
+                return {
+                    title: r.title || r.caption || "Instagram Post",
+                    author: r.author || r.username || "Unknown",
+                    likes: r.likes || 0,
+                    comments: r.comments || 0,
+                    thumbnail: r.thumbnail || r.cover || images[0] || randomNjabulourl,
+                    videoUrl: r.video || r.video_url || r.url || null,
+                    images: images,
+                    isVideo: r.is_video || (r.video && r.video.length > 0) || false,
+                    isCarousel: r.is_carousel || (images && images.length > 1) || false,
+                    audioUrl: r.audio || r.audio_url || null,
+                };
+            }
+        },
+        {
+            name: 'Instagram Official',
             url: `https://www.instagram.com/p/${extractCode(url)}/?__a=1&__d=1`,
             parse: (data) => {
                 if (!data || !data.graphql) return null;
@@ -217,17 +238,18 @@ async function fetchInstagramInfo(url) {
             console.log(`🔄 Trying Instagram API: ${api.name}`);
             let apiUrl = api.url;
             
-            if (api.name === 'Instagram API') {
+            if (api.name === 'Instagram Official') {
                 const code = extractCode(url);
                 if (!code) continue;
                 apiUrl = `https://www.instagram.com/p/${code}/?__a=1&__d=1`;
             }
             
             const response = await axios.get(apiUrl, { 
-                timeout: 25000,
+                timeout: 30000,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Accept': 'application/json',
+                    'Accept-Language': 'en-US,en;q=0.9',
                 }
             });
             
@@ -784,4 +806,4 @@ async function downloadInstagramAudio(zk, dest, ms, data, lang) {
             text: t.errorAudio 
         }, { quoted: ms });
     }
-            }
+                                                }
