@@ -113,11 +113,12 @@ const isNumberSelection = (text) => {
     return num >= 1 && num <= 5 && !isNaN(num);
 };
 
-// ========== FETCH PINTEREST INFO USING NOOBS API ==========
+// ========== FETCH PINTEREST INFO ==========
 async function fetchPinterestInfo(url) {
     try {
+        // First try the Noobs API
         const apiUrl = `https://noobs-api.top/dipto/alldl?url=${encodeURIComponent(url)}`;
-        console.log(`🔄 Fetching Pinterest: ${apiUrl}`);
+        console.log(`🔄 Fetching Pinterest from Noobs API: ${apiUrl}`);
         
         const response = await axios.get(apiUrl, { 
             timeout: 30000,
@@ -132,57 +133,79 @@ async function fetchPinterestInfo(url) {
             const data = response.data;
             console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
             
-            // Parse the response from Noobs API for Pinterest
-            let result = {
+            // Check if it's a video (contains .mp4 in result)
+            const isVideo = data.result && (data.result.includes('.mp4') || data.result.includes('video'));
+            
+            // For Pinterest, the result might be a video URL or image URL
+            let videoUrl = null;
+            let images = [];
+            let thumbnail = data.imageUrl || data.thumbnail || data.cover || randomNjabulourl;
+            
+            // If result is a video URL
+            if (data.result && isVideo) {
+                videoUrl = data.result;
+            }
+            
+            // Get images from the API response
+            if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+                images = data.images;
+            } else if (data.imageUrl) {
+                images = [data.imageUrl];
+            } else if (data.thumbnail) {
+                images = [data.thumbnail];
+            }
+            
+            // If no images found and it's not a video, try to get from thumbnail
+            if (images.length === 0 && thumbnail && !isVideo) {
+                images = [thumbnail];
+            }
+            
+            return {
                 title: data.videoTitle || data.title || data.caption || "Pinterest Post",
                 author: data.author || data.username || "Unknown",
                 description: data.cp || data.description || data.caption || "",
-                thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
-                videoUrl: data.result || data.video || data.video_url || null,
-                images: data.imageUrl ? [data.imageUrl] : (data.images || []),
-                isVideo: false,
-                isCarousel: false,
-                audioUrl: null,
-                raw: data
+                thumbnail: thumbnail,
+                videoUrl: videoUrl,
+                images: images,
+                isVideo: isVideo,
+                isCarousel: data.images && data.images.length > 1,
+                audioUrl: data.audio || data.audio_url || null,
+                raw: data,
+                isImage: !isVideo && images.length > 0
             };
-            
-            // Check if it's a video
-            if (data.result && data.result.includes('.mp4')) {
-                result.isVideo = true;
-                result.videoUrl = data.result;
-            }
-            
-            // If there are multiple images
-            if (data.images && data.images.length > 1) {
-                result.isCarousel = true;
-                result.isVideo = false;
-                result.videoUrl = null;
-                result.images = data.images;
-            }
-            
-            // If there's an imageUrl but no video, it's an image
-            if (data.imageUrl && !data.result) {
-                result.isVideo = false;
-                result.images = [data.imageUrl];
-            }
-            
-            // If imageUrl doesn't exist but images array has data
-            if (!data.imageUrl && data.images && data.images.length > 0) {
-                result.thumbnail = data.images[0];
-            }
-            
-            console.log(`✅ Pinterest data parsed: Video=${result.isVideo}, Images=${result.images.length}, VideoUrl=${result.videoUrl ? 'Yes' : 'No'}`);
-            return result;
         }
         
         throw new Error('No data received from API');
         
     } catch (error) {
         console.error('❌ Pinterest API error:', error.message);
-        if (error.response) {
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
+        
+        // Try alternative method - direct Pinterest oembed
+        try {
+            console.log('🔄 Trying alternative method...');
+            const oembedUrl = `https://www.pinterest.com/oembed?url=${encodeURIComponent(url)}`;
+            const oembedResponse = await axios.get(oembedUrl, { timeout: 15000 });
+            
+            if (oembedResponse.status === 200 && oembedResponse.data) {
+                const data = oembedResponse.data;
+                return {
+                    title: data.title || "Pinterest Post",
+                    author: data.author_name || "Unknown",
+                    description: data.description || "",
+                    thumbnail: data.thumbnail_url || randomNjabulourl,
+                    videoUrl: null,
+                    images: data.thumbnail_url ? [data.thumbnail_url] : [],
+                    isVideo: false,
+                    isCarousel: false,
+                    audioUrl: null,
+                    raw: data,
+                    isImage: true
+                };
+            }
+        } catch (e) {
+            console.log('Alternative method also failed:', e.message);
         }
+        
         throw error;
     }
 }
@@ -205,6 +228,7 @@ async function createPinterestCards(mediaInfo, zk, ms, lang) {
     const description = mediaInfo.description || "";
     const thumbnail = mediaInfo.thumbnail || randomNjabulourl;
     const isVideo = mediaInfo.isVideo || false;
+    const isImage = mediaInfo.isImage || (!isVideo && mediaInfo.images && mediaInfo.images.length > 0);
     const isCarousel = mediaInfo.isCarousel || (mediaInfo.images && mediaInfo.images.length > 1);
     const imageCount = mediaInfo.images ? mediaInfo.images.length : 0;
 
@@ -229,7 +253,7 @@ async function createPinterestCards(mediaInfo, zk, ms, lang) {
                   `${t.author} ${author}\n` +
                   `${description ? `${t.description} ${description}\n` : ''}` +
                   `${isCarousel ? `📸 ${t.imageCount} ${imageCount}` : ''}\n` +
-                  `${isVideo ? '🎬 Video' : '🖼️ Image'}\n\n` +
+                  `${isVideo ? '🎬 Video' : isImage ? '🖼️ Image' : '📌 Pin'}\n\n` +
                   `${t.selectFormat}\n\n` +
                   `${t.audioOption}\n` +
                   `${t.videoOption}\n` +
@@ -392,6 +416,7 @@ fana({
             videoUrl: result.videoUrl,
             images: result.images || [],
             isVideo: result.isVideo || false,
+            isImage: result.isImage || (!result.isVideo && result.images && result.images.length > 0),
             isCarousel: result.isCarousel || (result.images && result.images.length > 1),
             audioUrl: result.audioUrl,
             author: result.author,
@@ -551,9 +576,25 @@ async function downloadPinterestImage(zk, dest, ms, data, lang) {
         const t = await getTranslatedTexts();
         let imageUrl = null;
         
+        // Try to get the best quality image
         if (data.images && data.images.length > 0) {
-            const firstImage = data.images[0];
-            imageUrl = typeof firstImage === 'string' ? firstImage : firstImage.url || firstImage;
+            // Get the last image (usually highest quality)
+            const lastImage = data.images[data.images.length - 1];
+            imageUrl = typeof lastImage === 'string' ? lastImage : lastImage.url || lastImage;
+            
+            // If it's a small thumbnail, try to find a better one
+            if (imageUrl && imageUrl.includes('236x')) {
+                // Try to replace with larger size
+                const betterUrl = imageUrl.replace('236x', '736x');
+                try {
+                    const testResponse = await axios.head(betterUrl, { timeout: 5000 });
+                    if (testResponse.status === 200) {
+                        imageUrl = betterUrl;
+                    }
+                } catch (e) {
+                    // Keep original
+                }
+            }
         }
         
         if (!imageUrl) {
@@ -717,4 +758,4 @@ async function downloadPinterestAudio(zk, dest, ms, data, lang) {
             text: t.errorAudio 
         }, { quoted: ms });
     }
-                              }
+                                                 }
