@@ -176,7 +176,7 @@ async function getTranslatedGoodbye(lang) {
 
 // ========== GET TRANSLATED BUTTONS ==========
 async function getTranslatedButtons(lang) {
-    const buttonText = await translateTextWithCache("🌐 WA Channel", lang);
+    const buttonText = await translateTextWithCache("bot Channels", lang);
     return [
         {
             name: "cta_url",
@@ -207,7 +207,7 @@ async function getName(jid) {
     }
 }
 
-console.log("✅ Using Baileys from github:xhclintohn/Baileys");
+console.log("✅ Using Baileys from github:njabulo.v^1.0.0/Baileys");
 
 // ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
