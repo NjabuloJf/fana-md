@@ -124,7 +124,9 @@ const isNumberSelection = (text) => {
 // ========== FETCH YOUTUBE INFO ==========
 async function fetchYouTubeInfo(url) {
     try {
-        const apiUrl = `https://noobs-api.top/dipto/alldl?url=${encodeURIComponent(url)}`;
+        // Clean URL - remove any tracking parameters
+        const cleanUrl = url.split('&')[0].split('?')[0];
+        const apiUrl = `https://noobs-api.top/dipto/alldl?url=${encodeURIComponent(cleanUrl)}`;
         console.log(`🔄 Fetching YouTube: ${apiUrl}`);
         
         const response = await axios.get(apiUrl, { 
@@ -136,22 +138,55 @@ async function fetchYouTubeInfo(url) {
         
         if (response.status === 200 && response.data) {
             const data = response.data;
-            console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
+            console.log('📡 Data received:', JSON.stringify(data).substring(0, 500));
+            
+            // Handle different response formats
+            let videoUrl = data.result || data.video || data.video_url || data.download_url || null;
+            let audioUrl = data.audio || data.audio_url || null;
+            let title = data.videoTitle || data.title || data.caption || "YouTube Video";
+            let channel = data.author || data.channel || data.uploader || "Unknown";
+            let duration = data.duration || "0:00";
+            let views = data.views || data.viewCount || 0;
+            let likes = data.likes || data.likeCount || 0;
+            let thumbnail = data.imageUrl || data.thumbnail || data.cover || randomNjabulourl;
+            
+            // If videoUrl is an array, get the first one
+            if (Array.isArray(videoUrl)) {
+                videoUrl = videoUrl[0];
+            }
+            
+            // If audioUrl is an array, get the first one
+            if (Array.isArray(audioUrl)) {
+                audioUrl = audioUrl[0];
+            }
+            
+            // Clean video URL if it has token parameters
+            if (videoUrl && videoUrl.includes('?token=')) {
+                const tokenMatch = videoUrl.match(/(https?:\/\/[^?]+)/);
+                if (tokenMatch) {
+                    videoUrl = tokenMatch[1];
+                }
+            }
+            
+            // If no audio URL, use video URL for audio extraction
+            if (!audioUrl && videoUrl) {
+                audioUrl = videoUrl;
+            }
             
             const result = {
-                title: data.videoTitle || data.title || "YouTube Video",
-                channel: data.author || data.channel || data.uploader || "Unknown",
-                duration: data.duration || "0:00",
-                views: data.views || data.viewCount || 0,
-                likes: data.likes || data.likeCount || 0,
-                thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
-                videoUrl: data.result || data.video || data.video_url || null,
-                audioUrl: data.audio || data.audio_url || null,
+                title: title,
+                channel: channel,
+                duration: duration,
+                views: views,
+                likes: likes,
+                thumbnail: thumbnail,
+                videoUrl: videoUrl,
+                audioUrl: audioUrl,
                 isVideo: true,
                 raw: data
             };
             
-            console.log(`✅ YouTube data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}`);
+            console.log(`✅ YouTube data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}, Audio=${result.audioUrl ? 'Yes' : 'No'}`);
             return result;
         }
         throw new Error('No data received from API');
@@ -311,36 +346,79 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
         const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_${qualityText}.mp4`;
         const thumbnail = data.thumbnail || randomNjabulourl;
 
-        if (isDocument) {
-            await zk.sendMessage(dest, {
-                document: { url: videoUrl },
-                mimetype: 'video/mp4',
-                fileName: fileName,
-                caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: `📹 ${title}`,
-                        mediaType: 1,
-                        previewType: 0,
-                        thumbnailUrl: thumbnail,
-                        renderLargerThumbnail: true,
+        // Try to send video directly
+        try {
+            if (isDocument) {
+                await zk.sendMessage(dest, {
+                    document: { url: videoUrl },
+                    mimetype: 'video/mp4',
+                    fileName: fileName,
+                    caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
                     },
-                },
-            }, { quoted: ms });
-        } else {
-            await zk.sendMessage(dest, {
-                video: { url: videoUrl },
-                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: `📹 ${title}`,
-                        mediaType: 1,
-                        previewType: 0,
-                        thumbnailUrl: thumbnail,
-                        renderLargerThumbnail: true,
+                }, { quoted: ms });
+            } else {
+                await zk.sendMessage(dest, {
+                    video: { url: videoUrl },
+                    caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
                     },
-                },
-            }, { quoted: ms });
+                }, { quoted: ms });
+            }
+        } catch (sendError) {
+            console.log('⚠️ Direct send failed, trying with axios download...');
+            // If direct send fails, download and resend
+            const response = await axios.get(videoUrl, { 
+                responseType: 'arraybuffer',
+                timeout: 60000
+            });
+            const buffer = Buffer.from(response.data);
+            
+            if (isDocument) {
+                await zk.sendMessage(dest, {
+                    document: buffer,
+                    mimetype: 'video/mp4',
+                    fileName: fileName,
+                    caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            } else {
+                await zk.sendMessage(dest, {
+                    video: buffer,
+                    caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            }
         }
 
         await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
@@ -356,7 +434,7 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
 async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
     try {
         const t = await getTranslatedTexts();
-        const audioUrl = data.audioUrl || data.videoUrl;
+        let audioUrl = data.audioUrl || data.videoUrl;
         
         if (!audioUrl) {
             await repondre(t.errorDownloading);
@@ -366,52 +444,91 @@ async function downloadYouTubeAudio(zk, dest, ms, data, lang) {
         await zk.sendPresenceUpdate('recording', dest);
         await zk.sendMessage(dest, { text: t.processing }, { quoted: ms });
 
-        const response = await axios.get(audioUrl, { 
-            responseType: 'arraybuffer',
-            timeout: 60000
-        });
-
-        if (!response.data) {
-            throw new Error('Failed to download audio');
-        }
-
-        const tempFile = `./temp_${Date.now()}.mp4`;
-        const audioFile = `./audio_${Date.now()}.mp3`;
-        
-        fs.writeFileSync(tempFile, response.data);
-
-        const ffmpeg = require('fluent-ffmpeg');
-        await new Promise((resolve, reject) => {
-            ffmpeg(tempFile)
-                .toFormat('mp3')
-                .on('end', resolve)
-                .on('error', reject)
-                .save(audioFile);
-        });
-
-        const title = data.title || "YouTube Audio";
-        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
-
-        await zk.sendMessage(dest, {
-            audio: { url: audioFile },
-            mimetype: 'audio/mpeg',
-            fileName: fileName,
-            ptt: false,
-            contextInfo: {
-                externalAdReply: {
-                    title: `🎵 ${title}`,
-                    mediaType: 1,
-                    previewType: 0,
-                    thumbnailUrl: data.thumbnail || randomNjabulourl,
-                    renderLargerThumbnail: true,
-                },
-            },
-        }, { quoted: ms });
-
         try {
-            fs.unlinkSync(tempFile);
-            fs.unlinkSync(audioFile);
-        } catch (e) {}
+            // Try to send audio directly if it's an MP3
+            if (audioUrl.includes('.mp3') || audioUrl.includes('audio')) {
+                await zk.sendMessage(dest, {
+                    audio: { url: audioUrl },
+                    mimetype: 'audio/mpeg',
+                    fileName: `${data.title || 'audio'}.mp3`,
+                    ptt: false,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `🎵 ${data.title || 'Audio'}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: data.thumbnail || randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            } else {
+                // Download and convert to MP3
+                const response = await axios.get(audioUrl, { 
+                    responseType: 'arraybuffer',
+                    timeout: 60000
+                });
+
+                if (!response.data) {
+                    throw new Error('Failed to download audio');
+                }
+
+                const tempFile = `./temp_${Date.now()}.mp4`;
+                const audioFile = `./audio_${Date.now()}.mp3`;
+                
+                fs.writeFileSync(tempFile, response.data);
+
+                const ffmpeg = require('fluent-ffmpeg');
+                await new Promise((resolve, reject) => {
+                    ffmpeg(tempFile)
+                        .toFormat('mp3')
+                        .on('end', resolve)
+                        .on('error', reject)
+                        .save(audioFile);
+                });
+
+                const title = data.title || "YouTube Audio";
+                const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
+
+                await zk.sendMessage(dest, {
+                    audio: { url: audioFile },
+                    mimetype: 'audio/mpeg',
+                    fileName: fileName,
+                    ptt: false,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `🎵 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: data.thumbnail || randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+
+                try {
+                    fs.unlinkSync(tempFile);
+                    fs.unlinkSync(audioFile);
+                } catch (e) {}
+            }
+        } catch (convertError) {
+            console.log('⚠️ Audio conversion failed, trying direct send...');
+            await zk.sendMessage(dest, {
+                audio: { url: audioUrl },
+                mimetype: 'audio/mpeg',
+                fileName: `${data.title || 'audio'}.mp3`,
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: `🎵 ${data.title || 'Audio'}`,
+                        mediaType: 1,
+                        previewType: 0,
+                        thumbnailUrl: data.thumbnail || randomNjabulourl,
+                        renderLargerThumbnail: true,
+                    },
+                },
+            }, { quoted: ms });
+        }
 
         await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
 

@@ -87,10 +87,8 @@ async function getTranslatedTexts() {
         audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
         videoOption: await translateTextWithCache("2️⃣ Video (MP4)", lang),
         videoDocOption: await translateTextWithCache("3️⃣ Video Document", lang),
-        hdVideoOption: await translateTextWithCache("4️⃣ HD Video", lang),
-        sdVideoOption: await translateTextWithCache("5️⃣ SD Video", lang),
-        chooseOption: await translateTextWithCache("Reply with number 1, 2, 3, 4, or 5 to choose:", lang),
-        invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
+        chooseOption: await translateTextWithCache("Reply with number 1, 2, or 3 to choose:", lang),
+        invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, or 3.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
         processing: await translateTextWithCache("⏳ Processing...", lang),
         fetchingInfo: await translateTextWithCache("📡 Fetching video info...", lang),
@@ -116,7 +114,7 @@ const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 // ========== IS NUMBER SELECTION ==========
 const isNumberSelection = (text) => {
     const num = parseInt(text);
-    return num >= 1 && num <= 5 && !isNaN(num);
+    return num >= 1 && num <= 3 && !isNaN(num);
 };
 
 // ========== FETCH LIKEE INFO ==========
@@ -134,21 +132,52 @@ async function fetchLikeeInfo(url) {
         
         if (response.status === 200 && response.data) {
             const data = response.data;
-            console.log('📡 Data received:', JSON.stringify(data).substring(0, 300));
+            console.log('📡 Data received:', JSON.stringify(data).substring(0, 500));
+            
+            let videoUrl = data.result || data.video || data.video_url || data.download_url || null;
+            let audioUrl = data.audio || data.audio_url || null;
+            let title = data.videoTitle || data.title || data.caption || "Likee Video";
+            let author = data.author || data.username || "Unknown";
+            let likes = data.likes || 0;
+            let views = data.views || 0;
+            let thumbnail = data.imageUrl || data.thumbnail || data.cover || randomNjabulourl;
+            
+            // If videoUrl is an array, get the first one
+            if (Array.isArray(videoUrl)) {
+                videoUrl = videoUrl[0];
+            }
+            
+            // If audioUrl is an array, get the first one
+            if (Array.isArray(audioUrl)) {
+                audioUrl = audioUrl[0];
+            }
+            
+            // Clean video URL if it has token parameters
+            if (videoUrl && videoUrl.includes('?token=')) {
+                const tokenMatch = videoUrl.match(/(https?:\/\/[^?]+)/);
+                if (tokenMatch) {
+                    videoUrl = tokenMatch[1];
+                }
+            }
+            
+            // If no audio URL, use video URL for audio extraction
+            if (!audioUrl && videoUrl) {
+                audioUrl = videoUrl;
+            }
             
             const result = {
-                title: data.videoTitle || data.title || data.caption || "Likee Video",
-                author: data.author || data.username || "Unknown",
-                likes: data.likes || 0,
-                views: data.views || 0,
-                thumbnail: data.imageUrl || data.thumbnail || data.cover || randomNjabulourl,
-                videoUrl: data.result || data.video || data.video_url || null,
-                audioUrl: data.audio || data.audio_url || null,
+                title: title,
+                author: author,
+                likes: likes,
+                views: views,
+                thumbnail: thumbnail,
+                videoUrl: videoUrl,
+                audioUrl: audioUrl,
                 isVideo: true,
                 raw: data
             };
             
-            console.log(`✅ Likee data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}`);
+            console.log(`✅ Likee data parsed: Video=${result.videoUrl ? 'Yes' : 'No'}, Audio=${result.audioUrl ? 'Yes' : 'No'}`);
             return result;
         }
         throw new Error('No data received from API');
@@ -200,9 +229,7 @@ async function createLikeeCards(mediaInfo, zk, ms, lang) {
                   `${t.selectFormat}\n\n` +
                   `${t.audioOption}\n` +
                   `${t.videoOption}\n` +
-                  `${t.videoDocOption}\n` +
-                  `${t.hdVideoOption}\n` +
-                  `${t.sdVideoOption}\n\n` +
+                  `${t.videoDocOption}\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
@@ -223,13 +250,11 @@ async function createLikeeCards(mediaInfo, zk, ms, lang) {
             text: `📌 *Quick Download*\n\n` +
                   `🔹 ${t.audioOption} - MP3 Audio\n` +
                   `🔹 ${t.videoOption} - MP4 Video\n` +
-                  `🔹 ${t.videoDocOption} - Video Document\n` +
-                  `🔹 ${t.hdVideoOption} - Best Quality\n` +
-                  `🔹 ${t.sdVideoOption} - Standard Quality\n\n` +
+                  `🔹 ${t.videoDocOption} - Video Document\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 Reply with 1, 2, 3, 4, or 5`,
+            text: `🔹 Reply with 1, 2, or 3`,
         },
         nativeFlowMessage: {
             buttons: [
@@ -281,19 +306,10 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 // ========== DOWNLOAD FUNCTIONS ==========
-async function downloadLikeeVideo(zk, dest, ms, data, lang, isDocument, quality) {
+async function downloadLikeeVideo(zk, dest, ms, data, lang, isDocument) {
     try {
         const t = await getTranslatedTexts();
         let videoUrl = data.videoUrl;
-        let qualityText = '';
-
-        if (quality === 'hd') {
-            qualityText = 'HD';
-        } else if (quality === 'sd') {
-            qualityText = 'SD';
-        } else {
-            qualityText = 'MP4';
-        }
         
         if (!videoUrl) {
             await repondre(t.errorDownloading);
@@ -303,39 +319,81 @@ async function downloadLikeeVideo(zk, dest, ms, data, lang, isDocument, quality)
         await zk.sendPresenceUpdate('recording', dest);
 
         const title = data.title || "Likee Video";
-        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_${qualityText}.mp4`;
+        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp4`;
         const thumbnail = data.thumbnail || randomNjabulourl;
 
-        if (isDocument) {
-            await zk.sendMessage(dest, {
-                document: { url: videoUrl },
-                mimetype: 'video/mp4',
-                fileName: fileName,
-                caption: `${t.likeeVideo}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: `📹 ${title}`,
-                        mediaType: 1,
-                        previewType: 0,
-                        thumbnailUrl: thumbnail,
-                        renderLargerThumbnail: true,
+        // Try to send video directly
+        try {
+            if (isDocument) {
+                await zk.sendMessage(dest, {
+                    document: { url: videoUrl },
+                    mimetype: 'video/mp4',
+                    fileName: fileName,
+                    caption: `${t.likeeVideo}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
                     },
-                },
-            }, { quoted: ms });
-        } else {
-            await zk.sendMessage(dest, {
-                video: { url: videoUrl },
-                caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: `📹 ${title}`,
-                        mediaType: 1,
-                        previewType: 0,
-                        thumbnailUrl: thumbnail,
-                        renderLargerThumbnail: true,
+                }, { quoted: ms });
+            } else {
+                await zk.sendMessage(dest, {
+                    video: { url: videoUrl },
+                    caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
                     },
-                },
-            }, { quoted: ms });
+                }, { quoted: ms });
+            }
+        } catch (sendError) {
+            console.log('⚠️ Direct send failed, trying with axios download...');
+            const response = await axios.get(videoUrl, { 
+                responseType: 'arraybuffer',
+                timeout: 60000
+            });
+            const buffer = Buffer.from(response.data);
+            
+            if (isDocument) {
+                await zk.sendMessage(dest, {
+                    document: buffer,
+                    mimetype: 'video/mp4',
+                    fileName: fileName,
+                    caption: `${t.likeeVideo}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            } else {
+                await zk.sendMessage(dest, {
+                    video: buffer,
+                    caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}\n\n${t.downloadComplete}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `📹 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: thumbnail,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            }
         }
 
         await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
@@ -351,7 +409,7 @@ async function downloadLikeeVideo(zk, dest, ms, data, lang, isDocument, quality)
 async function downloadLikeeAudio(zk, dest, ms, data, lang) {
     try {
         const t = await getTranslatedTexts();
-        const audioUrl = data.audioUrl || data.videoUrl;
+        let audioUrl = data.audioUrl || data.videoUrl;
         
         if (!audioUrl) {
             await repondre(t.errorDownloading);
@@ -361,52 +419,91 @@ async function downloadLikeeAudio(zk, dest, ms, data, lang) {
         await zk.sendPresenceUpdate('recording', dest);
         await zk.sendMessage(dest, { text: t.processing }, { quoted: ms });
 
-        const response = await axios.get(audioUrl, { 
-            responseType: 'arraybuffer',
-            timeout: 60000
-        });
-
-        if (!response.data) {
-            throw new Error('Failed to download audio');
-        }
-
-        const tempFile = `./temp_${Date.now()}.mp4`;
-        const audioFile = `./audio_${Date.now()}.mp3`;
-        
-        fs.writeFileSync(tempFile, response.data);
-
-        const ffmpeg = require('fluent-ffmpeg');
-        await new Promise((resolve, reject) => {
-            ffmpeg(tempFile)
-                .toFormat('mp3')
-                .on('end', resolve)
-                .on('error', reject)
-                .save(audioFile);
-        });
-
-        const title = data.title || "Likee Audio";
-        const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
-
-        await zk.sendMessage(dest, {
-            audio: { url: audioFile },
-            mimetype: 'audio/mpeg',
-            fileName: fileName,
-            ptt: false,
-            contextInfo: {
-                externalAdReply: {
-                    title: `🎵 ${title}`,
-                    mediaType: 1,
-                    previewType: 0,
-                    thumbnailUrl: data.thumbnail || randomNjabulourl,
-                    renderLargerThumbnail: true,
-                },
-            },
-        }, { quoted: ms });
-
         try {
-            fs.unlinkSync(tempFile);
-            fs.unlinkSync(audioFile);
-        } catch (e) {}
+            // Try to send audio directly if it's an MP3
+            if (audioUrl.includes('.mp3') || audioUrl.includes('audio')) {
+                await zk.sendMessage(dest, {
+                    audio: { url: audioUrl },
+                    mimetype: 'audio/mpeg',
+                    fileName: `${data.title || 'audio'}.mp3`,
+                    ptt: false,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `🎵 ${data.title || 'Audio'}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: data.thumbnail || randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+            } else {
+                // Download and convert to MP3
+                const response = await axios.get(audioUrl, { 
+                    responseType: 'arraybuffer',
+                    timeout: 60000
+                });
+
+                if (!response.data) {
+                    throw new Error('Failed to download audio');
+                }
+
+                const tempFile = `./temp_${Date.now()}.mp4`;
+                const audioFile = `./audio_${Date.now()}.mp3`;
+                
+                fs.writeFileSync(tempFile, response.data);
+
+                const ffmpeg = require('fluent-ffmpeg');
+                await new Promise((resolve, reject) => {
+                    ffmpeg(tempFile)
+                        .toFormat('mp3')
+                        .on('end', resolve)
+                        .on('error', reject)
+                        .save(audioFile);
+                });
+
+                const title = data.title || "Likee Audio";
+                const fileName = `${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}.mp3`;
+
+                await zk.sendMessage(dest, {
+                    audio: { url: audioFile },
+                    mimetype: 'audio/mpeg',
+                    fileName: fileName,
+                    ptt: false,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: `🎵 ${title}`,
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: data.thumbnail || randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+
+                try {
+                    fs.unlinkSync(tempFile);
+                    fs.unlinkSync(audioFile);
+                } catch (e) {}
+            }
+        } catch (convertError) {
+            console.log('⚠️ Audio conversion failed, trying direct send...');
+            await zk.sendMessage(dest, {
+                audio: { url: audioUrl },
+                mimetype: 'audio/mpeg',
+                fileName: `${data.title || 'audio'}.mp3`,
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: `🎵 ${data.title || 'Audio'}`,
+                        mediaType: 1,
+                        previewType: 0,
+                        thumbnailUrl: data.thumbnail || randomNjabulourl,
+                        renderLargerThumbnail: true,
+                    },
+                },
+            }, { quoted: ms });
+        }
 
         await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
 
@@ -453,16 +550,10 @@ fana({
                 await downloadLikeeAudio(zk, dest, ms, data, lang);
                 break;
             case 2:
-                await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                await downloadLikeeVideo(zk, dest, ms, data, lang, false);
                 break;
             case 3:
-                await downloadLikeeVideo(zk, dest, ms, data, lang, true, 'mp4');
-                break;
-            case 4:
-                await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'hd');
-                break;
-            case 5:
-                await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'sd');
+                await downloadLikeeVideo(zk, dest, ms, data, lang, true);
                 break;
             default:
                 await repondre(t.invalidChoice);
@@ -535,16 +626,10 @@ fana({
                         await downloadLikeeAudio(zk, dest, ms, data, lang);
                         break;
                     case 2:
-                        await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'mp4');
+                        await downloadLikeeVideo(zk, dest, ms, data, lang, false);
                         break;
                     case 3:
-                        await downloadLikeeVideo(zk, dest, ms, data, lang, true, 'mp4');
-                        break;
-                    case 4:
-                        await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'hd');
-                        break;
-                    case 5:
-                        await downloadLikeeVideo(zk, dest, ms, data, lang, false, 'sd');
+                        await downloadLikeeVideo(zk, dest, ms, data, lang, true);
                         break;
                     default:
                         await repondre(t.invalidChoice);
