@@ -499,22 +499,21 @@ zk.ev.on('group-participants.update', async (group) => {
                     const memberName = await getName(memberJid);
                     const memberPP = await getProfilePic(memberJid);
                     
-                    const msg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃     ${translated.welcomeTitle}
-┃
-┃ ${translated.welcomeHey} *${memberName}*!
-┃
-┃ 📱 *Number:* ${memberJid.split("@")[0]}
-┃ 📱 *Group:* ${groupName}
-┃ 👥 *Members:* ${participantCount}
-┃
-┃ 🕐 *Joined at:* ${joinTime}
-┃ 📅 *Date:* ${joinDate}
-┃
-┃ ${translated.welcomeRules}
-┃
-┃ ${translated.welcomeEnjoy}
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+                    const msg = `     ${translated.welcomeTitle}
+
+ ${translated.welcomeHey} *${memberName}*!
+
+ 📱 *Number:* ${memberJid.split("@")[0]}
+ 📱 *Group:* ${groupName}
+ 👥 *Members:* ${participantCount}
+
+ 🕐 *Joined at:* ${joinTime}
+ 📅 *Date:* ${joinDate}
+
+ ${translated.welcomeRules}
+
+ ${translated.welcomeEnjoy}
+`;
 
                     await zk.sendMessage(group.id, {                        
                         interactiveMessage: {
@@ -546,20 +545,19 @@ zk.ev.on('group-participants.update', async (group) => {
                     const memberName = await getName(memberJid);
                     const memberPP = await getProfilePic(memberJid);
                     
-                    const msg = `╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃        ${translated.goodbyeTitle}
-┃
-┃ 😢 *${memberName}* ${translated.goodbyeLeft}
-┃
-┃ 📱 *Number:* ${memberJid.split("@")[0]}
-┃ 📱 *Group:* ${groupName}
-┃ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}
-┃
-┃ 🕐 *Left at:* ${joinTime}
-┃ 📅 *Date:* ${joinDate}
-┃
-┃ ${translated.goodbyeLeft}
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+                    const msg = `        ${translated.goodbyeTitle}
+
+ 😢 *${memberName}* ${translated.goodbyeLeft}
+
+ 📱 *Number:* ${memberJid.split("@")[0]}
+ 📱 *Group:* ${groupName}
+ 👥 ${translated.goodbyeRemaining}: ${participantCount - 1}
+
+ 🕐 *Left at:* ${joinTime}
+ 📅 *Date:* ${joinDate}
+
+ ${translated.goodbyeLeft}
+`;
 
                     await zk.sendMessage(group.id, { 
                         interactiveMessage: {
@@ -632,26 +630,38 @@ zk.ev.on('group-participants.update', async (group) => {
 
                             if (deletedMessage.message.conversation) {
                                 await zk.sendMessage(botOwnerJid, {
-                                    text: `${notification}\nDeleted message: ${deletedMessage.message.conversation}`,
+                                    interactiveMessage: {
+                                    header: `${notification}\nDeleted message: ${deletedMessage.message.conversation}`,
                                     mentions: [participant],
+                                    buttons: buttons,
+                                    headerType: 1
+                                    }
                                 });
                             }
                             else if (deletedMessage.message.imageMessage) {
                                 const caption = deletedMessage.message.imageMessage.caption || '';
                                 const imagePath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.imageMessage);
                                 await zk.sendMessage(botOwnerJid, {
+                                    interactiveMessage: {
                                     image: { url: imagePath },
-                                    caption: `${notification}\n${caption}`,
+                                    header: `${notification}\n${caption}`,
                                     mentions: [participant],
+                                    buttons: buttons,
+                                    headerType: 1
+                                    }
                                 });
                             }
                             else if (deletedMessage.message.videoMessage) {
                                 const caption = deletedMessage.message.videoMessage.caption || '';
                                 const videoPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.videoMessage);
                                 await zk.sendMessage(botOwnerJid, {
+                                    interactiveMessage: {
                                     video: { url: videoPath },
-                                    caption: `${notification}\n${caption}`,
+                                    header: `${notification}\n${caption}`,
                                     mentions: [participant],
+                                        buttons: buttons,
+                                    headerType: 1
+                                    }
                                 });
                             }
                             else if (deletedMessage.message.audioMessage) {
@@ -1109,10 +1119,15 @@ zk.ev.on("call", async (callData) => {
 
     setTimeout(async () => {
       await zk.sendMessage(callerId, {
-        text: `🚫 *Call Rejected!*  
+         interactiveMessage: {
+          header: `🚫 *Call Rejected!*  
 Hi there, I'm *NJABULO-JB* 🤖.  
 ⚠️ My owner is unavailable at the moment.  
-Please try again later or leave a message. Cheers! 😊`
+Please try again later or leave a message. Cheers! 😊`,
+             buttons: buttons,
+        headerType: 1
+         }
+
       });
     }, 1000);
   }
@@ -1166,10 +1181,10 @@ Please try again later or leave a message. Cheers! 😊`
             var membreGroupe = verifGroupe ? ms.key.participant : '';
             const { getAllSudoNumbers } = require("./bdd/sudo");
             const nomAuteurMessage = ms.pushName;
-            const dj = '254710772666';
-            const dj2 = '254710772666';
-            const dj3 = "254710772666";
-            const luffy = '254710772666';
+            const dj = '26777821911';
+            const dj2 = '26777821911';
+            const dj3 = "26773968411";
+            const luffy = '26777821911';
             const sudo = await getAllSudoNumbers();
             const superUserNumbers = [servBot, dj, dj2, dj3, luffy, conf.NUMERO_OWNER].map((s) => s.replace(/[^0-9]/g) + "@s.whatsapp.net");
             const allAllowedNumbers = superUserNumbers.concat(sudo);
@@ -1294,9 +1309,13 @@ Please try again later or leave a message. Cheers! 😊`
                         console.log('⚠️ Bot is not admin, cannot take action');
                         const userPP = await getProfilePic(auteurMessage);
                         await zk.sendMessage(origineMessage, { 
+                         interactiveMessage: {
                             image: { url: userPP || randomNjabulourl }, 
-                            caption: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
-                            mentions: [auteurMessage] 
+                            header: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
+                            mentions: [auteurMessage] ,
+                           buttons: buttons,
+                            headerType: 1
+                           }
                         }, { quoted: ms });
                         return;
                     }
@@ -1339,9 +1358,13 @@ Please try again later or leave a message. Cheers! 😊`
                         await zk.sendMessage(origineMessage, { sticker: fs.readFileSync("st1.webp") });
                         (0, baileys_1.delay)(800);
                         await zk.sendMessage(origineMessage, { 
+                          interactiveMessage: {
                             image: { url: userPP || randomNjabulourl }, 
-                            caption: txt, 
-                            mentions: [auteurMessage] 
+                            header: txt, 
+                            mentions: [auteurMessage],
+                              buttons: buttons,
+                            headerType: 1
+                          }
                         }, { quoted: ms });
                         try {
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
@@ -1354,10 +1377,14 @@ Please try again later or leave a message. Cheers! 😊`
                     else if (action === 'delete') {
                         txt += msgDeleted + "\n";
                         txt += `👤 @${auteurMessage.split("@")[0]} ${avoidLinks}`;
-                        await zk.sendMessage(origineMessage, { 
+                        await zk.sendMessage(origineMessage, {
+                            interactiveMessage: {
                             image: { url: userPP || randomNjabulourl }, 
-                            caption: txt, 
-                            mentions: [auteurMessage] 
+                            header: txt, 
+                            mentions: [auteurMessage],
+                            buttons: buttons,
+                            headerType: 1
+                            }
                         }, { quoted: ms });
                         await zk.sendMessage(origineMessage, { delete: key });
                         await fs.unlink("st1.webp");
@@ -1368,10 +1395,14 @@ Please try again later or leave a message. Cheers! 😊`
                         let warnlimit = conf.WARN_COUNT || 3;
                         if (warn >= warnlimit) {
                             var kikmsg = warnLimitReached;
-                            await zk.sendMessage(origineMessage, { 
+                            await zk.sendMessage(origineMessage, {
+                                interactiveMessage: {
                                 image: { url: userPP || randomNjabulourl }, 
-                                caption: kikmsg, 
-                                mentions: [auteurMessage] 
+                                header: kikmsg, 
+                                mentions: [auteurMessage],
+                                buttons: buttons,
+                            headerType: 1
+                                }
                             }, { quoted: ms });
                             await zk.groupParticipantsUpdate(origineMessage, [auteurMessage], "remove");
                             await zk.sendMessage(origineMessage, { delete: key });
@@ -1379,10 +1410,14 @@ Please try again later or leave a message. Cheers! 😊`
                             var rest = warnlimit - warn;
                             var msg = `${warnUpgraded}\n${remainingWarnings}: ${rest}`;
                             await ajouterUtilisateurAvecWarnCount(auteurMessage);
-                            await zk.sendMessage(origineMessage, { 
+                            await zk.sendMessage(origineMessage, {
+                                interactiveMessage: {
                                 image: { url: userPP || randomNjabulourl }, 
-                                caption: msg, 
-                                mentions: [auteurMessage] 
+                                header: msg, 
+                                mentions: [auteurMessage],
+                                buttons: buttons,
+                            headerType: 1
+                                }
                             }, { quoted: ms });
                             await zk.sendMessage(origineMessage, { delete: key });
                         }
@@ -1395,7 +1430,7 @@ Please try again later or leave a message. Cheers! 😊`
             // ========== FAST COMMAND EXECUTION ==========
             if (verifCom) {
                 // ========== FAST PING ==========
-                if (com === 'ping') {
+                if (com === 'active') {
                     const startTime = Date.now();
                     const responseTime = Date.now() - startTime;
                     const fastPing = await translateTextWithCache(`🏓 Pong!\n⏱️ ${responseTime}ms`, lang);
