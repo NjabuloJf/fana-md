@@ -42,7 +42,11 @@ module.exports = {
     // Use reliable GitHub URLs instead of Catbox
     URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
-    PAIRNJABULO: process.env.PAIRNJABULO || 'pair.com',
+    WEBSITEOWNER: process.env.WEBSITEOWNER || 'https://njabulobot.vercel.app',
+    REPOSITORY: process.env.REPOSITORY ||'https://github.com/NjabuloJf/Njabulo-Jb',
+    PAIR_API: process.env.PAIR_API || 'https://pairqr-ba69c42c51f7.herokuapp.com',
+
+ 
     
     // ========== MODE SETTINGS ==========
     MODE: process.env.PUBLIC_MODE || "yes",
