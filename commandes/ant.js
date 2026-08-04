@@ -271,7 +271,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 fana({ 
-    nomCom: "remove1", 
+    nomCom: "remove", 
     aliases: ["kick", "removemember", "deleteuser"],
     categorie: 'Group', 
     reaction: "👨🏿‍💼" 
@@ -311,7 +311,16 @@ fana({
     let admin = verifGroupe ? a.includes(auteurMsgRepondu) : false;
     let membre = verifMember(auteurMsgRepondu);
     let autAdmin = verifGroupe ? a.includes(auteurMessage) : false;
-    let zkad = verifGroupe ? a.includes(idBot) : false;
+    
+    // ========== FIX: BOT ADMIN CHECK ==========
+    // Get bot's full JID (with @s.whatsapp.net)
+    const botJid = idBot.includes('@') ? idBot : idBot + '@s.whatsapp.net';
+    let zkad = verifGroupe ? a.includes(botJid) : false;
+    
+    // Debug log to check
+    console.log('Bot JID:', botJid);
+    console.log('Admin list:', a);
+    console.log('Is bot admin?', zkad);
 
     // ========== CHECK FOR NUMBER SELECTION REPLY ==========
     const replyText = arg ? arg.join(' ') : '';
@@ -339,7 +348,6 @@ fana({
 
         switch(selectedNumber) {
             case 1:
-                // Option 1: Show remove format
                 await repondre(`📌 *${t.howToUse}*\n\n` +
                     `${t.usage}: .remove @username\n\n` +
                     `${t.example}: .remove @user123\n\n` +
@@ -347,7 +355,6 @@ fana({
                     `${t.poweredBy}`);
                 break;
             case 2:
-                // Option 2: Quick remove
                 await repondre(`📌 *${t.removeNow}*\n\n` +
                     `${t.usage}: .remove @username\n\n` +
                     `${t.example}: .remove @user123\n\n` +
@@ -355,7 +362,6 @@ fana({
                     `${t.poweredBy}`);
                 break;
             case 3:
-                // Option 3: Show instructions
                 await repondre(`📋 *${t.instructions}*\n\n` +
                     `1️⃣ ${t.removeNow}\n` +
                     `   ${t.usage}: .remove @username\n\n` +
@@ -376,13 +382,11 @@ fana({
         const { cards } = await createRemoveCards(zk, ms, lang);
         await sendCarouselMessage(zk, dest, cards, ms);
 
-        // Store for reply handling
         const senderJid = ms.key.remoteJid;
         activeRequests[senderJid] = {
             timestamp: Date.now()
         };
 
-        // Setup reply collector
         if (zk._replyListener) {
             zk.ev.off('messages.upsert', zk._replyListener);
         }
@@ -470,7 +474,7 @@ fana({
             return repondre(t.tagMember);
         }
 
-        // Check if bot is admin
+        // Check if bot is admin - FIXED
         if (!zkad) {
             return repondre(t.botNotAdmin);
         }
@@ -502,10 +506,8 @@ fana({
         let removedBy = superUser ? 'Super User' : `@${auteurMessage.split("@")[0]}`;
         var txt = `@${auteurMsgRepondu.split("@")[0]} ${t.removed}\n${t.removedBy} ${removedBy}`;
         
-        // Remove the member
         await zk.groupParticipantsUpdate(dest, [auteurMsgRepondu], "remove");
         
-        // Send confirmation with sticker
         await zk.sendMessage(dest, { 
             text: txt, 
             mentions: [auteurMsgRepondu, auteurMessage],
