@@ -174,6 +174,20 @@ async function getTranslatedGoodbye(lang) {
     return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
 }
 
+//==========button translate=======
+const buttonText = await translateText("bot Channels", lang);
+    
+    const buttons = [
+        {
+            name: "cta_url",
+            buttonParamsJson: JSON.stringify({
+                display_text: buttonText,
+                id: "backup channel",
+                url: config.GURL
+            }),
+        }
+    ];
+
 // ========== GET NAME FROM JID ==========
 async function getName(jid) {
     try {
@@ -498,10 +512,15 @@ zk.ev.on('group-participants.update', async (group) => {
 ┃ ${translated.welcomeEnjoy}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
-                    await zk.sendMessage(group.id, { 
+                    await zk.sendMessage(group.id, {                        
+                        interactiveMessage: {
                         image: { url: memberPP || randomNjabulourl }, 
-                        caption: msg, 
-                        mentions: [memberJid] 
+                        header: msg,
+                        mentions: [memberJid],
+                        buttons,
+                       headerType: 1
+                      }
+                     
                     });
                     
                     console.log(`✅ Welcome message sent to ${memberName}`);
@@ -540,9 +559,13 @@ zk.ev.on('group-participants.update', async (group) => {
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
                     await zk.sendMessage(group.id, { 
+                        interactiveMessage: {
                         image: { url: memberPP || randomNjabulourl }, 
-                        caption: msg, 
-                        mentions: [memberJid] 
+                        header: msg,
+                        mentions: [memberJid],
+                        buttons,
+                       headerType: 1
+                    }
                     });
                     
                     console.log(`✅ Goodbye message sent for ${memberName}`);
