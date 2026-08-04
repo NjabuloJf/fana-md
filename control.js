@@ -1574,23 +1574,28 @@ Please try again later or leave a message. Cheers! 😊`,
                 
                 // Get translated buttons for startup
                 const startupButtons = await getTranslatedButtons(currentLang);
-                
+                const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+      
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
-                        const startupText = `╭━━━━━━━━━━━━━━━━━━━━━━╮
-┃   📊 *NJABULO-JB BOT ONLINE*
-┃
-┃ ✅ *Bot:* WhatsApp Bot Connected
-┃ 📌 *Prefix:* ${prefixe}
-┃ 📅 *Date:* ${new Date().toLocaleDateString()}
-┃ 🕐 *Time:* ${new Date().toLocaleTimeString()}
-┃ 📊 *Mode:* ${md}
-┃ 🌍 *Language:* ${langName}
-┃ 👤 *Owner:* Njabulo JB
-┃
-┃ 💡 *Commands:* Use .menu
-┃ 📢 *Channel:* ${conf.GURL || "Available"}
-╰━━━━━━━━━━━━━━━━━━━━━━╯`;
+                        const startupText = `╭───────────────
+*-᳆   📊 NJABULO-JB BOT ONLINE*
+*-᳆
+*-᳆ ✅ Bot:* WhatsApp Bot Connected
+*-᳆ 📌 Prefix:* ${prefixe}
+*-᳆ 📅 Date:* ${new Date().toLocaleDateString()}
+*-᳆ 🕐 Time:* ${new Date().toLocaleTimeString()}
+*-᳆ 📊 Mode:* ${md}
+*-᳆ 🌍 Language:* ${langName}
+*-᳆ 👤 Owner:* Njabulo JB
+*-᳆*
+*-᳆ 💡 Commands:* Use .menu
+*-᳆ ⏳ lang to set bot language*
+*-᳆ 💌 use .setlang you owner country language*
+ ╰───────────────
+
+`;
+                        await zk.sendMessage(ownerNumber, { text: startupText });
 
                         // Send with buttons
                         await zk.sendMessage(zk.user.id, { 
