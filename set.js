@@ -42,6 +42,7 @@ module.exports = {
     // Use reliable GitHub URLs instead of Catbox
     URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
+    PAIRNJABULO: process.env.PAIRNJABULO || 'pair.com',
     
     // ========== MODE SETTINGS ==========
     MODE: process.env.PUBLIC_MODE || "yes",
