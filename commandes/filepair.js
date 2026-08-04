@@ -1,39 +1,82 @@
 const { fana } = require("../njabulo/fana");
 const axios = require("axios");
 const config = require("../set");
+const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
     try {
         if (!targetLang || targetLang === 'en') return text;
+        if (!text) return text;
         try {
             const { translate } = require('@vitalets/google-translate-api');
             const result = await translate(text, { to: targetLang });
             return result.text;
         } catch (e) {
-            const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
-                timeout: 5000
-            });
-            if (response.data && response.data.responseData) {
-                return response.data.responseData.translatedText || text;
+            console.log('⚠️ Google Translate failed, using fallback...');
+            try {
+                const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`, {
+                    timeout: 5000
+                });
+                if (response.data && response.data.responseData) {
+                    return response.data.responseData.translatedText || text;
+                }
+                return text;
+            } catch (fallbackError) {
+                console.error('⚠️ Fallback translation failed:', fallbackError.message);
+                return text;
             }
-            return text;
         }
     } catch (error) {
-        console.error('Translation error:', error.message);
+        console.error('⚠️ Translation error:', error.message);
         return text;
     }
 };
 
-// ========== TRANSLATED BUTTON FUNCTION ==========
-async function getTranslatedButton() {
-    const lang = config.LANGUAGE || "en";
-    return await translateText("📋 Copy", lang);
-}
+// ========== TRANSLATION CACHE ==========
+const translationCache = new Map();
 
-async function getTranslatedCopyCode() {
+let translateTextWithCache = async (text, targetLang) => {
+    if (!targetLang || targetLang === 'en') return text;
+    if (!text) return text;
+    
+    const cacheKey = `${text}_${targetLang}`;
+    if (translationCache.has(cacheKey)) {
+        return translationCache.get(cacheKey);
+    }
+    
+    try {
+        const result = await translateText(text, targetLang);
+        translationCache.set(cacheKey, result);
+        setTimeout(() => translationCache.delete(cacheKey), 3600000);
+        return result;
+    } catch (error) {
+        console.error('⚠️ Translation error:', error.message);
+        return text;
+    }
+};
+
+// ========== TRANSLATED TEXT FUNCTION ==========
+async function getTranslatedTexts() {
     const lang = config.LANGUAGE || "en";
-    return await translateText("📋 Copy Code", lang);
+    return {
+        waChannel: await translateTextWithCache("🌐 WA Channel", lang),
+        pairCodeTitle: await translateTextWithCache("🔐 YOUR PAIRING CODE", lang),
+        copyCode: await translateTextWithCache("📋 Copy Code", lang),
+        visitRepo: await translateTextWithCache("📂 Visit Repository", lang),
+        visitWebsite: await translateTextWithCache("🌍 Visit Website", lang),
+        enterNumber: await translateTextWithCache("📌 Enter your number like:", lang),
+        generating: await translateTextWithCache("⏳ Wait, generating your pairing code...", lang),
+        copyAndPaste: await translateTextWithCache("✅ Here is your pair code, copy and paste it to the notification above or link devices.", lang),
+        errorMsg: await translateTextWithCache("❌ Error getting response from API.", lang),
+        pairCardTitle: await translateTextWithCache("📡 PAIRING SYSTEM", lang),
+        pairCardDesc: await translateTextWithCache("Generate your WhatsApp pairing code to link devices.", lang),
+        repositoryCardTitle: await translateTextWithCache("📂 REPOSITORY", lang),
+        repositoryCardDesc: await translateTextWithCache("Visit the official repository for updates and support.", lang),
+        websiteCardTitle: await translateTextWithCache("🌍 WEBSITE", lang),
+        websiteCardDesc: await translateTextWithCache("Visit the official website for more information.", lang),
+        chooseOption: await translateTextWithCache("Reply with number 1, 2, or 3 to choose:", lang),
+    };
 }
 
 // ── Random image list from GitHub ─────────────────────────────────────────────
@@ -46,31 +89,168 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Base button definition (only Copy button) ────────────────────────
-async function getBaseButtons() {
-    const copyText = await getTranslatedButton();
-    return [
-        {
-            name: "cta_copy",
-            buttonParamsJson: JSON.stringify({
-                display_text: copyText,
-                id: "copy",
-                copy_code: "",
-            }),
+// ========== CREATE 3 CARDS ==========
+async function createPairCards(zk, ms, lang) {
+    const t = await getTranslatedTexts();
+    
+    // Image message for cards
+    let imageMessage = null;
+    try {
+        imageMessage = (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage;
+    } catch (e) {
+        console.log('⚠️ Could not load image');
+        imageMessage = (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage;
+    }
+
+    // Card 1: Pair Code
+    const card1 = {
+        header: {
+            title: `📡 ${t.pairCardTitle}`,
+            hasMediaAttachment: true,
+            imageMessage: imageMessage,
         },
-    ];
+        body: {
+            text: `${t.pairCardDesc}\n\n📌 ${t.enterNumber}\n.pair 26777821911\n\n${t.chooseOption}`,
+        },
+        footer: {
+            text: `🔹 Option 1: Generate Pair Code`,
+        },
+        nativeFlowMessage: {
+            buttons: [
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: t.waChannel,
+                        url: config.GURL
+                    }),
+                },
+                {
+                    name: "cta_copy",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: "📋 Example",
+                        copy_code: ".pair 26777821911",
+                    }),
+                },
+            ],
+        },
+    };
+
+    // Card 2: Repository
+    const card2 = {
+        header: {
+            title: `📂 ${t.repositoryCardTitle}`,
+            hasMediaAttachment: true,
+            imageMessage: imageMessage,
+        },
+        body: {
+            text: `${t.repositoryCardDesc}\n\n📌 *GitHub:*\nhttps://github.com/NjabuloJf/fana-md\n\n${t.chooseOption}`,
+        },
+        footer: {
+            text: `🔹 Option 2: Visit Repository`,
+        },
+        nativeFlowMessage: {
+            buttons: [
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: t.visitRepo,
+                        url: config.REPOSITORY, 
+                    }),
+                },
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: t.waChannel,
+                        url: config.GURL
+                    }),
+                },
+            ],
+        },
+    };
+
+    // Card 3: Website
+    const card3 = {
+        header: {
+            title: `🌍 ${t.websiteCardTitle}`,
+            hasMediaAttachment: true,
+            imageMessage: imageMessage,
+        },
+        body: {
+            text: `${t.websiteCardDesc}\n\n📌 *Website:*\nhttps://njabulojf.github.io\n\n${t.chooseOption}`,
+        },
+        footer: {
+            text: `🔹 Option 3: Visit Website`,
+        },
+        nativeFlowMessage: {
+            buttons: [
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: t.visitWebsite,
+                        url: CONFIG.WEBSITEOWNER,
+                    }),
+                },
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: t.waChannel,
+                        url: config.GURL
+                    }),
+                },
+            ],
+        },
+    };
+
+    return { cards: [card1, card2, card3] };
+}
+
+// ========== SEND CAROUSEL ==========
+async function sendCarouselMessage(zk, dest, cards, ms) {
+    const t = await getTranslatedTexts();
+    const message = generateWAMessageFromContent(
+        dest,
+        {
+            viewOnceMessage: {
+                message: {
+                    messageContextInfo: {
+                        deviceListMetadata: {},
+                        deviceListMetadataVersion: 2,
+                    },
+                    interactiveMessage: {
+                        body: { text: `📡 *Pairing System*` },
+                        footer: { text: `🔹 Choose an option` },
+                        carouselMessage: { cards },
+                    },
+                },
+            },
+        },
+        { quoted: ms }
+    );
+
+    await zk.relayMessage(dest, message.message, { messageId: message.key.id });
+    return message;
 }
 
 // ── Helper that sends an interactive message with image + buttons ─────
 async function sendFormattedMessage(zk, chatId, text, ms) {
-    const baseButtons = await getBaseButtons();
-    const buttons = JSON.parse(JSON.stringify(baseButtons));
-    const copyCodeText = await getTranslatedCopyCode();
-    buttons[0].buttonParamsJson = JSON.stringify({
-        display_text: copyCodeText,
-        id: "copy",
-        copy_code: text,
-    });
+    const t = await getTranslatedTexts();
+    const buttons = [
+        {
+            name: "cta_url",
+            buttonParamsJson: JSON.stringify({
+                display_text: t.waChannel,
+                url: config.GURL
+            }),
+        },
+        {
+            name: "cta_copy",
+            buttonParamsJson: JSON.stringify({
+                display_text: t.copyCode,
+                id: "copy",
+                copy_code: text,
+            }),
+        },
+    ];
 
     await zk.sendMessage(
         chatId,
@@ -86,6 +266,15 @@ async function sendFormattedMessage(zk, chatId, text, ms) {
     );
 }
 
+// ========== STORE FOR ACTIVE REQUESTS ==========
+const activeRequests = {};
+
+// ========== IS NUMBER SELECTION ==========
+const isNumberSelection = (text) => {
+    const num = parseInt(text);
+    return num >= 1 && num <= 3 && !isNaN(num);
+};
+
 // ── Pair code command ─────────────────────────────────────────────
 fana({
     nomCom: "pair",
@@ -95,74 +284,274 @@ fana({
 }, async (chatId, zk, commandeOptions) => {
     const { repondre, arg, ms } = commandeOptions;
     const lang = config.LANGUAGE || "en";
+    const t = await getTranslatedTexts();
 
-    // ========== TRANSLATED TEXTS ==========
-    const enterNumber = await translateText("📌 *Enter your number like:*", lang);
-    const generating = await translateText("⏳ *Wait, generating your pairing code...*", lang);
-    const yourPairCode = await translateText("🔐 *YOUR PAIRING CODE* 🔐", lang);
-    const copyAndPaste = await translateText("✅ *Here is your pair code, copy and paste it to the notification above or link devices.*", lang);
-    const errorMsg = await translateText("❌ Error getting response from API.", lang);
-    const copyCode = await translateText("📋 Copy Code", lang);
+    // Check if this is a number selection reply
+    const replyText = arg ? arg.join(' ') : '';
+    if (replyText && isNumberSelection(replyText)) {
+        const selectedNumber = parseInt(replyText);
+        const senderJid = ms.key.remoteJid;
+        
+        if (!activeRequests[senderJid]) {
+            await repondre(t.invalidChoice || "❌ Invalid choice!");
+            return;
+        }
 
-    if (!arg || arg.length === 0) {
-        return sendFormattedMessage(
-            zk,
-            chatId,
-            `${enterNumber}\n\n.pair 26777821911`,
-            ms
-        );
+        const data = activeRequests[senderJid];
+        delete activeRequests[senderJid];
+
+        if (zk._replyListener) {
+            zk.ev.off('messages.upsert', zk._replyListener);
+            zk._replyListener = null;
+        }
+
+        try {
+            await zk.sendMessage(chatId, {
+                react: { text: "📥", key: ms.key }
+            });
+        } catch (e) {}
+
+        switch(selectedNumber) {
+            case 1:
+                // Generate Pair Code
+                await generatePairCode(zk, chatId, ms, data, lang);
+                break;
+            case 2:
+                // Visit Repository
+                await zk.sendMessage(chatId, {
+                    text: `📂 *Repository*\n\nhttps://github.com/NjabuloJf/fana-md\n\n${t.waChannel}: ${config.GURL}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: "📂 NJABULO-JB Repository",
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+                break;
+            case 3:
+                // Visit Website
+                await zk.sendMessage(chatId, {
+                    text: `🌍 *Website*\n\nhttps://njabulojf.github.io\n\n${t.waChannel}: ${config.GURL}`,
+                    contextInfo: {
+                        externalAdReply: {
+                            title: "🌍 NJABULO-JB Website",
+                            mediaType: 1,
+                            previewType: 0,
+                            thumbnailUrl: randomNjabulourl,
+                            renderLargerThumbnail: true,
+                        },
+                    },
+                }, { quoted: ms });
+                break;
+            default:
+                await repondre("❌ Invalid choice!");
+                return;
+        }
+        return;
     }
 
+    // ========== Normal command execution ==========
+    // Show the 3 cards
+    const { cards } = await createPairCards(zk, ms, lang);
+    await sendCarouselMessage(zk, chatId, cards, ms);
+
+    // Store for reply handling
+    const senderJid = ms.key.remoteJid;
+    activeRequests[senderJid] = {
+        timestamp: Date.now()
+    };
+
+    // Setup reply collector
+    if (zk._replyListener) {
+        zk.ev.off('messages.upsert', zk._replyListener);
+    }
+
+    zk._replyListener = async (update) => {
+        try {
+            const msg = update.messages[0];
+            if (!msg || !msg.message) return;
+            
+            const sender = msg.key.remoteJid;
+            const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+            
+            if (!activeRequests[sender]) return;
+            if (!isNumberSelection(content)) return;
+            
+            const selectedNumber = parseInt(content);
+            const data = activeRequests[sender];
+            
+            delete activeRequests[sender];
+            zk.ev.off('messages.upsert', zk._replyListener);
+            zk._replyListener = null;
+
+            try {
+                await zk.sendMessage(chatId, {
+                    react: { text: "📥", key: msg.key }
+                });
+            } catch (e) {}
+
+            switch(selectedNumber) {
+                case 1:
+                    await generatePairCode(zk, chatId, ms, data, lang);
+                    break;
+                case 2:
+                    await zk.sendMessage(chatId, {
+                        text: `📂 *Repository*\n\nhttps://github.com/NjabuloJf/fana-md\n\n${t.waChannel}: ${config.GURL}`,
+                        contextInfo: {
+                            externalAdReply: {
+                                title: "📂 NJABULO-JB Repository",
+                                mediaType: 1,
+                                previewType: 0,
+                                thumbnailUrl: randomNjabulourl,
+                                renderLargerThumbnail: true,
+                            },
+                        },
+                    }, { quoted: ms });
+                    break;
+                case 3:
+                    await zk.sendMessage(chatId, {
+                        text: `🌍 *Website*\n\nhttps://njabulojf.github.io\n\n${t.waChannel}: ${config.GURL}`,
+                        contextInfo: {
+                            externalAdReply: {
+                                title: "🌍 NJABULO-JB Website",
+                                mediaType: 1,
+                                previewType: 0,
+                                thumbnailUrl: randomNjabulourl,
+                                renderLargerThumbnail: true,
+                            },
+                        },
+                    }, { quoted: ms });
+                    break;
+                default:
+                    await repondre("❌ Invalid choice!");
+                    return;
+            }
+        } catch (err) {
+            console.error('[REPLY HANDLER ERROR]', err);
+        }
+    };
+
+    zk.ev.on('messages.upsert', zk._replyListener);
+
+    setTimeout(async () => {
+        const senderJid = ms.key.remoteJid;
+        if (activeRequests[senderJid]) {
+            delete activeRequests[senderJid];
+        }
+        if (zk._replyListener) {
+            zk.ev.off('messages.upsert', zk._replyListener);
+            zk._replyListener = null;
+        }
+    }, 60000);
+});
+
+// ========== GENERATE PAIR CODE FUNCTION ==========
+async function generatePairCode(zk, chatId, ms, data, lang) {
+    const t = await getTranslatedTexts();
+    
     try {
-        await sendFormattedMessage(
-            zk,
-            chatId,
-            generating,
-            ms
-        );
+        // Ask for number
+        const enterNumber = await translateTextWithCache("📌 *Enter your number like:*", lang);
+        await zk.sendMessage(chatId, {
+            text: `${enterNumber}\n\n.pair 26777821911`
+        }, { quoted: ms });
 
-        const encodedNumber = encodeURIComponent(arg.join(" "));
-        const apiUrl = `https://site-code-bv0o.onrender.com/code?number=${encodedNumber}`;
+        // Wait for user to send number
+        const filter = (msg) => {
+            const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+            return content && content.includes('.pair') && msg.key.remoteJid === chatId;
+        };
 
-        const response = await axios.get(apiUrl);
+        // This will be handled by the main command handler
+        // So we don't need to wait here
+
+    } catch (error) {
+        console.error("Pair generation error:", error);
+        await zk.sendMessage(chatId, {
+            text: t.errorMsg
+        }, { quoted: ms });
+    }
+}
+
+// ========== ACTUAL PAIR CODE GENERATION ==========
+// This part handles the actual number input
+// Add this to the main command handler for numbers
+
+// In the main command handler, after checking if it's a number selection,
+// also check if the command starts with .pair and has a number
+
+// Add this to the main command handler:
+const isPairCommand = (text) => {
+    if (!text) return false;
+    const parts = text.trim().split(/ +/);
+    return parts[0] === '.pair' && parts.length > 1;
+};
+
+// In the message handler, before checking if it's a number selection:
+if (isPairCommand(texte)) {
+    const parts = texte.trim().split(/ +/);
+    const number = parts.slice(1).join(' ');
+    const encodedNumber = encodeURIComponent(number);
+    const apiUrl = `${config.PAIR_API}?number=${encodedNumber}`;
+    
+    try {
+        await zk.sendMessage(chatId, {
+            text: await translateTextWithCache("⏳ Wait, generating your pairing code...", lang)
+        }, { quoted: ms });
+        
+        const response = await axios.get(apiUrl, {
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
         const data = response.data;
-
+        
         if (data && data.code) {
             const pairingCode = data.code;
-
-            // Send the pairing code with copy button
-            const baseButtons = await getBaseButtons();
-            const buttons = JSON.parse(JSON.stringify(baseButtons));
-            buttons[0].buttonParamsJson = JSON.stringify({
-                display_text: copyCode,
-                id: "copy",
-                copy_code: pairingCode,
-            });
-
-            await zk.sendMessage(
-                chatId,
+            const yourPairCode = await translateTextWithCache("🔐 YOUR PAIRING CODE", lang);
+            
+            const buttons = [
                 {
-                    interactiveMessage: {
-                        image: { url: randomNjabulourl },
-                        header: `${yourPairCode}\n\n${pairingCode}`,
-                        buttons: buttons,
-                        headerType: 1,
-                    },
+                    name: "cta_copy",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateTextWithCache("📋 Copy Code", lang),
+                        copy_code: pairingCode,
+                    }),
                 },
-                { quoted: ms }
-            );
-
-            await sendFormattedMessage(
-                zk,
-                chatId,
-                copyAndPaste,
-                ms
-            );
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: await translateTextWithCache("🌐 WA Channel", lang),
+                        url: config.GURL
+                    }),
+                },
+            ];
+            
+            await zk.sendMessage(chatId, {
+                interactiveMessage: {
+                    image: { url: randomNjabulourl },
+                    header: `${yourPairCode}\n\n${pairingCode}`,
+                    buttons: buttons,
+                    headerType: 1,
+                },
+            }, { quoted: ms });
+            
+            const copyAndPaste = await translateTextWithCache("✅ Here is your pair code, copy and paste it to the notification above or link devices.", lang);
+            await zk.sendMessage(chatId, {
+                text: copyAndPaste
+            }, { quoted: ms });
         } else {
             throw new Error("Invalid response from API.");
         }
     } catch (error) {
         console.error("Error getting API response:", error.message);
-        sendFormattedMessage(zk, chatId, errorMsg, ms);
+        await zk.sendMessage(chatId, {
+            text: await translateTextWithCache("❌ Error getting response from API.", lang)
+        }, { quoted: ms });
     }
-});
+    return;
+                    }
