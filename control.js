@@ -174,19 +174,20 @@ async function getTranslatedGoodbye(lang) {
     return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
 }
 
-//==========button translate=======
-const buttonText = await translateText("bot Channels", lang);
-    
-    const buttons = [
+// ========== GET TRANSLATED BUTTONS ==========
+async function getTranslatedButtons(lang) {
+    const buttonText = await translateTextWithCache("🌐 WA Channel", lang);
+    return [
         {
             name: "cta_url",
             buttonParamsJson: JSON.stringify({
                 display_text: buttonText,
                 id: "backup channel",
-                url: config.GURL
+                url: conf.GURL
             }),
         }
     ];
+}
 
 // ========== GET NAME FROM JID ==========
 async function getName(jid) {
@@ -473,6 +474,9 @@ zk.ev.on('group-participants.update', async (group) => {
     console.log('Group update detected:', group);
 
     const lang = conf.LANGUAGE || "en";
+    
+    // Get translated buttons
+    const buttons = await getTranslatedButtons(lang);
 
     try {
         const metadata = await zk.groupMetadata(group.id);
@@ -514,13 +518,12 @@ zk.ev.on('group-participants.update', async (group) => {
 
                     await zk.sendMessage(group.id, {                        
                         interactiveMessage: {
-                        image: { url: memberPP || randomNjabulourl }, 
-                        header: msg,
-                        mentions: [memberJid],
-                        buttons,
-                       headerType: 1
-                      }
-                     
+                            image: { url: memberPP || randomNjabulourl }, 
+                            header: msg,
+                            mentions: [memberJid],
+                            buttons: buttons,
+                            headerType: 1
+                        }
                     });
                     
                     console.log(`✅ Welcome message sent to ${memberName}`);
@@ -560,12 +563,12 @@ zk.ev.on('group-participants.update', async (group) => {
 
                     await zk.sendMessage(group.id, { 
                         interactiveMessage: {
-                        image: { url: memberPP || randomNjabulourl }, 
-                        header: msg,
-                        mentions: [memberJid],
-                        buttons,
-                       headerType: 1
-                    }
+                            image: { url: memberPP || randomNjabulourl }, 
+                            header: msg,
+                            mentions: [memberJid],
+                            buttons: buttons,
+                            headerType: 1
+                        }
                     });
                     
                     console.log(`✅ Goodbye message sent for ${memberName}`);
@@ -908,13 +911,6 @@ zk.ev.on('group-participants.update', async (group) => {
             }
           }
         });
-
-        if (conf.PERFORMANCE_LOG === "yes") {
-    const startTime = Date.now();
-    // ... process command ...
-    const endTime = Date.now();
-    console.log(`⏱️ Command ${com} took ${endTime - startTime}ms`);
-        }
 
 // ========== ARRAY OF REACTION EMOJIS ==========
 const emojiMap = {
@@ -1525,7 +1521,7 @@ Please try again later or leave a message. Cheers! 😊`
                     console.log('No command folder found');
                 }
                 
-                (0, baileys_1.delay)(700);
+                await (0, baileys_1.delay)(700);
                 var md;
                 if ((conf.MODE || "").toLocaleLowerCase() === "yes") {
                     md = "public";
@@ -1540,6 +1536,9 @@ Please try again later or leave a message. Cheers! 😊`
                 
                 const currentLang = conf.LANGUAGE || "en";
                 const langName = languageNames[currentLang] || "English";
+                
+                // Get translated buttons for startup
+                const startupButtons = await getTranslatedButtons(currentLang);
                 
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
@@ -1558,8 +1557,13 @@ Please try again later or leave a message. Cheers! 😊`
 ┃ 📢 *Channel:* ${conf.GURL || "Available"}
 ╰━━━━━━━━━━━━━━━━━━━━━━╯`;
 
+                        // Send with buttons
                         await zk.sendMessage(zk.user.id, { 
-                            text: startupText 
+                            interactiveMessage: {
+                                header: startupText,
+                                buttons: startupButtons,
+                                headerType: 1
+                            }
                         });
                         console.log("✅ Startup message sent to bot DM");
                     } catch (e) {
