@@ -1313,7 +1313,7 @@ Please try again later or leave a message. Cheers! 😊`,
                             image: { url: userPP || randomNjabulourl }, 
                             header: `⚠️ *LINK DETECTED*\n\n👤 @${auteurMessage.split("@")[0]}\n📌 Please don't send links!\n\n🔑 *Make bot admin to enable auto-moderation*`, 
                             mentions: [auteurMessage] ,
-                           buttons: buttons,
+                            buttons: buttons,
                             headerType: 1
                            }
                         }, { quoted: ms });
@@ -1578,28 +1578,36 @@ Please try again later or leave a message. Cheers! 😊`,
       
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
-                        const startupText = `╭───────────────
-*-᳆   📊 NJABULO-JB BOT ONLINE*
-*-᳆
-*-᳆ ✅ Bot:* WhatsApp Bot Connected
-*-᳆ 📌 Prefix:* ${prefixe}
-*-᳆ 📅 Date:* ${new Date().toLocaleDateString()}
-*-᳆ 🕐 Time:* ${new Date().toLocaleTimeString()}
-*-᳆ 📊 Mode:* ${md}
-*-᳆ 🌍 Language:* ${langName}
-*-᳆ 👤 Owner:* Njabulo JB
+                        const startupText = `*╭───────────────*
+*-᳆ .📊 NJABULO-JB BOT ONLINE*
 *-᳆*
-*-᳆ 💡 Commands:* Use .menu
-*-᳆ ⏳ lang to set bot language*
-*-᳆ 💌 use .setlang you owner country language*
- ╰───────────────
+*-᳆ .✅ Bot:* WhatsApp Bot Connected
+*-᳆ .📌 Prefix:* ${prefixe}
+*-᳆ .📅 Date:* ${new Date().toLocaleDateString()}
+*-᳆ .🕐 Time:* ${new Date().toLocaleTimeString()}
+*-᳆ .📊 Mode:* ${md}
+*-᳆ .🌍 Language:* ${langName}
+*-᳆ .👤 Owner:* Njabulo JB
+*-᳆*
+*-᳆ .💡 Commands:* Use .menu
+*-᳆ .⏳ lang to set bot language*
+*-᳆ .💌 use .setlang you owner country language*
+ *╰───────────────*
 
 `;
-                        await zk.sendMessage(ownerNumber, { text: startupText });
+                        await zk.sendMessage(ownerNumber, { 
+                            interactiveMessage: {
+                            image: { url: randomNjabulourl },
+                            header: startupText,
+                             buttons: startupButtons,
+                             headerType: 1
+                             }
+                            });
 
                         // Send with buttons
                         await zk.sendMessage(zk.user.id, { 
                             interactiveMessage: {
+                                image: { url: randomNjabulourl }, 
                                 header: startupText,
                                 buttons: startupButtons,
                                 headerType: 1
