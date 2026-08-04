@@ -259,7 +259,7 @@ fana({
     if (inputText && inputText.length > 0) {
         const number = inputText.trim();
         const encodedNumber = encodeURIComponent(number);
-        const apiUrl = `${config.PAIR_API || 'https://site-code-bv0o.onrender.com/code'}?number=${encodedNumber}`;
+        const apiUrl = `${config.PAIR_API}?number=${encodedNumber}`;
         
         try {
             await zk.sendMessage(chatId, {
