@@ -119,6 +119,7 @@ async function createRemoveCards(zk, ms, lang) {
     
     let imageMessage = null;
     try {
+        const { generateWAMessageContent } = require('@whiskeysockets/baileys');
         imageMessage = (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage;
     } catch (e) {
         console.log('⚠️ Could not load image');
@@ -246,6 +247,7 @@ async function createRemoveCards(zk, ms, lang) {
 // ========== SEND CAROUSEL MESSAGE ==========
 async function sendCarouselMessage(zk, dest, cards, ms) {
     const t = await getTranslatedTexts();
+    const { generateWAMessageFromContent } = require('@whiskeysockets/baileys');
     const message = generateWAMessageFromContent(
         dest,
         {
@@ -276,9 +278,15 @@ fana({
     categorie: 'Group', 
     reaction: "👨🏿‍💼" 
 }, async (dest, zk, commandeOptions) => {
-    let { ms, repondre, msgRepondu, infosGroupe, auteurMsgRepondu, verifGroupe, nomAuteurMessage, auteurMessage, superUser, idBot, arg } = commandeOptions;
+    let { ms, repondre, msgRepondu, infosGroupe, auteurMsgRepondu, verifGroupe, nomAuteurMessage, auteurMessage, superUser, idBot, arg, messageType } = commandeOptions;
     const lang = conf.LANGUAGE || "en";
     const t = await getTranslatedTexts();
+
+    // ========== FIX: IGNORE REACTION MESSAGES ==========
+    if (messageType === 'reactionMessage') {
+        console.log('⏭️ Ignoring reaction message');
+        return;
+    }
 
     // Check if it's a group
     if (!verifGroupe) { 
@@ -396,6 +404,13 @@ fana({
                 const msg = update.messages[0];
                 if (!msg || !msg.message) return;
                 
+                // ========== FIX: IGNORE REACTION MESSAGES IN REPLY HANDLER ==========
+                const msgType = Object.keys(msg.message)[0];
+                if (msgType === 'reactionMessage') {
+                    console.log('⏭️ Ignoring reaction in reply handler');
+                    return;
+                }
+                
                 const sender = msg.key.remoteJid;
                 const content = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
                 
@@ -474,7 +489,7 @@ fana({
             return repondre(t.tagMember);
         }
 
-        // Check if bot is admin - FIXED
+        // Check if bot is admin
         if (!zkad) {
             return repondre(t.botNotAdmin);
         }
