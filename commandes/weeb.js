@@ -4,116 +4,167 @@ const { writeFile } = require("fs/promises");
 const config = require("../set");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
-// ── Random image for the header (used only for error messages) ─────
+// ── Random image for the header ──────────────────────────────
 const njabulox = [
-"https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
-      "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg3.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg4.png",
+  "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg5.png",
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ── Base button definition ─────────────────────────────────
-const baseButtons = [
-  {
-    name: "cta_copy",
-    buttonParamsJson: JSON.stringify({
-      display_text: "Copy URL",
-      id: "copy",
-      copy_code: "", // will be filled dynamically
-    }),
-  },
-];
-
-// ── Helper: send an image with a “Copy URL” button ─────
-async function sendImageWithCopy(zk, chatId, imageUrl, ms) {
-  // Clone the base button array so we can set the copy_code for this message
-  const buttons = JSON.parse(JSON.stringify(baseButtons));
-  buttons[1].buttonParamsJson = JSON.stringify({
-    display_text: "Copy URL",
-    id: "copy",
-    copy_code: imageUrl, // copy the image URL
-  });
-  await zk.sendMessage(
-    chatId,
-    {
-      interactiveMessage: {
-        image: { url: imageUrl },
-        header: "📸 Image",
-        buttons,
-        headerType: 1,
-      },
-    },
-    { quoted: ms }
-  );
-}
-
-// ── Helper for error messages (kept from previous version) ─────
+// ── Helper: send error messages ──────────────────────────────
 async function sendError(zk, chatId, text, ms) {
-  const buttons = JSON.parse(JSON.stringify(baseButtons));
-  buttons[1].buttonParamsJson = JSON.stringify({
-    display_text: "Copy",
-    id: "copy",
-    copy_code: text,
-  });
   await zk.sendMessage(
     chatId,
     {
-      interactiveMessage: {
-        image: { url: randomNjabulourl },
-        header: "⚠️ Error",
-        body: text,
-        buttons,
-        headerType: 1,
-        contextInfo: {
-          mentionedJid: [ms?.sender?.jid || ""],
-        },
+      image: { url: randomNjabulourl },
+      caption: `⚠️ *Error*\n\n${text}`,
+      contextInfo: {
+        mentionedJid: [ms?.sender?.jid || ""],
       },
     },
     { quoted: ms }
   );
 }
 
-// ── Waifu command ─────────────────────────────────────────────
+// ── Helper: Get waifu.im images ──────────────────────────────
+async function getWaifuImages(tags = [], isNsfw = false, type = "sfw") {
+  try {
+    const params = new URLSearchParams();
+    
+    // Add tags if provided
+    if (tags.length > 0) {
+      tags.forEach(tag => params.append('tags[]', tag));
+    }
+    
+    // Add type (sfw or nsfw)
+    params.append('type', type);
+    
+    // Add is_nsfw flag
+    params.append('is_nsfw', isNsfw ? 'true' : 'false');
+    
+    // Add selected tags for better results
+    if (tags.length === 0) {
+      // Default tags for sfw
+      const defaultTags = isNsfw ? ['ecchi', 'maid', 'school'] : ['waifu', 'maid', 'cute'];
+      defaultTags.forEach(tag => params.append('tags[]', tag));
+    }
+    
+    const url = `https://api.waifu.im/search?${params.toString()}`;
+    console.log('🔍 Fetching from:', url);
+    
+    const { data } = await axios.get(url, {
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    if (!data.images || data.images.length === 0) {
+      throw new Error('No images found');
+    }
+    
+    return data.images;
+  } catch (error) {
+    console.error('❌ Waifu.im API error:', error.message);
+    throw error;
+  }
+}
+
+// ── Main waifu command ──────────────────────────────────────────
 fana(
   {
-    nomCom: "waifu-one",
+    nomCom: "waifu",
+    aliases: ["anime", "waifuim", "animegirl"],
     categorie: "Weeb",
     reaction: "😏",
   },
   async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://api.waifu.pics/sfw/waifu";
+    const { ms, arg, repondre } = context;
+    
     try {
-      const { data } = await axios.get(api);
-      const cards = [
-        {
+      // Parse arguments for tags
+      let tags = [];
+      let isNsfw = false;
+      let type = "sfw";
+      
+      if (arg && arg.length > 0) {
+        const args = arg.join(' ').toLowerCase().split(' ');
+        
+        // Check for nsfw flag
+        if (args.includes('nsfw')) {
+          isNsfw = true;
+          type = "nsfw";
+          args.splice(args.indexOf('nsfw'), 1);
+        }
+        
+        // Check for specific tags
+        const validTags = ['waifu', 'maid', 'cute', 'smile', 'blush', 'happy', 'sad', 'angry', 
+                          'ecchi', 'school', 'uniform', 'kimono', 'swimsuit', 'neko', 'cat'];
+        
+        tags = args.filter(tag => validTags.includes(tag));
+      }
+      
+      // If no tags specified, use default
+      if (tags.length === 0 && !isNsfw) {
+        tags = ['waifu'];
+      } else if (tags.length === 0 && isNsfw) {
+        tags = ['ecchi'];
+      }
+      
+      // Get images from waifu.im
+      const images = await getWaifuImages(tags, isNsfw, type);
+      
+      // Create carousel cards for each image (limit to 3)
+      const maxCards = Math.min(images.length, 3);
+      const cards = [];
+      
+      for (let i = 0; i < maxCards; i++) {
+        const img = images[i];
+        const imageUrl = img.url;
+        const tagsList = img.tags.map(t => t.name).join(', ');
+        const signature = img.signature || 'waifu.im';
+        
+        cards.push({
           header: {
-            title: "Waifu Image",
+            title: `✨ ${tagsList || 'Waifu'}`,
             hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.url } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: (await generateWAMessageContent(
+              { image: { url: imageUrl } }, 
+              { upload: zk.waUploadToServer }
+            )).imageMessage,
           },
           body: {
-            text: "Check out this waifu!",
+            text: `📸 *${tagsList || 'Anime Girl'}*\n\n` +
+                  `🔹 Width: ${img.width}px\n` +
+                  `🔹 Height: ${img.height}px\n` +
+                  `🔹 Source: ${signature}\n` +
+                  `🔹 Type: ${img.type || 'SFW'}`,
           },
           footer: {
-            text: "Enjoy 😊",
+            text: `🔹 Powered by NJABULO JB`,
           },
           nativeFlowMessage: {
             buttons: [
               {
                 name: "cta_copy",
                 buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.url,
+                  display_text: "📋 Copy URL",
+                  copy_code: imageUrl,
+                }),
+              },
+              {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🌐 View Original",
+                  url: imageUrl,
                 }),
               },
             ],
           },
-        },
-      ];
+        });
+      }
 
       const message = generateWAMessageFromContent(
         chatId,
@@ -126,10 +177,10 @@ fana(
               },
               interactiveMessage: {
                 body: {
-                  text: "Waifu Image",
+                  text: `🌸 ${tags.length > 0 ? tags.join(', ') : 'Waifu'} Images`,
                 },
                 footer: {
-                  text: "Click to view",
+                  text: `🔹 ${cards.length} image(s) found | Powered by NJABULO JB`,
                 },
                 carouselMessage: {
                   cards,
@@ -142,50 +193,83 @@ fana(
       );
 
       await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
+      
+    } catch (error) {
+      console.error('❌ Waifu command error:', error);
+      
+      let errorMsg = `❌ *Error fetching waifu images*\n\n`;
+      if (error.response) {
+        errorMsg += `Status: ${error.response.status}\n`;
+        errorMsg += `Message: ${error.response.data?.message || error.message}`;
+      } else {
+        errorMsg += `Message: ${error.message}`;
+      }
+      errorMsg += `\n\n🔹 Powered by NJABULO JB`;
+      
+      await sendError(zk, chatId, errorMsg, ms);
     }
   }
 );
 
-// ── Neko command ─────────────────────────────────────────────
+// ── Neko command (using waifu.im) ─────────────────────────────
 fana(
   {
-    nomCom: "neko-one",
+    nomCom: "neko",
+    aliases: ["catgirl", "nekogirl"],
     categorie: "Weeb",
     reaction: "😺",
   },
   async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://api.waifu.pics/sfw/neko";
+    const { ms, arg, repondre } = context;
+    
     try {
-      const { data } = await axios.get(api);
-      const cards = [
-        {
+      const tags = ['neko', 'cat'];
+      const images = await getWaifuImages(tags, false, 'sfw');
+      
+      const maxCards = Math.min(images.length, 3);
+      const cards = [];
+      
+      for (let i = 0; i < maxCards; i++) {
+        const img = images[i];
+        const imageUrl = img.url;
+        
+        cards.push({
           header: {
-            title: "Neko Image",
+            title: '🐱 Neko Girl',
             hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.url } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: (await generateWAMessageContent(
+              { image: { url: imageUrl } }, 
+              { upload: zk.waUploadToServer }
+            )).imageMessage,
           },
           body: {
-            text: "Check out this neko!",
+            text: `📸 *Neko Girl*\n\n` +
+                  `🔹 Width: ${img.width}px\n` +
+                  `🔹 Height: ${img.height}px`,
           },
           footer: {
-            text: "Enjoy 😊",
+            text: `🔹 Powered by NJABULO JB`,
           },
           nativeFlowMessage: {
             buttons: [
               {
                 name: "cta_copy",
                 buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.url,
+                  display_text: "📋 Copy URL",
+                  copy_code: imageUrl,
+                }),
+              },
+              {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🌐 View Original",
+                  url: imageUrl,
                 }),
               },
             ],
           },
-        },
-      ];
+        });
+      }
 
       const message = generateWAMessageFromContent(
         chatId,
@@ -198,10 +282,10 @@ fana(
               },
               interactiveMessage: {
                 body: {
-                  text: "Neko Image",
+                  text: '🐱 Neko Images',
                 },
                 footer: {
-                  text: "Click to view",
+                  text: `🔹 ${cards.length} image(s) found | Powered by NJABULO JB`,
                 },
                 carouselMessage: {
                   cards,
@@ -214,8 +298,10 @@ fana(
       );
 
       await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
+      
+    } catch (error) {
+      console.error('❌ Neko command error:', error);
+      await sendError(zk, chatId, `Error: ${error.message}`, ms);
     }
   }
 );
@@ -223,41 +309,62 @@ fana(
 // ── Shinobu command ─────────────────────────────────────────────
 fana(
   {
-    nomCom: "shinobu-one",
+    nomCom: "shinobu",
+    aliases: ["shinobuimage", "monogatari"],
     categorie: "Weeb",
     reaction: "🦋",
   },
   async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://api.waifu.pics/sfw/shinobu";
+    const { ms, arg, repondre } = context;
+    
     try {
-      const { data } = await axios.get(api);
-      const cards = [
-        {
+      const tags = ['shinobu', 'monogatari', 'cute'];
+      const images = await getWaifuImages(tags, false, 'sfw');
+      
+      const maxCards = Math.min(images.length, 3);
+      const cards = [];
+      
+      for (let i = 0; i < maxCards; i++) {
+        const img = images[i];
+        const imageUrl = img.url;
+        
+        cards.push({
           header: {
-            title: "Shinobu Image",
+            title: '🦋 Shinobu',
             hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.url } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: (await generateWAMessageContent(
+              { image: { url: imageUrl } }, 
+              { upload: zk.waUploadToServer }
+            )).imageMessage,
           },
           body: {
-            text: "Check out this shinobu!",
+            text: `📸 *Shinobu Image*\n\n` +
+                  `🔹 Width: ${img.width}px\n` +
+                  `🔹 Height: ${img.height}px`,
           },
           footer: {
-            text: "Enjoy 😊",
+            text: `🔹 Powered by NJABULO JB`,
           },
           nativeFlowMessage: {
             buttons: [
               {
                 name: "cta_copy",
                 buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.url,
+                  display_text: "📋 Copy URL",
+                  copy_code: imageUrl,
+                }),
+              },
+              {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🌐 View Original",
+                  url: imageUrl,
                 }),
               },
             ],
           },
-        },
-      ];
+        });
+      }
 
       const message = generateWAMessageFromContent(
         chatId,
@@ -270,10 +377,10 @@ fana(
               },
               interactiveMessage: {
                 body: {
-                  text: "Shinobu Image",
+                  text: '🦋 Shinobu Images',
                 },
                 footer: {
-                  text: "Click to view",
+                  text: `🔹 ${cards.length} image(s) found | Powered by NJABULO JB`,
                 },
                 carouselMessage: {
                   cards,
@@ -286,49 +393,73 @@ fana(
       );
 
       await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
+      
+    } catch (error) {
+      console.error('❌ Shinobu command error:', error);
+      await sendError(zk, chatId, `Error: ${error.message}`, ms);
     }
   }
 );
 
+// ── Megumin command ─────────────────────────────────────────────
 fana(
   {
-    nomCom: "megumin-one",
+    nomCom: "megumin",
+    aliases: ["explosion", "meguminimage"],
     categorie: "Weeb",
     reaction: "💥",
   },
   async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://api.waifu.pics/sfw/megumin";
+    const { ms, arg, repondre } = context;
+    
     try {
-      const { data } = await axios.get(api);
-      const cards = [
-        {
+      const tags = ['megumin', 'explosion', 'konosuba'];
+      const images = await getWaifuImages(tags, false, 'sfw');
+      
+      const maxCards = Math.min(images.length, 3);
+      const cards = [];
+      
+      for (let i = 0; i < maxCards; i++) {
+        const img = images[i];
+        const imageUrl = img.url;
+        
+        cards.push({
           header: {
-            title: "Megumin Image",
+            title: '💥 Megumin',
             hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.url } }, { upload: zk.waUploadToServer })).imageMessage,
+            imageMessage: (await generateWAMessageContent(
+              { image: { url: imageUrl } }, 
+              { upload: zk.waUploadToServer }
+            )).imageMessage,
           },
           body: {
-            text: "Check out this megumin!",
+            text: `📸 *Megumin Image*\n\n` +
+                  `🔹 Width: ${img.width}px\n` +
+                  `🔹 Height: ${img.height}px`,
           },
           footer: {
-            text: "Enjoy 😊",
+            text: `🔹 Powered by NJABULO JB`,
           },
           nativeFlowMessage: {
             buttons: [
               {
                 name: "cta_copy",
                 buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.url,
+                  display_text: "📋 Copy URL",
+                  copy_code: imageUrl,
+                }),
+              },
+              {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "🌐 View Original",
+                  url: imageUrl,
                 }),
               },
             ],
           },
-        },
-      ];
+        });
+      }
 
       const message = generateWAMessageFromContent(
         chatId,
@@ -341,10 +472,10 @@ fana(
               },
               interactiveMessage: {
                 body: {
-                  text: "Megumin Image",
+                  text: '💥 Megumin Images',
                 },
                 footer: {
-                  text: "Click to view",
+                  text: `🔹 ${cards.length} image(s) found | Powered by NJABULO JB`,
                 },
                 carouselMessage: {
                   cards,
@@ -357,178 +488,98 @@ fana(
       );
 
       await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
+      
+    } catch (error) {
+      console.error('❌ Megumin command error:', error);
+      await sendError(zk, chatId, `Error: ${error.message}`, ms);
     }
   }
 );
 
-// ── Cosplay command ─────────────────────────────────────────────
+// ── Waifu command with tags (advanced) ──────────────────────
 fana(
   {
-    nomCom: "cosplay-one",
+    nomCom: "anime",
+    aliases: ["animeimg", "animeimage"],
     categorie: "Weeb",
-    reaction: "😏",
+    reaction: "🎨",
   },
   async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://fantox-cosplay-api.onrender.com/";
+    const { ms, arg, repondre } = context;
+    
     try {
-      const { data } = await axios.get(api, { responseType: "arraybuffer" });
-      await writeFile("./cosplay.jpg", data);
-      const cards = [
+      // Parse tags from arguments
+      let tags = [];
+      let isNsfw = false;
+      
+      if (arg && arg.length > 0) {
+        const args = arg.join(' ').toLowerCase().split(' ');
+        
+        if (args.includes('nsfw')) {
+          isNsfw = true;
+          args.splice(args.indexOf('nsfw'), 1);
+        }
+        
+        tags = args;
+      }
+      
+      // If no tags, use random
+      if (tags.length === 0) {
+        const defaultTags = isNsfw ? ['ecchi'] : ['waifu'];
+        tags = defaultTags;
+      }
+      
+      const images = await getWaifuImages(tags, isNsfw, isNsfw ? 'nsfw' : 'sfw');
+      
+      // Send first image directly
+      const img = images[0];
+      const imageUrl = img.url;
+      
+      const buttons = [
         {
-          header: {
-            title: "Cosplay Image",
-            hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: "./cosplay.jpg" } }, { upload: zk.waUploadToServer })).imageMessage,
-          },
-          body: {
-            text: "Check out this cosplay!",
-          },
-          footer: {
-            text: "Enjoy 😊",
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: "./cosplay.jpg",
-                }),
-              },
-            ],
-          },
+          name: "cta_copy",
+          buttonParamsJson: JSON.stringify({
+            display_text: "📋 Copy URL",
+            copy_code: imageUrl,
+          }),
+        },
+        {
+          name: "cta_url",
+          buttonParamsJson: JSON.stringify({
+            display_text: "🌐 View Original",
+            url: imageUrl,
+          }),
+        },
+        {
+          name: "cta_copy",
+          buttonParamsJson: JSON.stringify({
+            display_text: "📋 Tags",
+            copy_code: img.tags.map(t => t.name).join(', '),
+          }),
         },
       ];
-
-      const message = generateWAMessageFromContent(
+      
+      await zk.sendMessage(
         chatId,
         {
-          viewOnceMessage: {
-            message: {
-              messageContextInfo: {
-                deviceListMetadata: {},
-                deviceListMetadataVersion: 2,
-              },
-              interactiveMessage: {
-                body: {
-                  text: "Cosplay Image",
-                },
-                footer: {
-                  text: "Click to view",
-                },
-                carouselMessage: {
-                  cards,
-                },
-              },
-            },
+          image: { url: imageUrl },
+          caption: `🎨 *${tags.join(', ').toUpperCase()}*\n\n` +
+                   `📏 ${img.width}x${img.height}\n` +
+                   `🏷️ ${img.tags.map(t => t.name).join(', ')}\n` +
+                   `📝 ${img.signature || 'waifu.im'}\n\n` +
+                   `🔹 Powered by NJABULO JB`,
+          buttons: buttons,
+          headerType: 1,
+          contextInfo: {
+            mentionedJid: [ms?.sender?.jid || ""],
           },
         },
         { quoted: ms }
       );
-
-      await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
+      
+    } catch (error) {
+      console.error('❌ Anime command error:', error);
+      await sendError(zk, chatId, `Error: ${error.message}`, ms);
     }
   }
 );
-
-// ── Couple PP command ─────────────────────────────────────────────
-fana(
-  {
-    nomCom: "couplepp-one",
-    categorie: "Weeb",
-    reaction: "💞",
-  },
-  async (chatId, zk, context) => {
-    const { ms } = context;
-    const api = "https://smiling-hosiery-bear.cyclic.app/weeb/couplepp";
-    try {
-      const { data } = await axios.get(api);
-      const cards = [
-        {
-          header: {
-            title: "Couple PP - Male",
-            hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.male } }, { upload: zk.waUploadToServer })).imageMessage,
-          },
-          body: {
-            text: "Male profile pic",
-          },
-          footer: {
-            text: "Enjoy 😊",
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.male,
-                }),
-              },
-            ],
-          },
-        },
-        {
-          header: {
-            title: "Couple PP - Female",
-            hasMediaAttachment: true,
-            imageMessage: (await generateWAMessageContent({ image: { url: data.female } }, { upload: zk.waUploadToServer })).imageMessage,
-          },
-          body: {
-            text: "Female profile pic",
-          },
-          footer: {
-            text: "Enjoy 😊",
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "Copy Link",
-                  copy_code: data.female,
-                }),
-              },
-            ],
-          },
-        },
-      ];
-
-      const message = generateWAMessageFromContent(
-        chatId,
-        {
-          viewOnceMessage: {
-            message: {
-              messageContextInfo: {
-                deviceListMetadata: {},
-                deviceListMetadataVersion: 2,
-              },
-              interactiveMessage: {
-                body: {
-                  text: "Couple Profile Pics",
-                },
-                footer: {
-                  text: "Click to view",
-                },
-                carouselMessage: {
-                  cards,
-                },
-              },
-            },
-          },
-        },
-        { quoted: ms }
-      );
-
-      await zk.relayMessage(chatId, message.message, { messageId: message.key.id });
-    } catch (e) {
-      await sendError(zk, chatId, `Error: ${e.message}`, ms);
-    }
-  }
-);
-
