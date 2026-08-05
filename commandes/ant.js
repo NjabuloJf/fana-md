@@ -273,7 +273,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 fana({ 
-    nomCom: "remove", 
+    nomCom: "remove2", 
     aliases: ["kick", "removemember", "deleteuser"],
     categorie: 'Group', 
     reaction: "👨🏿‍💼" 
