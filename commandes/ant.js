@@ -71,7 +71,7 @@ async function getTranslatedTexts() {
     const lang = conf.LANGUAGE || "en";
     return {
         groupOnly: await translateTextWithCache("❌ This command only works in groups!", lang),
-        notAdmin: await translateTextWithCache("❌ You need to be an admin or super user to use this command!", lang),
+        adminOnly: await translateTextWithCache("❌ You need to be an admin or super user to use this command!", lang),
         tagMember: await translateTextWithCache("📌 Please tag the member to be removed", lang),
         notInGroup: await translateTextWithCache("❌ This user is not part of the group.", lang),
         isAdmin: await translateTextWithCache("❌ This member cannot be removed because they are an administrator of the group.", lang),
@@ -116,10 +116,10 @@ const isNumberSelection = (text) => {
 // ========== CREATE 3 CARDS ==========
 async function createRemoveCards(zk, ms, lang) {
     const t = await getTranslatedTexts();
+    const { generateWAMessageContent } = require('@whiskeysockets/baileys');
     
     let imageMessage = null;
     try {
-        const { generateWAMessageContent } = require('@whiskeysockets/baileys');
         imageMessage = (await generateWAMessageContent({ image: { url: randomNjabulourl } }, { upload: zk.waUploadToServer })).imageMessage;
     } catch (e) {
         console.log('⚠️ Could not load image');
@@ -278,57 +278,49 @@ fana({
     categorie: 'Group', 
     reaction: "👨🏿‍💼" 
 }, async (dest, zk, commandeOptions) => {
-    let { ms, repondre, msgRepondu, infosGroupe, auteurMsgRepondu, verifGroupe, nomAuteurMessage, auteurMessage, superUser, idBot, arg, messageType } = commandeOptions;
+    let { ms, repondre, msgRepondu, infosGroupe, auteurMsgRepondu, verifGroupe, nomAuteurMessage, auteurMessage, superUser, idBot, arg, messageType, verifAdmin } = commandeOptions;
     const lang = conf.LANGUAGE || "en";
     const t = await getTranslatedTexts();
 
-    // ========== FIX: IGNORE REACTION MESSAGES ==========
+    // ========== IGNORE REACTION MESSAGES ==========
     if (messageType === 'reactionMessage') {
         console.log('⏭️ Ignoring reaction message');
         return;
     }
 
-    // Check if it's a group
-    if (!verifGroupe) { 
-        return repondre(t.groupOnly); 
+    // ========== CHECK IF IN GROUP ==========
+    if (!verifGroupe) {
+        return repondre(t.groupOnly);
     }
 
-    // Get group participants
-    let membresGroupe = verifGroupe ? await infosGroupe.participants : "";
+    // ========== CHECK IF USER IS ADMIN OR SUPERUSER ==========
+    if (!verifAdmin && !superUser) {
+        return repondre(t.adminOnly);
+    }
+
+    // ========== GET GROUP INFO ==========
+    let membresGroupe = await infosGroupe.participants;
     
-    // Helper functions
-    const verifMember = (user) => {
-        for (const m of membresGroupe) {
-            if (m.id === user) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const memberAdmin = (membresGroupe) => {
-        let admin = [];
-        for (const m of membresGroupe) {
-            if (m.admin == null) continue;
-            admin.push(m.id);
-        }
-        return admin;
-    }
-
-    const a = verifGroupe ? memberAdmin(membresGroupe) : [];
-    let admin = verifGroupe ? a.includes(auteurMsgRepondu) : false;
-    let membre = verifMember(auteurMsgRepondu);
-    let autAdmin = verifGroupe ? a.includes(auteurMessage) : false;
-    
-    // ========== FIX: BOT ADMIN CHECK ==========
-    // Get bot's full JID (with @s.whatsapp.net)
+    // ========== CHECK IF BOT IS ADMIN ==========
+    // Get bot's full JID
     const botJid = idBot.includes('@') ? idBot : idBot + '@s.whatsapp.net';
-    let zkad = verifGroupe ? a.includes(botJid) : false;
     
-    // Debug log to check
-    console.log('Bot JID:', botJid);
-    console.log('Admin list:', a);
-    console.log('Is bot admin?', zkad);
+    // Check if bot is in admin list
+    let botIsAdmin = false;
+    for (const m of membresGroupe) {
+        if (m.id === botJid && m.admin !== null) {
+            botIsAdmin = true;
+            break;
+        }
+    }
+
+    console.log('🔍 Bot JID:', botJid);
+    console.log('🔍 Bot is admin?', botIsAdmin);
+    console.log('🔍 Admin list:', membresGroupe.filter(m => m.admin !== null).map(m => m.id));
+
+    if (!botIsAdmin) {
+        return repondre(t.botNotAdmin);
+    }
 
     // ========== CHECK FOR NUMBER SELECTION REPLY ==========
     const replyText = arg ? arg.join(' ') : '';
@@ -404,7 +396,6 @@ fana({
                 const msg = update.messages[0];
                 if (!msg || !msg.message) return;
                 
-                // ========== FIX: IGNORE REACTION MESSAGES IN REPLY HANDLER ==========
                 const msgType = Object.keys(msg.message)[0];
                 if (msgType === 'reactionMessage') {
                     console.log('⏭️ Ignoring reaction in reply handler');
@@ -479,28 +470,35 @@ fana({
 
     // ========== REMOVE MEMBER LOGIC ==========
     try {
-        // Check if user is admin or super user
-        if (!autAdmin && !superUser) {
-            return repondre(t.notAdmin);
-        }
-
         // Check if a member was tagged
         if (!msgRepondu) {
             return repondre(t.tagMember);
         }
 
-        // Check if bot is admin
-        if (!zkad) {
-            return repondre(t.botNotAdmin);
+        // Check if target is in group
+        let targetInGroup = false;
+        for (const m of membresGroupe) {
+            if (m.id === auteurMsgRepondu) {
+                targetInGroup = true;
+                break;
+            }
         }
 
-        // Check if target is in group
-        if (!membre) {
+        if (!targetInGroup) {
             return repondre(t.notInGroup);
         }
 
-        // Check if target is admin (and user is not super user)
-        if (admin && !superUser) {
+        // Check if target is admin
+        let targetIsAdmin = false;
+        for (const m of membresGroupe) {
+            if (m.id === auteurMsgRepondu && m.admin !== null) {
+                targetIsAdmin = true;
+                break;
+            }
+        }
+
+        // Super user can remove anyone, even admins
+        if (targetIsAdmin && !superUser) {
             return repondre(t.isAdmin);
         }
 
@@ -518,7 +516,7 @@ fana({
 
         await sticker.toFile("st.webp");
 
-        let removedBy = superUser ? 'Super User' : `@${auteurMessage.split("@")[0]}`;
+        let removedBy = superUser ? '🌟 Super User' : `@${auteurMessage.split("@")[0]}`;
         var txt = `@${auteurMsgRepondu.split("@")[0]} ${t.removed}\n${t.removedBy} ${removedBy}`;
         
         await zk.groupParticipantsUpdate(dest, [auteurMsgRepondu], "remove");
@@ -532,7 +530,7 @@ fana({
         fs.unlinkSync("st.webp");
 
     } catch (e) {
-        console.error('Remove command error:', e);
+        console.error('❌ Remove command error:', e);
         repondre(`${t.error}\n\n${t.poweredBy}`);
     }
 });
