@@ -75,7 +75,7 @@ async function getTranslatedTexts() {
         tagMember: await translateTextWithCache("📌 Please tag the member to be removed", lang),
         notInGroup: await translateTextWithCache("❌ This user is not part of the group.", lang),
         isAdmin: await translateTextWithCache("❌ This member cannot be removed because they are an administrator of the group.", lang),
-        botNotAdmin: await translateTextWithCache("❌ Sorry, I cannot perform this action because I am not an administrator of the group.", lang),
+        botNotAdmin: await translateTextWithCache("❌ Please make the bot an admin first! Then try again.", lang),
         removed: await translateTextWithCache("was removed from the group.", lang),
         removedBy: await translateTextWithCache("Removed by:", lang),
         error: await translateTextWithCache("❌ An error occurred while processing your request.", lang),
@@ -125,7 +125,6 @@ async function createRemoveCards(zk, ms, lang) {
         console.log('⚠️ Could not load image');
     }
 
-    // Card 1: Remove Member
     const card1 = {
         header: {
             title: `👨🏿‍💼 ${t.removeTitle}`,
@@ -164,7 +163,6 @@ async function createRemoveCards(zk, ms, lang) {
         },
     };
 
-    // Card 2: Quick Remove
     const card2 = {
         header: {
             title: `👨🏿‍💼 ${t.removeTitle}`,
@@ -202,7 +200,6 @@ async function createRemoveCards(zk, ms, lang) {
         },
     };
 
-    // Card 3: Instructions
     const card3 = {
         header: {
             title: `📋 ${t.instructions}`,
@@ -273,7 +270,7 @@ async function sendCarouselMessage(zk, dest, cards, ms) {
 }
 
 fana({ 
-    nomCom: "remove2", 
+    nomCom: "remove", 
     aliases: ["kick", "removemember", "deleteuser"],
     categorie: 'Group', 
     reaction: "👨🏿‍💼" 
@@ -301,25 +298,76 @@ fana({
     // ========== GET GROUP INFO ==========
     let membresGroupe = await infosGroupe.participants;
     
-    // ========== CHECK IF BOT IS ADMIN ==========
-    // Get bot's full JID
+    // ========== CHECK IF BOT IS ADMIN - FIXED FOR LID FORMAT ==========
+    // Get bot's phone number without @s.whatsapp.net
+    const botPhoneNumber = idBot.split('@')[0];
     const botJid = idBot.includes('@') ? idBot : idBot + '@s.whatsapp.net';
     
     // Check if bot is in admin list
     let botIsAdmin = false;
+    let botAdminStatus = null;
+    let botLid = null;
+    
     for (const m of membresGroupe) {
-        if (m.id === botJid && m.admin !== null) {
-            botIsAdmin = true;
-            break;
+        // Check if this participant is the bot
+        // Check by phone number (for @s.whatsapp.net) or by LID
+        const participantId = m.id;
+        
+        // Check if the participant ID contains the bot's phone number
+        // OR if it matches the bot's JID
+        if (participantId.includes(botPhoneNumber) || participantId === botJid) {
+            if (m.admin !== null) {
+                botIsAdmin = true;
+                botAdminStatus = m.admin;
+                botLid = participantId;
+                console.log(`✅ Bot is admin!`);
+                console.log(`   Admin status: ${m.admin}`);
+                console.log(`   Bot JID: ${botJid}`);
+                console.log(`   Bot LID: ${botLid}`);
+                break;
+            }
         }
     }
 
+    console.log('🔍 Bot phone number:', botPhoneNumber);
     console.log('🔍 Bot JID:', botJid);
     console.log('🔍 Bot is admin?', botIsAdmin);
-    console.log('🔍 Admin list:', membresGroupe.filter(m => m.admin !== null).map(m => m.id));
+    console.log('🔍 Bot admin status:', botAdminStatus);
+    console.log('🔍 Admin list:', membresGroupe.filter(m => m.admin !== null).map(m => ({ id: m.id, admin: m.admin })));
+
+    // If bot is not admin, try to get fresh group data
+    if (!botIsAdmin) {
+        try {
+            // Refresh group metadata
+            const freshGroup = await zk.groupMetadata(dest);
+            membresGroupe = freshGroup.participants;
+            
+            for (const m of membresGroupe) {
+                const participantId = m.id;
+                if (participantId.includes(botPhoneNumber) || participantId === botJid) {
+                    if (m.admin !== null) {
+                        botIsAdmin = true;
+                        botAdminStatus = m.admin;
+                        console.log(`✅ Bot is admin (after refresh)!`);
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('⚠️ Could not refresh group metadata:', e);
+        }
+    }
 
     if (!botIsAdmin) {
-        return repondre(t.botNotAdmin);
+        const errorMsg = `❌ *Bot is not recognized as an admin in this group!*\n\n` +
+                        `This might be due to WhatsApp's new LID (Linked ID) system.\n\n` +
+                        `Please try these steps:\n\n` +
+                        `1️⃣ Remove the bot from the group\n` +
+                        `2️⃣ Re-add the bot to the group\n` +
+                        `3️⃣ Make the bot an admin again\n` +
+                        `4️⃣ Then try the command again\n\n` +
+                        `🔹 ${t.poweredBy}`;
+        return repondre(errorMsg);
     }
 
     // ========== CHECK FOR NUMBER SELECTION REPLY ==========
@@ -477,9 +525,11 @@ fana({
 
         // Check if target is in group
         let targetInGroup = false;
+        let targetJid = null;
         for (const m of membresGroupe) {
             if (m.id === auteurMsgRepondu) {
                 targetInGroup = true;
+                targetJid = m.id;
                 break;
             }
         }
@@ -531,6 +581,12 @@ fana({
 
     } catch (e) {
         console.error('❌ Remove command error:', e);
-        repondre(`${t.error}\n\n${t.poweredBy}`);
+        
+        // Check for specific errors
+        if (e.message && e.message.includes('not-authorized')) {
+            repondre(`❌ Bot doesn't have permission to remove members!\n\nPlease remove the bot and re-add it as admin.`);
+        } else {
+            repondre(`${t.error}\n\n${t.poweredBy}`);
+        }
     }
 });
