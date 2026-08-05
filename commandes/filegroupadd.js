@@ -134,16 +134,16 @@ async function createAddCards(zk, ms, lang) {
         body: {
             text: `${t.addDesc}\n\n` +
                   `${t.howToUse}\n` +
-                  `━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `━━━━━━━━━━━━\n` +
                   `📌 ${t.usage}\n` +
-                  `.add 2547XXXXXX,2547XXXXXX\n\n` +
+                  `.add 267XXXXXX,2547XXXXXX\n\n` +
                   `📌 ${t.example}\n` +
-                  `.add 254712345678,254798765432\n\n` +
+                  `.add 26712345678,26798765432\n\n` +
                   `📌 ${t.maxNote}\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 ${t.poweredBy}`,
+            text: ` `,
         },
         nativeFlowMessage: {
             buttons: [
@@ -174,14 +174,14 @@ async function createAddCards(zk, ms, lang) {
         },
         body: {
             text: `📌 *Quick Add*\n\n` +
-                  `🔹 Add up to 30 members\n` +
-                  `🔹 Auto-detect valid numbers\n` +
-                  `🔹 Shows progress in real-time\n` +
-                  `🔹 Detailed results report\n\n` +
+                  ` Add up to 30 members\n` +
+                  ` Auto-detect valid numbers\n` +
+                  ` Shows progress in real-time\n` +
+                  ` Detailed results report\n\n` +
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 ${t.poweredBy}`,
+            text: ` `,
         },
         nativeFlowMessage: {
             buttons: [
@@ -220,7 +220,7 @@ async function createAddCards(zk, ms, lang) {
                   `${t.chooseOption}`,
         },
         footer: {
-            text: `🔹 ${t.poweredBy}`,
+            text: ` `,
         },
         nativeFlowMessage: {
             buttons: [
@@ -235,7 +235,7 @@ async function createAddCards(zk, ms, lang) {
                     name: "cta_copy",
                     buttonParamsJson: JSON.stringify({
                         display_text: "📋 Copy Help",
-                        copy_code: `ADD COMMAND HELP:\n.add 2547XXXXXX,2547XXXXXX\nMax 30 numbers`,
+                        copy_code: `ADD COMMAND HELP:\n.add 267XXXXXX,267XXXXXX\nMax 30 numbers`,
                     }),
                 },
             ],
@@ -282,7 +282,7 @@ const isNumberSelection = (text) => {
 };
 
 fana({
-  nomCom: "addd",
+  nomCom: "add",
   aliases: ["addmember", "addparticipant", "invite"],
   reaction: "➕",
   categorie: "Group"
@@ -332,7 +332,7 @@ fana({
                 // Option 1: Show add format
                 await repondre(`📌 *${t.howToUse}*\n\n` +
                     `${t.usage}: .add 2547XXXXXX,2547XXXXXX\n\n` +
-                    `${t.example}: .add 254712345678,254798765432\n\n` +
+                    `${t.example}: .add 267712345678,267798765432\n\n` +
                     `${t.maxNote}\n\n` +
                     `${t.poweredBy}`);
                 break;
@@ -340,7 +340,7 @@ fana({
                 // Option 2: Quick add - ask for numbers
                 await repondre(`📌 *${t.addNow}*\n\n` +
                     `${t.usage}: .add 2547XXXXXX,2547XXXXXX\n\n` +
-                    `${t.example}: .add 254712345678,254798765432\n\n` +
+                    `${t.example}: .add 26712345678,26798765432\n\n` +
                     `${t.maxNote}\n\n` +
                     `${t.poweredBy}`);
                 break;
@@ -411,8 +411,8 @@ fana({
                         break;
                     case 2:
                         await repondre(`📌 *${t.addNow}*\n\n` +
-                            `${t.usage}: .add 2547XXXXXX,2547XXXXXX\n\n` +
-                            `${t.example}: .add 254712345678,254798765432\n\n` +
+                            `${t.usage}: .add 267XXXXXX,2266XXXXXX\n\n` +
+                            `${t.example}: .add 2677XXXXXX,267XXXXXX\n\n` +
                             `${t.maxNote}\n\n` +
                             `${t.poweredBy}`);
                         break;
@@ -470,7 +470,7 @@ fana({
     }
 
     // Send initial message
-    await repondre(`⏳ ${t.adding} ${numbers.length} ${t.participants}\n\n_${t.pleaseWait}_\n\n${t.poweredBy}`);
+    await repondre(`⏳ ${t.adding} ${numbers.length} ${t.participants}\n\n_${t.pleaseWait}_\n`);
 
     // Get group metadata
     const groupMetadata = await zk.groupMetadata(origineMessage);
@@ -530,35 +530,35 @@ fana({
     }
 
     // Final report
-    let report = `╭━━━「 *${t.addResults}* 」━━━╮\n`;
-    report += `┃\n`;
-    report += `┃ 👥 ${t.group} ${groupName}\n`;
-    report += `┃ 📊 ${t.requested} ${numbers.length}\n`;
-    report += `┃\n`;
-    report += `┃ ✅ ${t.added} ${success.length}\n`;
+    let report = `「 *${t.addResults}* 」\n`;
+    report += `\n`;
+    report += `👥 ${t.group} ${groupName}\n`;
+    report += `📊 ${t.requested} ${numbers.length}\n`;
+    report += `\n`;
+    report += `✅ ${t.added} ${success.length}\n`;
     
     if (success.length > 0) {
-      report += `┃    ${success.slice(0, 5).map(n => `@${n}`).join(', ')}${success.length > 5 ? ` +${success.length - 5} more` : ''}\n`;
+      report += `    ${success.slice(0, 5).map(n => `@${n}`).join(', ')}${success.length > 5 ? ` +${success.length - 5} more` : ''}\n`;
     }
     
-    report += `┃\n`;
-    report += `┃ 👥 ${t.alreadyIn} ${alreadyInGroup.length}\n`;
+    report += `\n`;
+    report += `👥 ${t.alreadyIn} ${alreadyInGroup.length}\n`;
     
     if (alreadyInGroup.length > 0) {
-      report += `┃    ${alreadyInGroup.slice(0, 5).map(n => `@${n}`).join(', ')}${alreadyInGroup.length > 5 ? ` +${alreadyInGroup.length - 5} more` : ''}\n`;
+      report += `    ${alreadyInGroup.slice(0, 5).map(n => `@${n}`).join(', ')}${alreadyInGroup.length > 5 ? ` +${alreadyInGroup.length - 5} more` : ''}\n`;
     }
     
-    report += `┃\n`;
-    report += `┃ ❌ ${t.failed} ${failed.length}\n`;
+    report += `\n`;
+    report += ` ❌ ${t.failed} ${failed.length}\n`;
     
     if (failed.length > 0) {
-      report += `┃    ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` +${failed.length - 5} more` : ''}\n`;
+      report += `   ${failed.slice(0, 5).join(', ')}${failed.length > 5 ? ` +${failed.length - 5} more` : ''}\n`;
     }
     
-    report += `┃\n`;
-    report += `╰━━━━━━━━━━━━━━━━━╯\n\n`;
+    report += `\n`;
+    report += `\n\n`;
     report += `${t.useInviteLink}\n`;
-    report += `${t.poweredBy}`;
+    
 
     // Create mentions array
     const mentions = success.slice(0, 10).map(n => n + '@s.whatsapp.net');
