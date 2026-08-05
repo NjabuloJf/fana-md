@@ -61,7 +61,7 @@ let translateTextWithCache = async (text, targetLang) => {
 async function getTranslatedTexts() {
     const lang = config.LANGUAGE || "en";
     return {
-        waChannel: await translateTextWithCache("🌐 WA Channel", lang),
+        waChannel: await translateTextWithCache("bot Channel", lang),
         downloadComplete: await translateTextWithCache("✅ *Download complete!*", lang),
         errorDownloading: await translateTextWithCache("❌ *Error downloading*", lang),
         checkLink: await translateTextWithCache("Please check the link and try again.", lang),
@@ -75,11 +75,11 @@ async function getTranslatedTexts() {
         description: await translateTextWithCache("📝 *Description:*", lang),
         unknown: await translateTextWithCache("Unknown", lang),
         selectFormat: await translateTextWithCache("📌 *Select format:*", lang),
-        audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
-        videoOption: await translateTextWithCache("2️⃣ Video (MP4)", lang),
-        videoDocOption: await translateTextWithCache("3️⃣ Video Document", lang),
-        imageOption: await translateTextWithCache("4️⃣ Image", lang),
-        carouselOption: await translateTextWithCache("5️⃣ All Images (Carousel)", lang),
+        audioOption: await translateTextWithCache("-᳆ *1* Audio (MP3)", lang),
+        videoOption: await translateTextWithCache("-᳆ *2* Video (MP4)", lang),
+        videoDocOption: await translateTextWithCache("-᳆ *3* Video Document", lang),
+        imageOption: await translateTextWithCache("-᳆ *4* Image", lang),
+        carouselOption: await translateTextWithCache("-᳆ *5* All Images (Carousel)", lang),
         chooseOption: await translateTextWithCache("Reply with number 1, 2, 3, 4, or 5 to choose:", lang),
         invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
@@ -614,15 +614,7 @@ async function downloadPinterestImage(zk, dest, ms, data, lang) {
         await zk.sendMessage(dest, {
             image: { url: imageUrl },
             caption: caption,
-            contextInfo: {
-                externalAdReply: {
-                    title: `🖼️ ${title}`,
-                    mediaType: 1,
-                    previewType: 0,
-                    thumbnailUrl: imageUrl,
-                    renderLargerThumbnail: true,
-                },
-            },
+            
         }, { quoted: ms });
 
         await zk.sendMessage(dest, { text: t.downloadComplete }, { quoted: ms });
@@ -661,15 +653,7 @@ async function downloadPinterestCarousel(zk, dest, ms, data, lang) {
             await zk.sendMessage(dest, {
                 image: { url: imageUrl },
                 caption: `${t.pinterestPost}\n\n📸 *Image ${i+1}/${totalImages}*\n${t.title} ${title}\n${t.author} ${data.author || 'Unknown'}`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: `📸 Image ${i+1}/${totalImages}`,
-                        mediaType: 1,
-                        previewType: 0,
-                        thumbnailUrl: imageUrl,
-                        renderLargerThumbnail: true,
-                    },
-                },
+                
             }, { quoted: ms });
             
             if (i < totalImages - 1) {
