@@ -86,11 +86,11 @@ async function getTranslatedTexts() {
         likes: await translateTextWithCache("❤️ *Likes:*", lang),
         unknown: await translateTextWithCache("Unknown", lang),
         selectFormat: await translateTextWithCache("📌 *Select format:*", lang),
-        audioOption: await translateTextWithCache("1️⃣ Audio (MP3)", lang),
-        videoOption: await translateTextWithCache("2️⃣ Video (MP4)", lang),
-        videoDocOption: await translateTextWithCache("3️⃣ Video Document", lang),
-        hdVideoOption: await translateTextWithCache("4️⃣ HD Video", lang),
-        sdVideoOption: await translateTextWithCache("5️⃣ SD Video", lang),
+        audioOption: await translateTextWithCache("-᳆ *1* Audio (MP3)", lang),
+        videoOption: await translateTextWithCache("-᳆ *2* Video (MP4)", lang),
+        videoDocOption: await translateTextWithCache("-᳆ *3* Video Document", lang),
+        hdVideoOption: await translateTextWithCache("-᳆ *4* HD Video", lang),
+        sdVideoOption: await translateTextWithCache("-᳆ *5* SD Video", lang),
         chooseOption: await translateTextWithCache("Reply with number 1, 2, 3, 4, or 5 to choose:", lang),
         invalidChoice: await translateTextWithCache("❌ Invalid choice! Please reply with 1, 2, 3, 4, or 5.", lang),
         timeoutMsg: await translateTextWithCache("⏰ Timeout! Please try again.", lang),
@@ -354,29 +354,13 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
                     mimetype: 'video/mp4',
                     fileName: fileName,
                     caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: `📹 ${title}`,
-                            mediaType: 1,
-                            previewType: 0,
-                            thumbnailUrl: thumbnail,
-                            renderLargerThumbnail: true,
-                        },
-                    },
+                    
                 }, { quoted: ms });
             } else {
                 await zk.sendMessage(dest, {
                     video: { url: videoUrl },
                     caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: `📹 ${title}`,
-                            mediaType: 1,
-                            previewType: 0,
-                            thumbnailUrl: thumbnail,
-                            renderLargerThumbnail: true,
-                        },
-                    },
+                    
                 }, { quoted: ms });
             }
         } catch (sendError) {
@@ -394,29 +378,13 @@ async function downloadYouTubeVideo(zk, dest, ms, data, lang, isDocument, qualit
                     mimetype: 'video/mp4',
                     fileName: fileName,
                     caption: `${t.youtubeVideo}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: `📹 ${title}`,
-                            mediaType: 1,
-                            previewType: 0,
-                            thumbnailUrl: thumbnail,
-                            renderLargerThumbnail: true,
-                        },
-                    },
+                    
                 }, { quoted: ms });
             } else {
                 await zk.sendMessage(dest, {
                     video: buffer,
                     caption: `${t.videoReady}\n\n${t.title} ${title}\n${t.channel} ${data.channel || 'Unknown'}\n${t.quality} ${qualityText}\n\n${t.downloadComplete}`,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: `📹 ${title}`,
-                            mediaType: 1,
-                            previewType: 0,
-                            thumbnailUrl: thumbnail,
-                            renderLargerThumbnail: true,
-                        },
-                    },
+                    
                 }, { quoted: ms });
             }
         }
