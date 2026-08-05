@@ -213,7 +213,7 @@ fana({ nomCom: "demote", categorie: 'Group', reaction: "👨🏿‍💼" }, asyn
 });
 
 // ── Remove command ─────────────────────────────────────────────
-fana({ nomCom: "fuck-aut", categorie: 'Group', reaction: "👨🏿‍💼" }, async (dest, zk, commandeOptions) => {
+fana({ nomCom: "remove", categorie: 'Group', reaction: "👨🏿‍💼" }, async (dest, zk, commandeOptions) => {
     let { repondre, msgRepondu, infosGroupe, auteurMsgRepondu, verifGroupe, nomAuteurMessage, auteurMessage, superUser, idBot, ms } = commandeOptions;
     const lang = config.LANGUAGE || "en";
     
@@ -317,7 +317,7 @@ fana({ nomCom: "info", categorie: 'Group' }, async (dest, zk, commandeOptions) =
 });
 
 // ── AntiLink command ─────────────────────────────────────────────
-fana({ nomCom: "link-del", categorie: 'Group', reaction: "🔗" }, async (dest, zk, commandeOptions) => {
+fana({ nomCom: "antilink", categorie: 'Group', reaction: "🔗" }, async (dest, zk, commandeOptions) => {
     var { repondre, arg, verifGroupe, superUser, verifAdmin, ms } = commandeOptions;
     const lang = config.LANGUAGE || "en";
     
