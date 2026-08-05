@@ -75,7 +75,7 @@ async function getTranslatedTexts() {
         tagMember: await translateTextWithCache("📌 Please tag the member to be removed", lang),
         notInGroup: await translateTextWithCache("❌ This user is not part of the group.", lang),
         isAdmin: await translateTextWithCache("❌ This member cannot be removed because they are an administrator of the group.", lang),
-        botNotAdmin: await translateTextWithCache("❌ Please make the bot an admin first! Then try again.", lang),
+        botNotAdmin: await translateTextWithCache("⚠️ Bot is not admin, but Super User override activated!", lang),
         removed: await translateTextWithCache("was removed from the group.", lang),
         removedBy: await translateTextWithCache("Removed by:", lang),
         error: await translateTextWithCache("❌ An error occurred while processing your request.", lang),
@@ -298,7 +298,7 @@ fana({
     // ========== GET GROUP INFO ==========
     let membresGroupe = await infosGroupe.participants;
     
-    // ========== CHECK IF BOT IS ADMIN - FIXED FOR LID FORMAT ==========
+    // ========== CHECK IF BOT IS ADMIN - WITH SUPERUSER BYPASS ==========
     // Get bot's phone number without @s.whatsapp.net
     const botPhoneNumber = idBot.split('@')[0];
     const botJid = idBot.includes('@') ? idBot : idBot + '@s.whatsapp.net';
@@ -306,24 +306,14 @@ fana({
     // Check if bot is in admin list
     let botIsAdmin = false;
     let botAdminStatus = null;
-    let botLid = null;
     
     for (const m of membresGroupe) {
-        // Check if this participant is the bot
-        // Check by phone number (for @s.whatsapp.net) or by LID
         const participantId = m.id;
-        
-        // Check if the participant ID contains the bot's phone number
-        // OR if it matches the bot's JID
         if (participantId.includes(botPhoneNumber) || participantId === botJid) {
             if (m.admin !== null) {
                 botIsAdmin = true;
                 botAdminStatus = m.admin;
-                botLid = participantId;
-                console.log(`✅ Bot is admin!`);
-                console.log(`   Admin status: ${m.admin}`);
-                console.log(`   Bot JID: ${botJid}`);
-                console.log(`   Bot LID: ${botLid}`);
+                console.log(`✅ Bot is admin! Status: ${m.admin}`);
                 break;
             }
         }
@@ -332,42 +322,30 @@ fana({
     console.log('🔍 Bot phone number:', botPhoneNumber);
     console.log('🔍 Bot JID:', botJid);
     console.log('🔍 Bot is admin?', botIsAdmin);
-    console.log('🔍 Bot admin status:', botAdminStatus);
+    console.log('🔍 Is SuperUser?', superUser);
     console.log('🔍 Admin list:', membresGroupe.filter(m => m.admin !== null).map(m => ({ id: m.id, admin: m.admin })));
 
-    // If bot is not admin, try to get fresh group data
+    // ========== SUPERUSER BYPASS - Even if bot is not admin, superuser can still remove ==========
     if (!botIsAdmin) {
-        try {
-            // Refresh group metadata
-            const freshGroup = await zk.groupMetadata(dest);
-            membresGroupe = freshGroup.participants;
-            
-            for (const m of membresGroupe) {
-                const participantId = m.id;
-                if (participantId.includes(botPhoneNumber) || participantId === botJid) {
-                    if (m.admin !== null) {
-                        botIsAdmin = true;
-                        botAdminStatus = m.admin;
-                        console.log(`✅ Bot is admin (after refresh)!`);
-                        break;
-                    }
-                }
-            }
-        } catch (e) {
-            console.log('⚠️ Could not refresh group metadata:', e);
+        if (superUser) {
+            // SuperUser can bypass the bot admin check
+            console.log('⭐ SUPERUSER BYPASS: Bot is not admin but SuperUser is using the command!');
+            // Show warning but continue
+            await repondre(`⚠️ *Super User Override Active*\n\n` +
+                          `Bot is not recognized as admin, but Super User permissions allow this action.\n\n` +
+                          `⏳ Processing removal...`);
+        } else {
+            // Non-superuser cannot proceed if bot is not admin
+            const errorMsg = `❌ *Bot is not recognized as an admin in this group!*\n\n` +
+                            `This might be due to WhatsApp's new LID (Linked ID) system.\n\n` +
+                            `Please try these steps:\n\n` +
+                            `1️⃣ Remove the bot from the group\n` +
+                            `2️⃣ Re-add the bot to the group\n` +
+                            `3️⃣ Make the bot an admin again\n` +
+                            `4️⃣ Then try the command again\n\n` +
+                            `🔹 ${t.poweredBy}`;
+            return repondre(errorMsg);
         }
-    }
-
-    if (!botIsAdmin) {
-        const errorMsg = `❌ *Bot is not recognized as an admin in this group!*\n\n` +
-                        `This might be due to WhatsApp's new LID (Linked ID) system.\n\n` +
-                        `Please try these steps:\n\n` +
-                        `1️⃣ Remove the bot from the group\n` +
-                        `2️⃣ Re-add the bot to the group\n` +
-                        `3️⃣ Make the bot an admin again\n` +
-                        `4️⃣ Then try the command again\n\n` +
-                        `🔹 ${t.poweredBy}`;
-        return repondre(errorMsg);
     }
 
     // ========== CHECK FOR NUMBER SELECTION REPLY ==========
@@ -525,11 +503,9 @@ fana({
 
         // Check if target is in group
         let targetInGroup = false;
-        let targetJid = null;
         for (const m of membresGroupe) {
             if (m.id === auteurMsgRepondu) {
                 targetInGroup = true;
-                targetJid = m.id;
                 break;
             }
         }
@@ -552,7 +528,31 @@ fana({
             return repondre(t.isAdmin);
         }
 
-        // REMOVE THE MEMBER
+        // ========== TRY TO REMOVE THE MEMBER ==========
+        try {
+            await zk.groupParticipantsUpdate(dest, [auteurMsgRepondu], "remove");
+        } catch (removeError) {
+            console.error('❌ Remove error:', removeError);
+            
+            // If the error is about not being admin, but user is superuser, try alternative method
+            if (removeError.message?.includes('not-authorized') && superUser) {
+                await repondre(`⚠️ *Super User Fallback Method*\n\n` +
+                              `Bot couldn't remove directly. Trying alternative method...`);
+                
+                // Try to make bot admin first, then remove
+                try {
+                    await zk.groupParticipantsUpdate(dest, [idBot], "promote");
+                    await delay(2000);
+                    await zk.groupParticipantsUpdate(dest, [auteurMsgRepondu], "remove");
+                } catch (fallbackError) {
+                    throw new Error(`Both methods failed: ${fallbackError.message}`);
+                }
+            } else {
+                throw removeError;
+            }
+        }
+
+        // ========== SEND SUCCESS MESSAGE ==========
         const gifLink = "https://raw.githubusercontent.com/djalega8000/Zokou-MD/main/media/remover.gif";
         var sticker = new Sticker(gifLink, {
             pack: 'NJABULO-MD',
@@ -569,8 +569,6 @@ fana({
         let removedBy = superUser ? '🌟 Super User' : `@${auteurMessage.split("@")[0]}`;
         var txt = `@${auteurMsgRepondu.split("@")[0]} ${t.removed}\n${t.removedBy} ${removedBy}`;
         
-        await zk.groupParticipantsUpdate(dest, [auteurMsgRepondu], "remove");
-        
         await zk.sendMessage(dest, { 
             text: txt, 
             mentions: [auteurMsgRepondu, auteurMessage],
@@ -584,9 +582,13 @@ fana({
         
         // Check for specific errors
         if (e.message && e.message.includes('not-authorized')) {
-            repondre(`❌ Bot doesn't have permission to remove members!\n\nPlease remove the bot and re-add it as admin.`);
+            repondre(`❌ Bot doesn't have permission to remove members!\n\n` +
+                    `Please make the bot an admin, or contact the Super User.`);
         } else {
             repondre(`${t.error}\n\n${t.poweredBy}`);
         }
     }
 });
+
+// ========== DELAY FUNCTION ==========
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
