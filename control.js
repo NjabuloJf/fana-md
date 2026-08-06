@@ -1611,7 +1611,7 @@ Please try again later or leave a message. Cheers! 😊`,
                             interactiveMessage: {
                             image: { url: randomNjabulourl },
                             header: startupText,
-                             buttons: buttons,
+                             buttons: startupButtons,
                              headerType: 1
                              }
                             });
