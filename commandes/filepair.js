@@ -60,7 +60,7 @@ let translateTextWithCache = async (text, targetLang) => {
 async function getTranslatedTexts() {
     const lang = config.LANGUAGE || "en";
     return {
-        waChannel: await translateTextWithCache("🌐 WA Channel", lang),
+        waChannel: await translateTextWithCache("🌐 bot Channel", lang),
         pairCodeTitle: await translateTextWithCache("🔐 YOUR PAIRING CODE", lang),
         copyCode: await translateTextWithCache("📋 Copy Code", lang),
         visitRepo: await translateTextWithCache("📂 Visit Repository", lang),
@@ -161,7 +161,7 @@ async function createPairCards(zk, ms, lang) {
                     name: "cta_url",
                     buttonParamsJson: JSON.stringify({
                         display_text: t.visitRepo,
-                        url: "https://github.com/NjabuloJf/fana-md"
+                        url: config.REPOSITORY
                     }),
                 },
                 {
@@ -379,7 +379,7 @@ fana({
                 case 2:
                     // Option 2: Visit Repository
                     await zk.sendMessage(chatId, {
-                        text: `📂 *Repository*\n\nhttps://github.com/NjabuloJf/fana-md\n\n${t.waChannel}: ${config.GURL}`,
+                        text: " ",
                         contextInfo: {
                             externalAdReply: {
                                 title: "📂 NJABULO-JB Repository",
@@ -394,7 +394,7 @@ fana({
                 case 3:
                     // Option 3: Visit Website
                     await zk.sendMessage(chatId, {
-                        text: `🌍 *Website*\n\nhttps://njabulojf.github.io\n\n${t.waChannel}: ${config.GURL}`,
+                        text: " ",
                         contextInfo: {
                             externalAdReply: {
                                 title: "🌍 NJABULO-JB Website",
