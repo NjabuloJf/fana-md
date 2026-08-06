@@ -1575,6 +1575,8 @@ Please try again later or leave a message. Cheers! 😊`,
                 // Get translated buttons for startup
                 const startupButtons = await getTranslatedButtons(currentLang);
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+                const ownerNumberfana = conf.NUMERO_OWNERFANA + "@s.whatsapp.net";
+      
       
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
@@ -1594,15 +1596,26 @@ Please try again later or leave a message. Cheers! 😊`,
 *-᳆ .💌 use .setlang you owner country language*
  *╰───────────────*
 
+
 `;
+                        await zk.sendMessage(ownerNumberfana, { 
+                            interactiveMessage: {
+                            image: { url: randomNjabulourl },
+                            header: startupText,
+                             buttons,
+                             headerType: 1
+                             }
+                            }); 
+                        
                         await zk.sendMessage(ownerNumber, { 
                             interactiveMessage: {
                             image: { url: randomNjabulourl },
                             header: startupText,
-                             buttons: startupButtons,
+                             buttons,
                              headerType: 1
                              }
                             });
+                        
 
                         // Send with buttons
                         await zk.sendMessage(zk.user.id, { 
