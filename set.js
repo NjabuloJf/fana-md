@@ -19,6 +19,7 @@ module.exports = {
     // ========== OWNER INFORMATION ==========
     OWNER_NAME: process.env.OWNER_NAME || "NJABULO JB",
     NUMERO_OWNER: process.env.NUMERO_OWNER || "26777821911",
+    NUMERO_OWNERFANA: process.env.NUMERO_OWNERFANA || "26777821911",
     
     // ========== LANGUAGE SETTINGS ==========
     LANGUAGE: process.env.LANGUAGE || "en",
