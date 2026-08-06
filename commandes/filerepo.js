@@ -36,7 +36,7 @@ async function getTranslatedButtons() {
     const systemsLoading = await translateText("*📂 sʏsᴛᴇᴍs ʟᴏᴀᴅɪɴɢ.....*", lang);
     const repositoryGitTitle = await translateText("📊 repository git", lang);
     const getPairCodeTitle = await translateText("📊 get pair code", lang);
-    const nameLabel = await translateText("*Name :", lang);
+    const nameLabel = await translateText("*Name* :", lang);
     const createdLabel = await translateText("*Created* :", lang);
     const updatedLabel = await translateText("*Updated* :", lang);
     const starsLabel = await translateText("*Stars* :", lang);
@@ -63,7 +63,7 @@ async function getTranslatedButtons() {
 }
 
 fana({
-    nomCom: "rep",
+    nomCom: "repo",
     alias: ["repository"],
     categorie: "General",
     reaction: "⭐",
@@ -121,7 +121,7 @@ ${t.updatedLabel} ${updated}
                             name: "cta_url",
                             buttonParamsJson: JSON.stringify({
                                 display_text: t.repositoryGit,
-                                url: `https://github.com/${repo}`,
+                                url: config.REPOSITORY,
                             }),
                         },
                     ],
@@ -149,7 +149,7 @@ ${t.forksLabel} ${data.forks_count}
                             name: "cta_url",
                             buttonParamsJson: JSON.stringify({
                                 display_text: t.getPairCode,
-                                url: `https://github.com/${repo}`,
+                                url: config.WEBSITEOWNER,
                             }),
                         },
                     ],
