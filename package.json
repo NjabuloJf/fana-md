@@ -33,11 +33,11 @@
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@vitalets/google-translate-api": "^9.2.0",
-    "@whiskeysockets/baileys": "github:xhclintohn/Baileys",
+    "@whiskeysockets/baileys": "npm:toxic-baileys@latest",
     "@xaviabot/fb-downloader": "^1.0.14",
     "adm-zip": "^0.5.12",
     "aptoide-scraper": "^1.0.1",
-    "axios": "^1.7.2",
+    "axios": "latest",
     "cache-manager": "^5.5.0",
     "canvacord": "^5.4.8",
     "chalk": "^5.3.0",
@@ -55,7 +55,7 @@
     "heroku-client": "^3.1.0",
     "human-readable": "^0.2.1",
     "javascript-obfuscator": "^4.1.0",
-    "jimp": "^0.16.13",
+    "jimp": "*",
     "link-preview-js": "^3.0.4",
     "megajs": "^1.2.4",
     "moment-timezone": "^0.5.43",
@@ -90,4 +90,4 @@
     "url": "https://github.com/NjabuloJf/fana-md/issues"
   },
   "homepage": "https://github.com/NjabuloJf/fana-md#readme"
-}
+  }
