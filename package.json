@@ -16,7 +16,6 @@
     "pm2:logs": "pm2 logs njabulo",
     "pm2:monit": "pm2 monit",
     "keepalive": "node keepalive.js",
-    "postinstall": "npm rebuild --update-binary || echo 'Build completed with warnings'",
     "build": "npm install --legacy-peer-deps",
     "docker-start": "pm2-runtime control.js --name njabulo"
   },
@@ -82,10 +81,6 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
