@@ -2,7 +2,13 @@
   "name": "Njabulo_Jb",
   "description": "Njabulo AI WhatsApp Bot",
   "stack": "heroku-24",
-  "keywords": ["bot", "node", "baileys", "whatsapp"],
+  "keywords": [
+    "bot",
+    "node",
+    "baileys",
+    "whatsapp",
+    "njabulo-bot"
+  ],
   "logo": "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
   "repository": "https://github.com/NjabuloJf/fana-md",
   "success_url": "/",
@@ -13,17 +19,17 @@
       "required": true
     },
     "LANGUAGE": {
-      "description": "🌍 Choose your bot language\n🇬🇧 en - English\n🇿🇼 sn - Shona\n🇿🇼 nd - Ndebele\n🇿🇦 af - Afrikaans\n🇿🇦 zu - Zulu\n🇿🇦 xh - Xhosa\n🇵🇹 pt - Portuguese\n🇰🇪 sw - Swahili\n🇮🇳 hi - Hindi\n🇮🇶 ar - Arabic\n🇫🇷 fr - French\n🇪🇸 es - Spanish\n🇨🇳 zh - Chinese\n🇩🇪 de - German\n🇯🇵 ja - Japanese\n🇰🇷 ko - Korean\n🇷🇺 ru - Russian\n🇮🇹 it - Italian",
+      "description": "🌍 Choose your bot language",
       "value": "en",
       "required": false
     },
     "AUTO_READ_STATUS": {
-      "description": "♻️ Your contact status will be read automatically",
+      "description": "♻️ Auto read status (yes/no)",
       "value": "no",
       "required": false
     },
     "AUTOREACT_STATUS": {
-      "description": "🎊 Enter yes for your bot to auto like status",
+      "description": "🎊 Auto like status (yes/no)",
       "value": "no",
       "required": false
     },
@@ -48,7 +54,7 @@
       "required": false
     },
     "PUBLIC_MODE": {
-      "description": "🌐 Type yes to put your bot on public mode or no to put it on private mode",
+      "description": "🌐 Public mode (yes/no)",
       "value": "yes",
       "required": false
     },
@@ -58,7 +64,7 @@
       "required": false
     },
     "HEROKU_APY_KEY": {
-      "description": "📡insert your heroku api-key ",
+      "description": "📡 Insert your heroku api-key",
       "value": "HRKU-AAa4OvbTCLDEK8R9CIpjZDInu5zGLmQfqkA0oJNNSu2Q_____wNi617Z3aQe",
       "required": true
     },
@@ -73,17 +79,17 @@
       "value": ""
     },
     "NUMERO_OWNER": {
-      "description": "🍥 Your number, don't put '+' and put your area code",
+      "description": "🍥 Your number (no '+' sign, include area code)",
       "required": true,
       "value": ""
     },
     "STARTING_BOT_MESSAGE": {
-      "description": "💬 If you don't want starting bot message put no else put yes",
+      "description": "💬 Starting bot message (yes/no)",
       "required": false,
       "value": "yes"
     },
     "PRESENCE": {
-      "description": "⬇️ Mark your presence: 1 for online, 2 for typing, 3 for recording",
+      "description": "⬇️ Presence: 1=online, 2=typing, 3=recording",
       "value": "1",
       "required": false
     },
