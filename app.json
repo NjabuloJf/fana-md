@@ -60,6 +60,11 @@
       "value": "",
       "required": false
     },
+     "HEROKU_APY_KEY": {
+      "description": "📡insert your heroku api-key ",
+      "value":"HRKU-AAa4OvbTCLDEK8R9CIpjZDInu5zGLmQfqkA0oJNNSu2Q_____wNi617Z3aQe",
+      "required" :true
+    },
     "SESSION_ID": {
       "description": "📃 Put your session ID with njabulo~ prefix",
       "value": "",
@@ -89,7 +94,7 @@
 
     "ANTI_CALL": {
       "description": "📞 Block calls (yes/no)",
-      "value": "yes",
+      "value": "no",
       "required": false
     },
     "PM_PERMIT": {
