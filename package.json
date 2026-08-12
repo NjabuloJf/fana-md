@@ -22,7 +22,7 @@
     "bot",
     "node",
     "baileys",
-    "WhatsApp"
+    "njabulo-bot"
   ],
   "author": "NjabuloJf",
   "license": "ISC",
@@ -67,7 +67,6 @@
     "qrcode-terminal": "^0.12.0",
     "readline": "^1.3.0",
     "sequelize": "^6.32.1",
-    "sqlite3": "^5.1.6",
     "translatte": "^3.0.1",
     "typescript": "^5.1.6",
     "unlimited-ai": "^1.0.0",
@@ -80,7 +79,7 @@
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": "24.x",
     "npm": ">=8.0.0"
   },
   "repository": {
