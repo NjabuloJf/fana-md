@@ -15,15 +15,14 @@
     "pm2:restart": "pm2 restart njabulo",
     "pm2:logs": "pm2 logs njabulo",
     "pm2:monit": "pm2 monit",
-    "keepalive": "node keepalive.js"
+    "keepalive": "node keepalive.js",
+    "docker-start": "pm2-runtime control.js --name njabulo"
   },
   "keywords": [
     "bot",
-    "Baileys",
-    "Njabulo-Jb",
-    "whatsapp",
-    "whatsapp-bot",
-    "fana-md-boy"
+    "node",
+    "baileys",
+    "WhatsApp"
   ],
   "author": "NjabuloJf",
   "license": "ISC",
