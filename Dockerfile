@@ -1,4 +1,4 @@
-# 1. Use Node 20 (Critical to fix your EBADENGINE errors)
+# 1. Use Node 20 (Fixes all engine errors)
 FROM node:20-slim
 
 # 2. Install system dependencies (ffmpeg, git, etc.)
@@ -6,24 +6,20 @@ RUN apt-get update && \
     apt-get install -y ffmpeg git python3 make g++ curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 3. Install PM2 globally
-RUN npm install -g pm2
-
-# 4. Set the working directory inside the container
+# 3. Set the working directory
 WORKDIR /app
 
-# 5. Copy package.json and package-lock.json first (for better caching)
+# 4. Copy package files first (for caching)
 COPY package*.json ./
 
-# 6. Install Node dependencies (Removed the broken fallback)
+# 5. Install Node dependencies
 RUN npm install --legacy-peer-deps --no-optional --no-audit
 
-# 7. Copy the rest of your application code
+# 6. Copy the rest of your application code
 COPY . .
 
-# 8. Expose the port (Heroku will assign a dynamic one, but this is good practice)
+# 7. Expose the port
 EXPOSE 8080
 
-# 9. THE MOST IMPORTANT PART: Start command
-# You must ensure "npm run toshtech" works, otherwise use "npm start"
-CMD ["npm", "run", "toshtech"]
+# 8. THE FIX: Use your existing "docker-start" script from package.json
+CMD ["npm", "run", "docker-start"]
