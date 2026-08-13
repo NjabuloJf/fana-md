@@ -1,10 +1,7 @@
-# This file is used for the "Deploy to Heroku" button feature.
-# It tells Heroku to use the Procfile instead of Docker.
-
 build:
-  languages:
-    - nodejs
-
+  docker:
+      worker: Dockerfile
 run:
-  web: npm run keepalive
-  worker: npm start
+   worker:   npm run njabulofana
+   
+   
