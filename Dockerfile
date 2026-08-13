@@ -9,8 +9,8 @@ RUN apt-get update && \
   npm i pm2 -g && \
   rm -rf /var/lib/apt/lists/*
   
-RUN git clone https://github.com/NjabuloJf/fana-md  /root/ToshTech
-WORKDIR /root/toshtech/
+RUN git clone https://github.com/NjabuloJf/fana-md  /root/NjabuloFana
+WORKDIR /root/njabulofana/
 
 
 COPY package.json .
