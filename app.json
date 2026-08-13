@@ -1,7 +1,7 @@
 {
   "name": "Njabulo_Jb",
   "description": "Njabulo AI WhatsApp Bot",
-  "stack": "heroku-24",
+  "stack": "heroku-26",
   "buildpacks": [
     {
       "url": "heroku/nodejs"
@@ -125,4 +125,4 @@
       "size": "eco"
     }
   }
-    }
+  }
