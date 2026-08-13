@@ -1,28 +1,11 @@
 {
   "name": "Njabulo_Jb",
   "description": "Njabulo AI WhatsApp Bot",
-  "stack": "heroku-26",
-  "buildpacks": [
-    {
-      "url": "heroku/nodejs"
-    },
-    {
-      "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git"
-    },
-    {
-      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest"
-    }
-  ],
-  "keywords": [
-    "bot",
-    "node",
-    "baileys",
-    "whatsapp",
-    "njabulo-bot"
-  ],
+  "keywords": ["bot", "node", "baileys", "whatsapp"],
   "logo": "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
   "repository": "https://github.com/NjabuloJf/fana-md",
   "success_url": "/",
+  "stack": "container",
   "env": {
     "PREFIX": {
       "description": "🔠 Choose your prefix of bot",
@@ -30,17 +13,18 @@
       "required": true
     },
     "LANGUAGE": {
-      "description": "🌍 Choose your bot language",
+      "description": "🌍 Choose your bot language\n🇬🇧 en - English\n🇿🇼 sn - Shona\n🇿🇼 nd - Ndebele\n🇿🇦 af - Afrikaans\n🇿🇦 zu - Zulu\n🇿🇦 xh - Xhosa\n🇵🇹 pt - Portuguese\n🇰🇪 sw - Swahili\n🇮🇳 hi - Hindi\n🇮🇶 ar - Arabic\n🇫🇷 fr - French\n🇪🇸 es - Spanish\n🇨🇳 zh - Chinese\n🇩🇪 de - German\n🇯🇵 ja - Japanese\n🇰🇷 ko - Korean\n🇷🇺 ru - Russian\n🇮🇹 it - Italian",
       "value": "en",
       "required": false
     },
     "AUTO_READ_STATUS": {
-      "description": "♻️ Auto read status (yes/no)",
+      "description": "♻️ Your contact status will be read automatically",
       "value": "no",
       "required": false
     },
+
     "AUTOREACT_STATUS": {
-      "description": "🎊 Auto like status (yes/no)",
+      "description": "🎊 Enter yes for your bot to auto like status",
       "value": "no",
       "required": false
     },
@@ -64,20 +48,17 @@
       "value": "NJABULO JB",
       "required": false
     },
+
     "PUBLIC_MODE": {
-      "description": "🌐 Public mode (yes/no)",
+      "description": "🌐 Type yes to put your bot on public mode or no to put it on private mode",
       "value": "yes",
       "required": false
     },
+
     "HEROKU_APP_NAME": {
       "description": "👥 Insert your heroku APP NAME",
       "value": "",
       "required": false
-    },
-    "HEROKU_APY_KEY": {
-      "description": "📡 Insert your heroku api-key",
-      "value": "HRKU-AAa4OvbTCLDEK8R9CIpjZDInu5zGLmQfqkA0oJNNSu2Q_____wNi617Z3aQe",
-      "required": true
     },
     "SESSION_ID": {
       "description": "📃 Put your session ID with njabulo~ prefix",
@@ -90,23 +71,25 @@
       "value": ""
     },
     "NUMERO_OWNER": {
-      "description": "🍥 Your number (no '+' sign, include area code)",
+      "description": "🍥 Your number, don't put '+' and put your area code",
       "required": true,
       "value": ""
     },
+
     "STARTING_BOT_MESSAGE": {
-      "description": "💬 Starting bot message (yes/no)",
+      "description": "💬 If you don't want starting bot message put no else put yes",
       "required": false,
       "value": "yes"
     },
     "PRESENCE": {
-      "description": "⬇️ Presence: 1=online, 2=typing, 3=recording",
+      "description": "⬇️ Mark your presence: 1 for online, 2 for typing, 3 for recording",
       "value": "1",
       "required": false
     },
+
     "ANTI_CALL": {
       "description": "📞 Block calls (yes/no)",
-      "value": "no",
+      "value": "yes",
       "required": false
     },
     "PM_PERMIT": {
@@ -116,13 +99,14 @@
     }
   },
   "formation": {
-    "web": {
-      "quantity": 1,
-      "size": "eco"
-    },
     "worker": {
       "quantity": 1,
-      "size": "eco"
+      "size": "basic"
     }
-  }
-  }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    }
+  ]
+}
