@@ -1,9 +1,4 @@
-FROM node:lts-buster
-
-# Fix the repository URLs for deprecated Buster
-RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
-    sed -i '/buster-updates/d' /etc/apt/sources.list
+FROM node:lts-bullseye
 
 RUN apt-get update && \
   apt-get install -y \
@@ -17,12 +12,20 @@ RUN apt-get update && \
 RUN git clone https://github.com/NjabuloJf/fana-md /root/NjabuloFana
 WORKDIR /root/NjabuloFana
 
+# Copy package.json first
 COPY package.json .
-RUN npm install pm2 -g
-RUN npm install --legacy-peer-deps
 
+# Install dependencies
+RUN npm install pm2 -g && \
+    npm install --legacy-peer-deps
+
+# Copy the rest
 COPY . .
+
+# Rename control.js to control.mjs for ESM support
+RUN mv control.js control.mjs || true
 
 EXPOSE 5000
 
-CMD ["npm", "run", "control.js"]
+# Use pm2-runtime to run the app
+CMD ["pm2-runtime", "control.mjs"]
