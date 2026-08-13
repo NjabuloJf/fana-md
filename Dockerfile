@@ -21,4 +21,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["npm", "run" , "control.js", "keepalive.js"]
+CMD ["npm", "run" , "control.js"]
