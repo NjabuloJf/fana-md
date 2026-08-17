@@ -1,12 +1,17 @@
 {
-  "name": "Njabulo_Jb",
-  "description": "Njabulo AI WhatsApp Bot",
-  "keywords": ["bot", "node", "baileys", "whatsapp"],
-  "logo": "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
-  "repository": "https://github.com/NjabuloJf/fana-md",
-  "success_url": "/",
-  "stack": "container",
-  "env": {
+  "name": "Njabulo-Jb",
+  "description": "🤖 WhatsApp Bot with commands folder support",
+  "repository": "https://github.com/NjabuloJf/njabuloo-minibot",
+  "logo": "https://files.catbox.moe/dfe0h0.jpg",
+  "keywords": [
+    "whatsapp-bot",
+    "nodejs",
+    "baileys",
+    "whatsapp",
+    "bot",
+    "njabulomini"
+  ],
+    "env": {
     "PREFIX": {
       "description": "🔠 Choose your prefix of bot",
       "value": ".",
@@ -104,9 +109,23 @@
       "size": "basic"
     }
   },
-  "addons": [
+
+  "buildpacks": [
     {
-      "plan": "heroku-postgresql:essential-0"
+      "url": "https://github.com/heroku/heroku-buildpack-activestorage-preview"
+    },
+    {
+      "url": "heroku/nodejs"
     }
-  ]
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "stack": "heroku-26"
 }
+
+
+
