@@ -1,33 +1,19 @@
 {
   "name": "Njabulo-Jb",
-  "version": "2.0.0",
-  "description": "NJABULO-JB WhatsApp Bot - Fast & Reliable",
+  "version": "1.0.0",
+  "description": "WhatsApp Bot with Multi-Language Support",
   "main": "control.js",
   "scripts": {
-    "test": "node control.js",
+    "start": "node index.js",
+    "postinstall": "mkdir -p session commands logs",
+    "test": "echo \"Error: no test specified\" && exit 1"
     "s": "node control.js",
     "start": "node control.js",
-    "njabulofana": "pm2 start control.js --attach",
     "c": "tsc",
     "dev": "nodemon control.js",
-    "pm2:start": "pm2 start control.js --name fana-md --max-memory-restart 500M",
-    "pm2:stop": "pm2 stop fana-md",
-    "pm2:restart": "pm2 restart fana-md",
-    "pm2:logs": "pm2 logs fama-md",
-    "pm2:monit": "pm2 monit",
     "keepalive": "node keepalive.js"
   },
-  "keywords": [
-    "bot",
-    "Baileys",
-    "Njabulo-Jb",
-    "whatsapp",
-    "whatsapp-bot",
-    "fana-md-boy"
-  ],
-  "author": "NjabuloJf",
-  "license": "ISC",
-  "dependencies": {
+    "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@vitalets/google-translate-api": "^9.2.0",
@@ -77,19 +63,19 @@
     "ytdl-core": "4.11.5",
     "youtube-yts": "^2.0.0"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "22.x"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/NjabuloJf/fana-md"
-  },
-  "bugs": {
-    "url": "https://github.com/NjabuloJf/fana-md/issues"
-  },
-  "homepage": "https://github.com/NjabuloJf/fana-md#readme"
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "multi-device",
+    "baileys",
+    "njabulomini",
+    "translation",
+    "multi-language"
+  ],
+  "author": "Hans Tech",
+  "license": "MIT"
 }
+
