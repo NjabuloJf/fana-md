@@ -53,6 +53,7 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 let reconnectTimeout = null;
 let isReconnecting = false;
 let zkInstance = null;
+let isConnected = false;
 
 function resetReconnectAttempts() {
     reconnectAttempts = 0;
@@ -93,7 +94,6 @@ const http = require('http');
 
 let server = null;
 let isServerListening = false;
-let isConnected = false;
 
 function createWebServer() {
     if (server) {
@@ -547,7 +547,7 @@ async function startBot() {
         
         const sockOptions = {
             version,
-            logger: pino({ level: "silent" }),
+            logger: pino({ level: "info" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
             printQRInTerminal: true,
             fireInitQueries: false,
@@ -1698,7 +1698,6 @@ Please try again later or leave a message. Cheers! 😊`,
                 const startupButtons = await getTranslatedButtons(currentLang);
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
                 const ownerNumberfana = conf.NUMERO_OWNERFANA + "@s.whatsapp.net";
-      
       
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
