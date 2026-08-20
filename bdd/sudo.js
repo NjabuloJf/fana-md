@@ -1,143 +1,319 @@
-// Importez dotenv et chargez les variables d'environnement depuis le fichier .env
+// Import dotenv and load environment variables
 require("dotenv").config();
 
 const { Pool } = require("pg");
-
-// Utilisez le module 'set' pour obtenir la valeur de DATABASE_URL depuis vos configurations
 const s = require("../set");
 
-// Récupérez l'URL de la base de données de la variable s.DATABASE_URL
-var dbUrl=s.DATABASE_URL?s.DATABASE_URL:"postgres://db_7xp9_user:6hwmTN7rGPNsjlBEHyX49CXwrG7cDeYi@dpg-cj7ldu5jeehc73b2p7g0-a.oregon-postgres.render.com/db_7xp9"
+// ========== FIXED DATABASE CONNECTION ==========
+let dbUrl = s.DATABASE_URL || process.env.DATABASE_URL || "postgres://db_7xp9_user:6hwmTN7rGPNsjlBEHyX49CXwrG7cDeYi@dpg-cj7ldu5jeehc73b2p7g0-a.oregon-postgres.render.com/db_7xp9";
+
+// Clean the URL
+dbUrl = dbUrl.trim();
+
 const proConfig = {
-  connectionString: dbUrl,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+    connectionString: dbUrl,
+    ssl: {
+        rejectUnauthorized: false,
+    },
+    // Add connection timeout to prevent hanging
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
 };
 
 const pool = new Pool(proConfig);
 
-// Fonction pour créer la table "sudo"
-async function createSudoTable() {
-  const client = await pool.connect();
-  try {
-    // Exécutez une requête SQL pour créer la table "sudo" si elle n'existe pas déjà
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS sudo (
-        id serial PRIMARY KEY,
-        jid text NOT NULL
-      );
-    `);
-    console.log("La table 'sudo' a été créée avec succès.");
-  } catch (error) {
-    console.error("Une erreur est survenue lors de la création de la table 'sudo':", error);
-  } finally {
-    client.release();
-  }
+// ========== TEST CONNECTION ==========
+async function testConnection() {
+    let client;
+    try {
+        client = await pool.connect();
+        console.log("✅ sudo - PostgreSQL connected successfully!");
+        client.release();
+        return true;
+    } catch (error) {
+        console.log("⚠️ sudo - PostgreSQL connection failed:", error.message);
+        console.log("⚠️ sudo - Database features will be disabled");
+        return false;
+    }
 }
 
-// Appelez la méthode pour créer la table "sudo"
+// ========== CREATE TABLE ==========
+async function createSudoTable() {
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - Skipping table creation (no database connection)");
+            return;
+        }
+
+        client = await pool.connect();
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS sudo (
+                id SERIAL PRIMARY KEY,
+                jid TEXT NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                added_by TEXT
+            );
+        `);
+        console.log("✅ Table 'sudo' created successfully!");
+    } catch (error) {
+        console.error("❌ Error creating 'sudo' table:", error.message);
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// Call table creation
 createSudoTable();
 
-
-// Fonction pour vérifier si un groupe est banni
+// ========== FUNCTION: Check if JID is sudo ==========
 async function issudo(jid) {
-    const client = await pool.connect();
-    try {
-      // Vérifiez si le groupe existe dans la table "banGroup"
-      const query = "SELECT EXISTS (SELECT 1 FROM sudo WHERE jid = $1)";
-      const values = [jid];
-  
-      const result = await client.query(query, values);
-      return result.rows[0].exists;
-    } catch (error) {
-      console.error("Erreur lors de la vérification du groupe banni :", error);
-      return false;
-    } finally {
-      client.release();
+    if (!jid) {
+        console.log("⚠️ sudo - No JID provided");
+        return false;
     }
-  }
-  
-  // Fonction pour supprimer un groupe de la liste des groupes bannis
-  async function removeSudoNumber(jid) {
-    const client = await pool.connect();
+
+    let client;
     try {
-      // Supprimez le numéro de téléphone de la table "sudo"
-      const query = "DELETE FROM sudo WHERE jid = $1";
-      const values = [jid];
-  
-      await client.query(query, values);
-      console.log(`Numéro de téléphone ${jid} supprimé de la liste des numéros de téléphone autorisés.`);
-    } catch (error) {
-      console.error("Erreur lors de la suppression du numéro de téléphone autorisé :", error);
-    } finally {
-      client.release();
-    }
-  }
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - No database connection, returning false");
+            return false;
+        }
 
-  async function addSudoNumber(jid) {
-    const client = await pool.connect();
+        client = await pool.connect();
+        const query = "SELECT EXISTS (SELECT 1 FROM sudo WHERE jid = $1)";
+        const values = [jid];
+        const result = await client.query(query, values);
+        return result.rows[0].exists || false;
+    } catch (error) {
+        console.error("❌ Error checking sudo status:", error.message);
+        return false; // Return false on error (fail safe)
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Add sudo number ==========
+async function addSudoNumber(jid, addedBy = null) {
+    if (!jid) {
+        console.log("⚠️ sudo - No JID provided");
+        return false;
+    }
+
+    let client;
     try {
-      // Insérez le numéro de téléphone dans la table "sudo"
-      const query = "INSERT INTO sudo (jid) VALUES ($1)";
-      const values = [jid];
-  
-      await client.query(query, values);
-      console.log(`Numéro de téléphone ${jid} ajouté à la liste des numéros de téléphone autorisés.`);
-    } catch (error) {
-      console.error("Erreur lors de l'ajout du numéro de téléphone autorisé :", error);
-    } finally {
-      client.release();
-    }
-  }
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - No database connection, cannot add sudo");
+            return false;
+        }
 
-  async function getAllSudoNumbers() {
-    const client = await pool.connect();
+        client = await pool.connect();
+        
+        // Check if JID already exists
+        const checkQuery = "SELECT EXISTS (SELECT 1 FROM sudo WHERE jid = $1)";
+        const checkResult = await client.query(checkQuery, [jid]);
+        
+        if (checkResult.rows[0].exists) {
+            console.log(`ℹ️ sudo - JID ${jid} is already in sudo list`);
+            return true;
+        }
+
+        // Insert JID into sudo table
+        const query = "INSERT INTO sudo (jid, added_by) VALUES ($1, $2)";
+        const values = [jid, addedBy];
+        await client.query(query, values);
+        
+        console.log(`✅ sudo - JID ${jid} added to sudo list`);
+        return true;
+    } catch (error) {
+        console.error("❌ Error adding sudo number:", error.message);
+        return false;
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Remove sudo number ==========
+async function removeSudoNumber(jid) {
+    if (!jid) {
+        console.log("⚠️ sudo - No JID provided");
+        return false;
+    }
+
+    let client;
     try {
-      // Sélectionnez tous les numéros de téléphone de la table "sudo"
-      const query = "SELECT jid FROM sudo";
-      const result = await client.query(query);
-  
-      // Créez un tableau des numéros de téléphone
-      const sudoNumbers = result.rows.map((row) => row.jid);
-  
-      return sudoNumbers;
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - No database connection, cannot remove sudo");
+            return false;
+        }
+
+        client = await pool.connect();
+        const query = "DELETE FROM sudo WHERE jid = $1";
+        const values = [jid];
+        const result = await client.query(query, values);
+        
+        if (result.rowCount > 0) {
+            console.log(`✅ sudo - JID ${jid} removed from sudo list`);
+            return true;
+        } else {
+            console.log(`ℹ️ sudo - JID ${jid} was not in sudo list`);
+            return false;
+        }
     } catch (error) {
-      console.error("Erreur lors de la récupération des numéros de téléphone autorisés :", error);
-      return [];
+        console.error("❌ Error removing sudo number:", error.message);
+        return false;
     } finally {
-      client.release();
+        if (client) client.release();
     }
-  }  
+}
 
-     async function isSudoTableNotEmpty() {
-    const client = await pool.connect();
-
+// ========== FUNCTION: Get all sudo numbers ==========
+async function getAllSudoNumbers() {
+    let client;
     try {
-      // Exécutez une requête SQL pour compter le nombre de lignes dans la table "sudo"
-      const result = await client.query('SELECT COUNT(*) FROM sudo');
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - No database connection, returning empty array");
+            return [];
+        }
 
-      // Récupérez la valeur du compteur (nombre de lignes)
-      const rowCount = parseInt(result.rows[0].count);
-
-      // Si le nombre de lignes est supérieur à zéro, la table n'est pas vide
-      return rowCount > 0;
+        client = await pool.connect();
+        const query = "SELECT jid FROM sudo ORDER BY created_at DESC";
+        const result = await client.query(query);
+        
+        // Create array of JIDs
+        const sudoNumbers = result.rows.map((row) => row.jid);
+        return sudoNumbers;
     } catch (error) {
-      console.error('Erreur lors de la vérification de la table "sudo" :', error);
-      return false; // En cas d'erreur, considérez la table comme vide
+        console.error("❌ Error getting sudo numbers:", error.message);
+        return [];
     } finally {
-      client.release();
+        if (client) client.release();
     }
-  };
-  
-  
-  
-  
-  module.exports = {
+}
+
+// ========== FUNCTION: Check if sudo table is not empty ==========
+async function isSudoTableNotEmpty() {
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ sudo - No database connection");
+            return false;
+        }
+
+        client = await pool.connect();
+        const result = await client.query('SELECT COUNT(*) FROM sudo');
+        const rowCount = parseInt(result.rows[0].count);
+        return rowCount > 0;
+    } catch (error) {
+        console.error('❌ Error checking sudo table:', error.message);
+        return false; // Consider table as empty on error
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Get sudo count ==========
+async function getSudoCount() {
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            return 0;
+        }
+
+        client = await pool.connect();
+        const result = await client.query('SELECT COUNT(*) FROM sudo');
+        return parseInt(result.rows[0].count) || 0;
+    } catch (error) {
+        console.error('❌ Error getting sudo count:', error.message);
+        return 0;
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Get sudo details ==========
+async function getSudoDetails(jid) {
+    if (!jid) {
+        console.log("⚠️ sudo - No JID provided");
+        return null;
+    }
+
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            return null;
+        }
+
+        client = await pool.connect();
+        const query = "SELECT id, jid, created_at, added_by FROM sudo WHERE jid = $1";
+        const result = await client.query(query, [jid]);
+        
+        if (result.rows.length > 0) {
+            return result.rows[0];
+        }
+        return null;
+    } catch (error) {
+        console.error('❌ Error getting sudo details:', error.message);
+        return null;
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Clear all sudo numbers ==========
+async function clearAllSudo() {
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            return false;
+        }
+
+        client = await pool.connect();
+        const result = await client.query('DELETE FROM sudo');
+        
+        if (result.rowCount > 0) {
+            console.log(`✅ sudo - Cleared ${result.rowCount} sudo entries`);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('❌ Error clearing sudo table:', error.message);
+        return false;
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Check if database is working ==========
+async function sudoIsDatabaseWorking() {
+    try {
+        const isConnected = await testConnection();
+        return isConnected;
+    } catch (error) {
+        console.error("❌ sudo - Database connection check failed:", error.message);
+        return false;
+    }
+}
+
+// ========== EXPORT MODULE ==========
+module.exports = {
     issudo,
     addSudoNumber,
     removeSudoNumber,
     getAllSudoNumbers,
-    isSudoTableNotEmpty
-  };
-  
+    isSudoTableNotEmpty,
+    getSudoCount,
+    getSudoDetails,
+    clearAllSudo,
+    sudoIsDatabaseWorking,
+    testConnection
+};
