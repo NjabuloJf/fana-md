@@ -50,27 +50,84 @@ const { generateWAMessageContent, generateWAMessageFromContent } = require('@whi
 // ========== FIXED WEB SERVER FOR KEEP-ALIVE ==========
 const http = require('http');
 
-// Create a simple web server for Heroku - FIXED
-const server = http.createServer((req, res) => {
-    if (req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            status: 'online',
-            time: new Date().toISOString(),
-            uptime: process.uptime(),
-            bot: 'NJABULO-JB'
-        }));
-    } else if (req.url === '/ping') {
-        res.writeHead(200);
-        res.end('Pong!');
-    } else {
-        res.writeHead(404);
-        res.end('Not Found');
-    }
-});
+let server = null;
+let isServerListening = false;
+let isConnected = false;
 
-// Get port from environment - FIXED
+function createWebServer() {
+    if (server) {
+        try { server.close(); } catch (e) {}
+    }
+    
+    server = http.createServer((req, res) => {
+        if (req.url === '/') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'online',
+                time: new Date().toISOString(),
+                uptime: process.uptime(),
+                bot: 'NJABULO-JB',
+                connected: isConnected || false
+            }));
+        } else if (req.url === '/ping') {
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('Pong!');
+        } else {
+            res.writeHead(404);
+            res.end('Not Found');
+        }
+    });
+
+    return server;
+}
+
+// Get port from environment
 const PORT = process.env.PORT || 3000;
+
+function startServer() {
+    if (isServerListening) {
+        console.log('ℹ️ Server already running');
+        return;
+    }
+    
+    try {
+        const serverInstance = createWebServer();
+        serverInstance.listen(PORT, () => {
+            isServerListening = true;
+            console.log(`✅ Web server running on port ${PORT}`);
+        });
+        
+        serverInstance.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.log(`⚠️ Port ${PORT} already in use, retrying...`);
+                setTimeout(startServer, 2000);
+            } else {
+                console.error('❌ Server error:', err.message);
+            }
+        });
+    } catch (err) {
+        console.error('❌ Failed to start server:', err.message);
+    }
+}
+
+function stopServer() {
+    if (server && isServerListening) {
+        try {
+            server.close();
+            isServerListening = false;
+            console.log('🛑 Web server stopped');
+        } catch (err) {
+            console.error('Error stopping server:', err.message);
+        }
+    }
+}
+
+// Start server
+startServer();
+
+// Handle process exit
+process.on('SIGINT', () => { stopServer(); process.exit(0); });
+process.on('SIGTERM', () => { stopServer(); process.exit(0); });
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
@@ -415,7 +472,6 @@ async function processSingleMessage(from, message) {
     console.log(`Processing message from ${from}`);
 }
 
-// ========== FIX: Start server AFTER bot is ready ==========
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
@@ -1079,9 +1135,6 @@ function getCurrentDateTime() {
     return dateTime;
 }
 
-// ========== TRACK CONNECTION STATUS ==========
-let isConnected = false;
-
 // ========== AUTO BIO UPDATE WITH CONNECTION CHECK ==========
 zk.ev.on("connection.update", async (con) => {
     const { connection } = con;
@@ -1709,11 +1762,8 @@ Please try again later or leave a message. Cheers! 😊`,
             });
         }
 
-        // ========== START THE WEB SERVER AFTER BOT INITIALIZES ==========
-        server.listen(PORT, () => {
-            console.log(`✅ Web server running on port ${PORT}`);
-        });
-
+        // ========== SERVER IS ALREADY STARTED ==========
+        // The web server is already running from startServer()
         return zk;
     }
     let fichier = require.resolve(__filename);
