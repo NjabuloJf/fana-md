@@ -4,16 +4,15 @@
   "description": "WhatsApp Bot with Multi-Language Support",
   "main": "control.js",
   "scripts": {
-    "start": "node index.js",
-    "postinstall": "mkdir -p session commands logs",
-    "test": "echo \"Error: no test specified\" && exit 1"
-    "s": "node control.js",
     "start": "node control.js",
+    "postinstall": "mkdir -p session commands logs",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "s": "node control.js",
     "c": "tsc",
     "dev": "nodemon control.js",
     "keepalive": "node keepalive.js"
   },
-    "dependencies": {
+  "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@types/node": "^18.0.6",
     "@vitalets/google-translate-api": "^9.2.0",
@@ -78,4 +77,3 @@
   "author": "Hans Tech",
   "license": "MIT"
 }
-
