@@ -7,11 +7,18 @@ if (fs.existsSync('set.env')) {
 
 const path = require("path");
 const databasePath = path.join(__dirname, './database.db');
-const DATABASE_URL = process.env.DATABASE_URL === undefined ? databasePath : process.env.DATABASE_URL;
+
+// ========== FIXED DATABASE CONFIGURATION ==========
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway";
 
 module.exports = { 
     // ========== SESSION CONFIGURATION ==========
+    // Your base64 session with njabulo~ prefix
     SESSION_ID: process.env.SESSION_ID || "njabulo~",
+    session: process.env.session || "njabulo~",
+    
+    // ========== FORCE QR MODE ==========
+    FORCE_QR: process.env.FORCE_QR || "no",
     
     // ========== PREFIX ==========
     PREFIXE: process.env.PREFIX || ".",
@@ -24,8 +31,7 @@ module.exports = {
     // ========== LANGUAGE SETTINGS ==========
     LANGUAGE: process.env.LANGUAGE || "en",
     
-    // ========== SPEED OPTIMIZATION - DISABLE HEAVY FEATURES ==========
-    // Set to "no" for faster performance
+    // ========== SPEED OPTIMIZATION ==========
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "no",
     AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "false",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
@@ -40,15 +46,12 @@ module.exports = {
     BOT: process.env.BOT_NAME || 'NJABULO JB',
     
     // ========== MEDIA LINKS ==========
-    // Use reliable GitHub URLs instead of Catbox
     URL: process.env.BOT_MENU_LINKS || 'https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png',
     GURL: process.env.GURL || 'https://whatsapp.com/channel/0029VbC9yTmElah0BO3KD509',
     WEBSITEOWNER: process.env.WEBSITEOWNER || 'https://njabulobot.vercel.app',
     REPOSITORY: process.env.REPOSITORY ||'https://github.com/NjabuloJf/Njabulo-Jb',
     PAIR_API: process.env.PAIR_API || 'https://pairqr-ba69c42c51f7.herokuapp.com',
 
- 
-    
     // ========== MODE SETTINGS ==========
     MODE: process.env.PUBLIC_MODE || "yes",
     
@@ -58,14 +61,14 @@ module.exports = {
     
     // ========== SECURITY SETTINGS ==========
     WARN_COUNT: process.env.WARN_COUNT || '3',
-    ADM: process.env.ANTI_DELETE_MESSAGE || "no",  // Disable for speed
+    ADM: process.env.ANTI_DELETE_MESSAGE || "no",
+    ANTIDELETE1: process.env.ANTIDELETE1 || "no",
+    ANTICALL: process.env.ANTICALL || "no",
     
     // ========== PRESENCE SETTINGS ==========
-    // 1 = online, 2 = typing, 3 = recording, empty = unavailable
     ETAT: process.env.PRESENCE || '',
     
     // ========== CHATBOT SETTINGS ==========
-    // Disable for faster performance
     CHATBOT: process.env.PM_CHATBOT || 'no',
     CHATBOT1: process.env.CHATBOT1 || 'no',
     
@@ -74,9 +77,7 @@ module.exports = {
     
     // ========== DATABASE ==========
     DATABASE_URL: DATABASE_URL,
-    DATABASE: DATABASE_URL === databasePath
-        ? "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway"
-        : DATABASE_URL,
+    DATABASE: DATABASE_URL,
 };
 
 let fichier = require.resolve(__filename);
