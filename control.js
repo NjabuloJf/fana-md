@@ -47,6 +47,46 @@ const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = 
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
+// ========== RECONNECTION CONTROL ==========
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+let reconnectTimeout = null;
+let isReconnecting = false;
+
+function resetReconnectAttempts() {
+    reconnectAttempts = 0;
+    isReconnecting = false;
+}
+
+function handleReconnect(reason) {
+    if (isReconnecting) {
+        console.log('⏳ Already reconnecting, skipping...');
+        return;
+    }
+    
+    reconnectAttempts++;
+    isReconnecting = true;
+    
+    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+        console.log(`❌ Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached.`);
+        console.log('💡 Please restart the bot manually: heroku dyno:restart web.1');
+        isReconnecting = false;
+        return;
+    }
+    
+    const delay = Math.min(5000 * reconnectAttempts, 60000);
+    console.log(`🔄 ${reason} - Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay/1000}s...`);
+    
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+    }
+    
+    reconnectTimeout = setTimeout(() => {
+        isReconnecting = false;
+        main();
+    }, delay);
+}
+
 // ========== FIXED WEB SERVER FOR KEEP-ALIVE ==========
 const http = require('http');
 
@@ -63,15 +103,23 @@ function createWebServer() {
         if (req.url === '/') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
-                status: 'online',
+                status: isConnected ? 'online' : 'offline',
                 time: new Date().toISOString(),
                 uptime: process.uptime(),
                 bot: 'NJABULO-JB',
-                connected: isConnected || false
+                connected: isConnected || false,
+                reconnectAttempts: reconnectAttempts
             }));
         } else if (req.url === '/ping') {
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end('Pong!');
+        } else if (req.url === '/health') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'healthy',
+                connected: isConnected,
+                uptime: process.uptime()
+            }));
         } else {
             res.writeHead(404);
             res.end('Not Found');
@@ -472,35 +520,54 @@ async function processSingleMessage(from, message) {
     console.log(`Processing message from ${from}`);
 }
 
+// ========== CLEAR SESSION FUNCTION ==========
+async function clearSession() {
+    try {
+        if (fs.existsSync(sessionDir)) {
+            fs.rmSync(sessionDir, { recursive: true, force: true });
+            console.log('✅ Session directory cleared');
+        }
+        if (fs.existsSync(__dirname + '/auth')) {
+            fs.rmSync(__dirname + '/auth', { recursive: true, force: true });
+            console.log('✅ Auth directory cleared');
+        }
+        return true;
+    } catch (e) {
+        console.log('❌ Error clearing session:', e.message);
+        return false;
+    }
+}
+
 setTimeout(() => {
     async function main() {
-        const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
-        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
-        
-        const sockOptions = {
-            version,
-            logger: pino({ level: "silent" }),
-            browser: ['NJABULO-MD', "Chrome", "1.0.0"],
-            printQRInTerminal: true,
-            fireInitQueries: false,
-            markOnlineOnConnect: false,
-            keepAliveIntervalMs: 30_000,
-            auth: {
-                creds: state.creds,
-                keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
-            },
-            getMessage: async (key) => {
-                if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id);
-                    return msg?.message || undefined;
+        try {
+            const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
+            const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
+            
+            const sockOptions = {
+                version,
+                logger: pino({ level: "silent" }),
+                browser: ['NJABULO-MD', "Chrome", "1.0.0"],
+                printQRInTerminal: true,
+                fireInitQueries: false,
+                markOnlineOnConnect: false,
+                keepAliveIntervalMs: 30_000,
+                auth: {
+                    creds: state.creds,
+                    keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
+                },
+                getMessage: async (key) => {
+                    if (store) {
+                        const msg = await store.loadMessage(key.remoteJid, key.id);
+                        return msg?.message || undefined;
+                    }
+                    return {
+                        conversation: 'An Error Occurred, Repeat Command!'
+                    };
                 }
-                return {
-                    conversation: 'An Error Occurred, Repeat Command!'
-                };
-            }
-        };
-        const zk = (0, baileys_1.default)(sockOptions);
-        store.bind(zk.ev);
+            };
+            const zk = (0, baileys_1.default)(sockOptions);
+            store.bind(zk.ev);
 
 // ========== IMAGE URLS (Reliable GitHub URLs) ==========
 const njabulox = [
@@ -1140,6 +1207,7 @@ zk.ev.on("connection.update", async (con) => {
     const { connection } = con;
     if (connection === 'open') {
         isConnected = true;
+        resetReconnectAttempts();
         console.log("✅ Bot is connected!");
     } else if (connection === 'close') {
         isConnected = false;
@@ -1583,6 +1651,7 @@ Please try again later or leave a message. Cheers! 😊`,
             }
             else if (connection === 'open') {
                 console.log("✅ Njabulo-Jb Connected to WhatsApp! ☺️");
+                resetReconnectAttempts();
                 console.log("--");
                 await (0, baileys_1.delay)(200);
                 console.log("------");
@@ -1685,23 +1754,41 @@ Please try again later or leave a message. Cheers! 😊`,
             }
             else if (connection == "close") {
                 let raisonDeconnexion = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
+                
+                // Reset connection flag
+                isConnected = false;
+                
                 if (raisonDeconnexion === baileys_1.DisconnectReason.badSession) {
-                    console.log('Session id error, rescan again...');
+                    console.log('❌ Session id error! Please clear sessions and rescan QR.');
+                    // Delete session files
+                    try {
+                        await clearSession();
+                        console.log('✅ Session files cleared. Restart the bot to get new QR.');
+                    } catch (e) {
+                        console.log('Could not delete session files:', e.message);
+                    }
+                    // Don't auto-restart on bad session - let the user restart manually
+                    return;
                 } else if (raisonDeconnexion === baileys_1.DisconnectReason.connectionClosed || 
                            raisonDeconnexion === baileys_1.DisconnectReason.connectionLost) {
-                    console.log('Connection lost, reconnecting...');
-                    main();
+                    handleReconnect('Connection lost');
+                    return;
                 } else if (raisonDeconnexion === baileys_1.DisconnectReason.restartRequired) {
-                    console.log('Restarting...');
-                    main();
+                    handleReconnect('Restart required');
+                    return;
                 } else if (raisonDeconnexion === baileys_1.DisconnectReason.loggedOut) {
-                    console.log('Logged out, please rescan QR');
+                    console.log('🚫 Logged out! Please clear sessions and rescan QR.');
+                    try {
+                        await clearSession();
+                        console.log('✅ Session files cleared. Restart the bot to get new QR.');
+                    } catch (e) {
+                        console.log('Could not delete session files:', e.message);
+                    }
+                    return;
                 } else {
-                    console.log('Restarting due to error...');
-                    const {exec}=require("child_process");
-                    exec("pm2 restart all");
+                    handleReconnect('Unknown error');
+                    return;
                 }
-                main();
             }
         });
 
@@ -1765,6 +1852,10 @@ Please try again later or leave a message. Cheers! 😊`,
         // ========== SERVER IS ALREADY STARTED ==========
         // The web server is already running from startServer()
         return zk;
+        } catch (error) {
+            console.error('❌ Error in main:', error.message);
+            handleReconnect('Main error: ' + error.message);
+        }
     }
     let fichier = require.resolve(__filename);
     fs.watchFile(fichier, () => {
