@@ -47,10 +47,10 @@ const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = 
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
-// ========== WEB SERVER FOR KEEP-ALIVE ==========
+// ========== FIXED WEB SERVER FOR KEEP-ALIVE ==========
 const http = require('http');
 
-// Create a simple web server for Heroku
+// Create a simple web server for Heroku - FIXED
 const server = http.createServer((req, res) => {
     if (req.url === '/') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -69,11 +69,8 @@ const server = http.createServer((req, res) => {
     }
 });
 
-// Get port from environment
+// Get port from environment - FIXED
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`✅ Web server running on port ${PORT}`);
-});
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
@@ -207,7 +204,7 @@ async function getName(jid) {
     }
 }
 
-console.log("✅ Using Baileys from @whiskeysockets/baileys");
+console.log("✅ Using Baileys from github:njabulo.v^1.0.0/Baileys");
 
 // ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
@@ -317,8 +314,8 @@ loadSession();
 // ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
-const more = String.fromCharCode(8206);
-const readmore = more.repeat(4001);
+const more = String.fromCharCode(8206)
+const readmore = more.repeat(4001)
 
 async function authentification() {
     try {
@@ -418,6 +415,7 @@ async function processSingleMessage(from, message) {
     console.log(`Processing message from ${from}`);
 }
 
+// ========== FIX: Start server AFTER bot is ready ==========
 setTimeout(() => {
     async function main() {
         const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
@@ -1710,6 +1708,11 @@ Please try again later or leave a message. Cheers! 😊`,
                 }
             });
         }
+
+        // ========== START THE WEB SERVER AFTER BOT INITIALIZES ==========
+        server.listen(PORT, () => {
+            console.log(`✅ Web server running on port ${PORT}`);
+        });
 
         return zk;
     }
