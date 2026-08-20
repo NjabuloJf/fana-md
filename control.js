@@ -52,6 +52,7 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 let reconnectTimeout = null;
 let isReconnecting = false;
+let zkInstance = null;
 
 function resetReconnectAttempts() {
     reconnectAttempts = 0;
@@ -83,7 +84,7 @@ function handleReconnect(reason) {
     
     reconnectTimeout = setTimeout(() => {
         isReconnecting = false;
-        main();
+        startBot();
     }, delay);
 }
 
@@ -538,36 +539,37 @@ async function clearSession() {
     }
 }
 
-setTimeout(() => {
-    async function main() {
-        try {
-            const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
-            const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
-            
-            const sockOptions = {
-                version,
-                logger: pino({ level: "silent" }),
-                browser: ['NJABULO-MD', "Chrome", "1.0.0"],
-                printQRInTerminal: true,
-                fireInitQueries: false,
-                markOnlineOnConnect: false,
-                keepAliveIntervalMs: 30_000,
-                auth: {
-                    creds: state.creds,
-                    keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
-                },
-                getMessage: async (key) => {
-                    if (store) {
-                        const msg = await store.loadMessage(key.remoteJid, key.id);
-                        return msg?.message || undefined;
-                    }
-                    return {
-                        conversation: 'An Error Occurred, Repeat Command!'
-                    };
+// ========== MAIN BOT FUNCTION ==========
+async function startBot() {
+    try {
+        const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
+        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
+        
+        const sockOptions = {
+            version,
+            logger: pino({ level: "silent" }),
+            browser: ['NJABULO-MD', "Chrome", "1.0.0"],
+            printQRInTerminal: true,
+            fireInitQueries: false,
+            markOnlineOnConnect: false,
+            keepAliveIntervalMs: 30_000,
+            auth: {
+                creds: state.creds,
+                keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
+            },
+            getMessage: async (key) => {
+                if (store) {
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg?.message || undefined;
                 }
-            };
-            const zk = (0, baileys_1.default)(sockOptions);
-            store.bind(zk.ev);
+                return {
+                    conversation: 'An Error Occurred, Repeat Command!'
+                };
+            }
+        };
+        const zk = (0, baileys_1.default)(sockOptions);
+        zkInstance = zk;
+        store.bind(zk.ev);
 
 // ========== IMAGE URLS (Reliable GitHub URLs) ==========
 const njabulox = [
@@ -1851,18 +1853,27 @@ Please try again later or leave a message. Cheers! 😊`,
 
         // ========== SERVER IS ALREADY STARTED ==========
         // The web server is already running from startServer()
+        console.log("✅ Bot started successfully!");
         return zk;
-        } catch (error) {
-            console.error('❌ Error in main:', error.message);
-            handleReconnect('Main error: ' + error.message);
-        }
+    } catch (error) {
+        console.error('❌ Error in startBot:', error.message);
+        handleReconnect('Main error: ' + error.message);
     }
-    let fichier = require.resolve(__filename);
-    fs.watchFile(fichier, () => {
-        fs.unwatchFile(fichier);
-        console.log(`mise à jour ${__filename}`);
-        delete require.cache[fichier];
-        require(fichier);
-    });
-    main();
-}, 5000);
+}
+
+// ========== START THE BOT ==========
+console.log("🚀 Starting NJABULO-JB Bot...");
+
+// Start the bot after a short delay
+setTimeout(() => {
+    startBot();
+}, 3000);
+
+// Watch for file changes
+let fichier = require.resolve(__filename);
+fs.watchFile(fichier, () => {
+    fs.unwatchFile(fichier);
+    console.log(`🔄 ${__filename} updated, restarting...`);
+    delete require.cache[fichier];
+    require(fichier);
+});
