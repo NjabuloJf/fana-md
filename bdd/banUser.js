@@ -1,98 +1,188 @@
-// Importez dotenv et chargez les variables d'environnement depuis le fichier .env
+// Import dotenv and load environment variables
 require("dotenv").config();
 
 const { Pool } = require("pg");
-
-// Utilisez le module 'set' pour obtenir la valeur de DATABASE_URL depuis vos configurations
 const s = require("../set");
 
-// Récupérez l'URL de la base de données de la variable s.DATABASE_URL
-var dbUrl=s.DATABASE_URL?s.DATABASE_URL:"postgres://db_7xp9_user:6hwmTN7rGPNsjlBEHyX49CXwrG7cDeYi@dpg-cj7ldu5jeehc73b2p7g0-a.oregon-postgres.render.com/db_7xp9"
+// ========== FIXED DATABASE CONNECTION ==========
+let dbUrl = s.DATABASE_URL || process.env.DATABASE_URL || "postgres://db_7xp9_user:6hwmTN7rGPNsjlBEHyX49CXwrG7cDeYi@dpg-cj7ldu5jeehc73b2p7g0-a.oregon-postgres.render.com/db_7xp9";
+
+// Clean the URL
+dbUrl = dbUrl.trim();
+
 const proConfig = {
-  connectionString: dbUrl,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+    connectionString: dbUrl,
+    ssl: {
+        rejectUnauthorized: false,
+    },
+    // Add connection timeout to prevent hanging
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
 };
 
-// Créez une pool de connexions PostgreSQL
+// Create PostgreSQL connection pool
 const pool = new Pool(proConfig);
 
-// Vous pouvez maintenant utiliser 'pool' pour interagir avec votre base de données PostgreSQL.
+// ========== TEST CONNECTION ==========
+async function testConnection() {
+    let client;
+    try {
+        client = await pool.connect();
+        console.log("✅ banUser - PostgreSQL connected successfully!");
+        client.release();
+        return true;
+    } catch (error) {
+        console.log("⚠️ banUser - PostgreSQL connection failed:", error.message);
+        console.log("⚠️ banUser - Database features will be disabled");
+        return false;
+    }
+}
+
+// ========== CREATE TABLE ==========
 const creerTableBanUser = async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS banUser (
-        jid text PRIMARY KEY
-      );
-    `);
-    console.log("La table 'banUser' a été créée avec succès.");
-  } catch (e) {
-    console.error("Une erreur est survenue lors de la création de la table 'banUser':", e);
-  }
+    let client;
+    try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            console.log("⚠️ banUser - Skipping table creation (no database connection)");
+            return;
+        }
+
+        client = await pool.connect();
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS banUser (
+                jid TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                banned_by TEXT
+            );
+        `);
+        console.log("✅ Table 'banUser' created successfully!");
+    } catch (e) {
+        console.error("❌ Error creating 'banUser' table:", e.message);
+    } finally {
+        if (client) client.release();
+    }
 };
 
-// Appelez la méthode pour créer la table "banUser"
+// Call table creation
 creerTableBanUser();
 
+// ========== FUNCTION: Add user to ban list ==========
+async function addUserToBanList(jid, bannedBy = null) {
+    if (!jid) {
+        console.log("⚠️ banUser - No JID provided");
+        return false;
+    }
 
+    let client;
+    try {
+        client = await pool.connect();
+        
+        // Check if user already exists
+        const checkQuery = "SELECT EXISTS (SELECT 1 FROM banUser WHERE jid = $1)";
+        const checkResult = await client.query(checkQuery, [jid]);
+        
+        if (checkResult.rows[0].exists) {
+            console.log(`ℹ️ JID ${jid} is already banned`);
+            return true;
+        }
 
-// Fonction pour ajouter un utilisateur à la liste des bannis
-async function addUserToBanList(jid) {
-  const client = await pool.connect();
-  try {
-    // Insérez l'utilisateur dans la table "banUser"
-    const query = "INSERT INTO banUser (jid) VALUES ($1)";
-    const values = [jid];
-
-    await client.query(query, values);
-    console.log(`JID ${jid} ajouté à la liste des bannis.`);
-  } catch (error) {
-    console.error("Erreur lors de l'ajout de l'utilisateur banni :", error);
-  } finally {
-    client.release();
-  }
+        // Insert user into ban list
+        const query = "INSERT INTO banUser (jid, banned_by) VALUES ($1, $2)";
+        const values = [jid, bannedBy];
+        await client.query(query, values);
+        
+        console.log(`✅ JID ${jid} added to ban list`);
+        return true;
+    } catch (error) {
+        console.error("❌ Error adding user to ban list:", error.message);
+        return false;
+    } finally {
+        if (client) client.release();
+    }
 }
 
-
-
-// Fonction pour vérifier si un utilisateur est banni
+// ========== FUNCTION: Check if user is banned ==========
 async function isUserBanned(jid) {
-  const client = await pool.connect();
-  try {
-    // Vérifiez si l'utilisateur existe dans la table "banUser"
-    const query = "SELECT EXISTS (SELECT 1 FROM banUser WHERE jid = $1)";
-    const values = [jid];
+    if (!jid) return false;
 
-    const result = await client.query(query, values);
-    return result.rows[0].exists;
-  } catch (error) {
-    console.error("Erreur lors de la vérification de l'utilisateur banni :", error);
-    return false;
-  } finally {
-    client.release();
-  }
+    let client;
+    try {
+        client = await pool.connect();
+        const query = "SELECT EXISTS (SELECT 1 FROM banUser WHERE jid = $1)";
+        const values = [jid];
+        const result = await client.query(query, values);
+        return result.rows[0].exists || false;
+    } catch (error) {
+        console.error("❌ Error checking if user is banned:", error.message);
+        return false; // Return false on error (fail safe)
+    } finally {
+        if (client) client.release();
+    }
 }
 
-// Fonction pour supprimer un utilisateur de la liste des bannis
+// ========== FUNCTION: Remove user from ban list ==========
 async function removeUserFromBanList(jid) {
-  const client = await pool.connect();
-  try {
-    // Supprimez l'utilisateur de la table "banUser"
-    const query = "DELETE FROM banUser WHERE jid = $1";
-    const values = [jid];
+    if (!jid) {
+        console.log("⚠️ banUser - No JID provided");
+        return false;
+    }
 
-    await client.query(query, values);
-    console.log(`JID ${jid} supprimé de la liste des bannis.`);
-  } catch (error) {
-    console.error("Erreur lors de la suppression de l'utilisateur banni :", error);
-  } finally {
-    client.release();
-  }
+    let client;
+    try {
+        client = await pool.connect();
+        const query = "DELETE FROM banUser WHERE jid = $1";
+        const values = [jid];
+        const result = await client.query(query, values);
+        
+        if (result.rowCount > 0) {
+            console.log(`✅ JID ${jid} removed from ban list`);
+            return true;
+        } else {
+            console.log(`ℹ️ JID ${jid} was not in ban list`);
+            return false;
+        }
+    } catch (error) {
+        console.error("❌ Error removing user from ban list:", error.message);
+        return false;
+    } finally {
+        if (client) client.release();
+    }
 }
 
+// ========== FUNCTION: Get all banned users ==========
+async function getAllBannedUsers() {
+    let client;
+    try {
+        client = await pool.connect();
+        const query = "SELECT jid, created_at, banned_by FROM banUser ORDER BY created_at DESC";
+        const result = await client.query(query);
+        return result.rows;
+    } catch (error) {
+        console.error("❌ Error getting banned users:", error.message);
+        return [];
+    } finally {
+        if (client) client.release();
+    }
+}
+
+// ========== FUNCTION: Check if database is working ==========
+async function isDatabaseWorking() {
+    try {
+        const isConnected = await testConnection();
+        return isConnected;
+    } catch (error) {
+        console.error("❌ Database connection check failed:", error.message);
+        return false;
+    }
+}
+
+// ========== EXPORT MODULE ==========
 module.exports = {
-  addUserToBanList,
-  isUserBanned,
-  removeUserFromBanList,
+    addUserToBanList,
+    isUserBanned,
+    removeUserFromBanList,
+    getAllBannedUsers,
+    isDatabaseWorking,
+    testConnection
 };
