@@ -1,125 +1,464 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NJABULO JB Bot</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NJABULO-JB - WhatsApp Bot</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #fff;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            text-align: center;
+            color: #fff;
             padding: 20px;
         }
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px;
-            padding: 50px 40px;
+
+        .container {
             max-width: 500px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
-        .avatar {
+
+        .logo {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            border: 4px solid #00d4ff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 0 auto 20px;
-            background: url('https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png') center/cover;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            font-size: 60px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s ease-in-out infinite;
         }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
         h1 {
             font-size: 28px;
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #00d4ff, #7b2ffc);
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
         }
-        .status {
-            display: inline-block;
-            background: #00d4ff;
-            color: #000;
-            padding: 6px 20px;
-            border-radius: 50px;
-            font-weight: bold;
+
+        .subtitle {
+            color: #a0a0c0;
             font-size: 14px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
         }
-        @keyframes pulse {
-            0% { opacity: 0.7; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.05); }
-            100% { opacity: 0.7; transform: scale(0.95); }
-        }
-        .info {
+
+        .status-card {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 15px 0;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #a0a0c0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-value {
             font-size: 14px;
-            text-align: left;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 600;
         }
-        .info span {
-            color: #00d4ff;
-            font-weight: bold;
-        }
-        .footer {
-            margin-top: 20px;
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
             font-size: 12px;
-            opacity: 0.6;
+            font-weight: 600;
+            animation: statusPulse 2s ease-in-out infinite;
         }
+
+        .status-badge.online {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .status-badge.offline {
+            background: rgba(251, 113, 133, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(251, 113, 133, 0.3);
+        }
+
+        @keyframes statusPulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 25px 0;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .feature-item .icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .feature-item .label {
+            font-size: 10px;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .commands-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 16px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .commands-section h3 {
+            font-size: 13px;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .command-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #c0c0e0;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .command-item:hover {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .footer {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+            color: #606080;
+        }
+
         .footer a {
-            color: #00d4ff;
+            color: #667eea;
             text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #34d399;
+            animation: spin 0.8s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .uptime-text {
+            font-size: 12px;
+            color: #606080;
+            margin-top: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .features {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .feature-item .icon {
+                font-size: 20px;
+            }
+
+            .command-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .logo {
+                width: 90px;
+                height: 90px;
+                font-size: 45px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="avatar"></div>
-        <h1>NJABULO JB</h1>
-        <div class="status">🟢 Bot Connected</div>
-        
-        <div class="info">
-            <strong>🤖 Status:</strong> <span>Active & Online</span><br>
-            <strong>📡 Uptime:</strong> <span id="uptime">Loading...</span><br>
-            <strong>📅 Started:</strong> <span id="startTime">Loading...</span>
+    <div class="container">
+        <!-- Logo -->
+        <div class="logo">🤖</div>
+
+        <!-- Title -->
+        <h1>NJABULO-JB</h1>
+        <p class="subtitle">⚡ WhatsApp Bot • Multi-Device</p>
+
+        <!-- Status Card -->
+        <div class="status-card">
+            <div class="status-row">
+                <span class="status-label">📊 Status</span>
+                <span class="status-value">
+                    <span class="status-badge online" id="statusBadge">
+                        <span class="loader" id="statusLoader" style="display:none;"></span>
+                        <span id="statusText">Checking...</span>
+                    </span>
+                </span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">⏱️ Uptime</span>
+                <span class="status-value" id="uptime">--</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">📱 Connected</span>
+                <span class="status-value" id="connected">--</span>
+            </div>
         </div>
 
+        <!-- Features -->
+        <div class="features">
+            <div class="feature-item">
+                <span class="icon">🌍</span>
+                <span class="label">Multi-Language</span>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🛡️</span>
+                <span class="label">Anti-Link</span>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🤖</span>
+                <span class="label">AI Chatbot</span>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🎵</span>
+                <span class="label">Music Download</span>
+            </div>
+            <div class="feature-item">
+                <span class="icon">📸</span>
+                <span class="label">Media Tools</span>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🔒</span>
+                <span class="label">Auto-Mod</span>
+            </div>
+        </div>
+
+        <!-- Commands -->
+        <div class="commands-section">
+            <h3>⚡ Quick Commands</h3>
+            <div class="command-grid">
+                <span class="command-item">.menu</span>
+                <span class="command-item">.ping</span>
+                <span class="command-item">.ai</span>
+                <span class="command-item">.sticker</span>
+                <span class="command-item">.play</span>
+                <span class="command-item">.song</span>
+                <span class="command-item">.setlang</span>
+                <span class="command-item">.owner</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
         <div class="footer">
-            Powered by <a href="https://github.com/NjabuloJf/fana-md" target="_blank">NjabuloJf</a> 🚀
+            <p>
+                Developed with ❤️ by
+                <a href="#" target="_blank">Njabulo JB</a>
+            </p>
+            <p style="margin-top: 4px; font-size: 11px;">
+                © 2026 • All rights reserved
+            </p>
         </div>
     </div>
 
     <script>
-        // Calculate start time
-        const startTime = new Date();
-        document.getElementById('startTime').innerText = startTime.toLocaleString();
+        // ========== BOT STATUS FETCHER ==========
+        async function fetchStatus() {
+            const statusText = document.getElementById('statusText');
+            const statusBadge = document.getElementById('statusBadge');
+            const statusLoader = document.getElementById('statusLoader');
+            const uptimeEl = document.getElementById('uptime');
+            const connectedEl = document.getElementById('connected');
 
-        // Update uptime every second
-        function updateUptime() {
-            const now = new Date();
-            const diff = Math.floor((now - startTime) / 1000);
-            const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const seconds = String(diff % 60).padStart(2, '0');
-            document.getElementById('uptime').innerText = `${hours}:${minutes}:${seconds}`;
+            try {
+                // Show loading
+                statusLoader.style.display = 'inline-block';
+                statusText.textContent = 'Checking...';
+
+                const response = await fetch('/ping');
+                const data = await response.json();
+
+                // Hide loading
+                statusLoader.style.display = 'none';
+
+                if (response.ok) {
+                    statusBadge.className = 'status-badge online';
+                    statusText.textContent = '🟢 Online';
+
+                    // Update uptime if available
+                    if (data && data.uptime) {
+                        const uptime = data.uptime;
+                        const hours = Math.floor(uptime / 3600);
+                        const minutes = Math.floor((uptime % 3600) / 60);
+                        const seconds = Math.floor(uptime % 60);
+                        uptimeEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    } else {
+                        uptimeEl.textContent = 'Just started';
+                    }
+
+                    connectedEl.textContent = '✅ Connected';
+                } else {
+                    statusBadge.className = 'status-badge offline';
+                    statusText.textContent = '🔴 Offline';
+                    uptimeEl.textContent = '--';
+                    connectedEl.textContent = '❌ Disconnected';
+                }
+            } catch (error) {
+                // Hide loading
+                statusLoader.style.display = 'none';
+
+                statusBadge.className = 'status-badge offline';
+                statusText.textContent = '🔴 Offline';
+                uptimeEl.textContent = '--';
+                connectedEl.textContent = '❌ Disconnected';
+                console.error('Status fetch error:', error);
+            }
         }
-        setInterval(updateUptime, 1000);
-        updateUptime();
+
+        // ========== FETCH FULL STATUS ==========
+        async function fetchFullStatus() {
+            try {
+                const response = await fetch('/');
+                const data = await response.json();
+
+                if (response.ok && data) {
+                    document.getElementById('statusText').textContent = '🟢 Online';
+                    document.getElementById('statusBadge').className = 'status-badge online';
+                    document.getElementById('connected').textContent = '✅ Connected';
+
+                    if (data.uptime) {
+                        const uptime = data.uptime;
+                        const hours = Math.floor(uptime / 3600);
+                        const minutes = Math.floor((uptime % 3600) / 60);
+                        const seconds = Math.floor(uptime % 60);
+                        document.getElementById('uptime').textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    }
+                }
+            } catch (error) {
+                console.error('Full status fetch error:', error);
+            }
+        }
+
+        // ========== INITIALIZE ==========
+        // Try full status first, then fallback to ping
+        fetchFullStatus();
+        setTimeout(() => {
+            fetchStatus();
+        }, 1000);
+
+        // Refresh every 30 seconds
+        setInterval(fetchStatus, 30000);
+
+        // Also refresh full status every minute
+        setInterval(fetchFullStatus, 60000);
     </script>
 </body>
-      </html>
+</html>
