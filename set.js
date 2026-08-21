@@ -33,7 +33,7 @@ module.exports = {
     
     // ========== SPEED OPTIMIZATION ==========
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "no",
-    AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "false",
+    AUTO_REACT_STATUS: process.env.AUTO_REACT_STATUS || "true",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",
     AUTO_STATUS_MSG: process.env.AUTO_STATUS_MSG || "Nice status! 👍",
     AUTO_BIO: process.env.AUTO_BIO || 'no',
