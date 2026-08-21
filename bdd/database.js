@@ -1,7 +1,7 @@
 // bdd/database.js
-const { Pool } = require('pg');
-const path = require('path');
-const s = require('../set');
+require("dotenv").config();
+const { Pool } = require("pg");
+const s = require("../set");
 
 let dbUrl = s.DATABASE_URL || process.env.DATABASE_URL || "postgres://db_7xp9_user:6hwmTN7rGPNsjlBEHyX49CXwrG7cDeYi@dpg-cj7ldu5jeehc73b2p7g0-a.oregon-postgres.render.com/db_7xp9";
 dbUrl = dbUrl.trim();
@@ -11,22 +11,21 @@ const proConfig = {
     ssl: { rejectUnauthorized: false },
     connectionTimeoutMillis: 3000,
     idleTimeoutMillis: 10000,
-    max: 3, // Max connections in pool
+    max: 3,
 };
 
 const pool = new Pool(proConfig);
 
-// Connection test with retry
 async function testConnection(retries = 3) {
     for (let i = 0; i < retries; i++) {
         let client;
         try {
             client = await pool.connect();
-            console.log(`✅ Database connected successfully!`);
+            console.log("✅ Database connected successfully!");
             client.release();
             return true;
         } catch (error) {
-            console.log(`⚠️ Database connection attempt ${i + 1}/${retries} failed:`, error.message);
+            console.log(`⚠️ Database attempt ${i + 1}/${retries} failed:`, error.message);
             if (client) client.release();
             if (i < retries - 1) {
                 await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
@@ -37,7 +36,6 @@ async function testConnection(retries = 3) {
     return false;
 }
 
-// Wrapper for queries with retry
 async function query(text, params, retries = 2) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -56,8 +54,13 @@ async function query(text, params, retries = 2) {
     }
 }
 
+async function getPool() {
+    return pool;
+}
+
 module.exports = {
     pool,
     testConnection,
     query,
+    getPool,
 };
