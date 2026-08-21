@@ -18,89 +18,89 @@ async function testConnection() {
     let client;
     try {
         client = await pool.connect();
-        console.log("✅ onlyAdmin - PostgreSQL connected successfully!");
+        console.log("✅ banUser - PostgreSQL connected successfully!");
         client.release();
         return true;
     } catch (error) {
-        console.log("⚠️ onlyAdmin - PostgreSQL connection failed:", error.message);
+        console.log("⚠️ banUser - PostgreSQL connection failed:", error.message);
         return false;
     }
 }
 
-const creerTableOnlyAdmin = async () => {
+const creerTableBanUser = async () => {
     let client;
     try {
         const isConnected = await testConnection();
         if (!isConnected) return;
         client = await pool.connect();
         await client.query(`
-            CREATE TABLE IF NOT EXISTS onlyAdmin (
-                groupeJid TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS banUser (
+                jid TEXT PRIMARY KEY,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                added_by TEXT
+                banned_by TEXT
             );
         `);
-        console.log("✅ Table 'onlyAdmin' created successfully!");
+        console.log("✅ Table 'banUser' created successfully!");
     } catch (e) {
-        console.error("❌ Error creating 'onlyAdmin' table:", e.message);
+        console.error("❌ Error creating 'banUser' table:", e.message);
     } finally {
         if (client) client.release();
     }
 };
 
-creerTableOnlyAdmin();
+creerTableBanUser();
 
-async function addGroupToOnlyAdminList(groupeJid, addedBy = null) {
-    if (!groupeJid) return false;
+async function addUserToBanList(jid, bannedBy = null) {
+    if (!jid) return false;
     let client;
     try {
         const isConnected = await testConnection();
         if (!isConnected) return false;
         client = await pool.connect();
-        const checkQuery = "SELECT EXISTS (SELECT 1 FROM onlyAdmin WHERE groupeJid = $1)";
-        const checkResult = await client.query(checkQuery, [groupeJid]);
+        const checkQuery = "SELECT EXISTS (SELECT 1 FROM banUser WHERE jid = $1)";
+        const checkResult = await client.query(checkQuery, [jid]);
         if (checkResult.rows[0].exists) return true;
-        const query = "INSERT INTO onlyAdmin (groupeJid, added_by) VALUES ($1, $2)";
-        await client.query(query, [groupeJid, addedBy]);
+        const query = "INSERT INTO banUser (jid, banned_by) VALUES ($1, $2)";
+        await client.query(query, [jid, bannedBy]);
         return true;
     } catch (error) {
-        console.error("❌ Error adding group to onlyAdmin list:", error.message);
+        console.error("❌ Error adding user to ban list:", error.message);
         return false;
     } finally {
         if (client) client.release();
     }
 }
 
-async function isGroupOnlyAdmin(groupeJid) {
-    if (!groupeJid) return false;
+async function isUserBanned(jid) {
+    if (!jid) return false;
     let client;
     try {
         const isConnected = await testConnection();
         if (!isConnected) return false;
         client = await pool.connect();
-        const query = "SELECT EXISTS (SELECT 1 FROM onlyAdmin WHERE groupeJid = $1)";
-        const result = await client.query(query, [groupeJid]);
+        const query = "SELECT EXISTS (SELECT 1 FROM banUser WHERE jid = $1)";
+        const result = await client.query(query, [jid]);
         return result.rows[0].exists || false;
     } catch (error) {
-        console.error("❌ Error checking if group is onlyAdmin:", error.message);
+        console.error("❌ Error checking if user is banned:", error.message);
         return false;
     } finally {
         if (client) client.release();
     }
 }
 
-async function removeGroupFromOnlyAdminList(groupeJid) {
-    if (!groupeJid) return false;
+async function removeUserFromBanList(jid) {
+    if (!jid) return false;
     let client;
     try {
         const isConnected = await testConnection();
         if (!isConnected) return false;
         client = await pool.connect();
-        const query = "DELETE FROM onlyAdmin WHERE groupeJid = $1";
-        const result = await client.query(query, [groupeJid]);
+        const query = "DELETE FROM banUser WHERE jid = $1";
+        const result = await client.query(query, [jid]);
         return result.rowCount > 0;
     } catch (error) {
-        console.error("❌ Error removing group from onlyAdmin list:", error.message);
+        console.error("❌ Error removing user from ban list:", error.message);
         return false;
     } finally {
         if (client) client.release();
@@ -108,7 +108,7 @@ async function removeGroupFromOnlyAdminList(groupeJid) {
 }
 
 module.exports = {
-    addGroupToOnlyAdminList,
-    isGroupOnlyAdmin,
-    removeGroupFromOnlyAdminList,
+    addUserToBanList,
+    isUserBanned,
+    removeUserFromBanList,
 };
