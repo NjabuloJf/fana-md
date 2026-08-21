@@ -28,10 +28,10 @@
       "required": false
     },
 
-    "AUTOREACT_STATUS": {
+    "AUTO_REACT_STATUS": {
       "description": "🎊 Enter yes for your bot to auto like status",
       "value": "no",
-      "required": false
+      "required": true
     },
     "AUTO_REACT": {
       "description": "🎭 Auto react to messages (yes/no)",
