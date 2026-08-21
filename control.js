@@ -47,6 +47,28 @@ const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = 
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
+// ========== LOAD COMMANDS IMMEDIATELY ON STARTUP ==========
+console.log("🚀 Loading Commands...");
+
+try {
+    const commandFiles = fs.readdirSync(__dirname + "/commandes");
+    let loadedCommands = 0;
+    commandFiles.forEach((fichier) => {
+        if (path.extname(fichier).toLowerCase() == (".js")) {
+            try {
+                require(__dirname + "/commandes/" + fichier);
+                console.log("✅ " + fichier + " Installed Successfully✔️");
+                loadedCommands++;
+            } catch (e) {
+                console.log(`❌ ${fichier} could not be installed: ${e.message}`);
+            }
+        }
+    });
+    console.log(`\n📦 Total Commands Loaded: ${loadedCommands}`);
+} catch (e) {
+    console.log('⚠️ No command folder found');
+}
+
 // ========== RECONNECTION CONTROL ==========
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -420,6 +442,8 @@ async function clearSession() {
 // ========== MAIN BOT FUNCTION ==========
 async function startBot() {
     try {
+        console.log("🚀 Starting bot connection...");
+        
         const { version } = await (0, baileys_1.fetchLatestBaileysVersion)();
         const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
         
@@ -593,7 +617,14 @@ zk.ev.on('group-participants.update', async (group) => {
 
         // ========== CONNECTION UPDATE ==========
         zk.ev.on("connection.update", async (con) => {
-            const { lastDisconnect, connection } = con;
+            const { lastDisconnect, connection, qr } = con;
+            
+            // ========== SHOW QR CODE IF NEEDED ==========
+            if (qr) {
+                console.log("\n📱 ========== SCAN THIS QR CODE WITH WHATSAPP ==========");
+                console.log(qr);
+                console.log("📱 ====================================================\n");
+            }
             
             if (connection === "connecting") {
                 console.log("ℹ️ Njabulo-Jb is connecting...");
@@ -608,43 +639,11 @@ zk.ev.on('group-participants.update', async (group) => {
                 await (0, baileys_1.delay)(300);
                 console.log("------------------/-----");
                 console.log("Njabulo-Jb is Online 🕸\n\n");
-                console.log("Loading Commands ...\n");
+                console.log("✅ Bot is ready to receive commands!\n");
                 
-                try {
-                    const commandFiles = fs.readdirSync(__dirname + "/commandes");
-                    let loadedCommands = 0;
-                    commandFiles.forEach((fichier) => {
-                        if (path.extname(fichier).toLowerCase() == (".js")) {
-                            try {
-                                require(__dirname + "/commandes/" + fichier);
-                                console.log("✅ " + fichier + " Installed Successfully✔️");
-                                loadedCommands++;
-                            } catch (e) {
-                                console.log(`❌ ${fichier} could not be installed due to: ${e}`);
-                            }
-                            (0, baileys_1.delay)(300);
-                        }
-                    });
-                    console.log(`\n📦 Total Commands Loaded: ${loadedCommands}`);
-                } catch (e) {
-                    console.log('⚠️ No command folder found');
-                }
+                // Show commands that are loaded
+                console.log("📦 Commands are loaded and ready!");
                 
-                await (0, baileys_1.delay)(700);
-                var md;
-                if ((conf.MODE || "").toLocaleLowerCase() === "yes") {
-                    md = "public";
-                } else if ((conf.MODE || "").toLocaleLowerCase() === "no") {
-                    md = "private";
-                } else {
-                    md = "undefined";
-                }
-                console.log("✅ Commands Installation Completed ✅");
-                console.log(`📊 Mode: ${md}`);
-                console.log(`🌍 Language: ${conf.LANGUAGE || "en"}`);
-                console.log(`👤 Owner: ${conf.OWNER_NAME || "NJABULO JB"}`);
-                console.log(`📌 Prefix: ${prefixe}\n`);
-
                 const currentLang = conf.LANGUAGE || "en";
                 const langName = languageNames[currentLang] || "English";
                 const startupButtons = await getTranslatedButtons(currentLang);
@@ -1316,7 +1315,7 @@ if (conf.AUTO_REACT === "yes") {
 }
 
 // ========== START THE BOT ==========
-console.log("🚀 Starting NJABULO-JB Bot...");
+console.log("\n🚀 Starting NJABULO-JB Bot...");
 
 setTimeout(() => {
     startBot();
