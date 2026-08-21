@@ -43,7 +43,22 @@ const { atbverifierEtatJid , atbrecupererActionJid } = require("./bdd/antibot");
 let evt = require(__dirname + "/njabulo/fana");
 const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd/banUser");
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
-const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
+
+// ========== FIX: OnlyAdmin with fallback ==========
+let isGroupOnlyAdmin, addGroupToOnlyAdminList, removeGroupFromOnlyAdminList;
+try {
+    const onlyAdmin = require("./bdd/onlyAdmin");
+    isGroupOnlyAdmin = onlyAdmin.isGroupOnlyAdmin || (() => false);
+    addGroupToOnlyAdminList = onlyAdmin.addGroupToOnlyAdminList || (() => {});
+    removeGroupFromOnlyAdminList = onlyAdmin.removeGroupFromOnlyAdminList || (() => {});
+    console.log("✅ onlyAdmin module loaded successfully");
+} catch (e) {
+    console.log("⚠️ onlyAdmin module not available, using fallback");
+    isGroupOnlyAdmin = async () => false;
+    addGroupToOnlyAdminList = async () => {};
+    removeGroupFromOnlyAdminList = async () => {};
+}
+
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
@@ -619,7 +634,6 @@ zk.ev.on('group-participants.update', async (group) => {
         zk.ev.on("connection.update", async (con) => {
             const { lastDisconnect, connection, qr } = con;
             
-            // ========== SHOW QR CODE IF NEEDED ==========
             if (qr) {
                 console.log("\n📱 ========== SCAN THIS QR CODE WITH WHATSAPP ==========");
                 console.log(qr);
@@ -640,15 +654,20 @@ zk.ev.on('group-participants.update', async (group) => {
                 console.log("------------------/-----");
                 console.log("Njabulo-Jb is Online 🕸\n\n");
                 console.log("✅ Bot is ready to receive commands!\n");
-                
-                // Show commands that are loaded
-                console.log("📦 Commands are loaded and ready!");
-                
+
                 const currentLang = conf.LANGUAGE || "en";
                 const langName = languageNames[currentLang] || "English";
                 const startupButtons = await getTranslatedButtons(currentLang);
                 const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
                 const ownerNumberfana = conf.NUMERO_OWNERFANA + "@s.whatsapp.net";
+                var md;
+                if ((conf.MODE || "").toLocaleLowerCase() === "yes") {
+                    md = "public";
+                } else if ((conf.MODE || "").toLocaleLowerCase() === "no") {
+                    md = "private";
+                } else {
+                    md = "undefined";
+                }
       
                 if((conf.DP || "").toLowerCase() === 'yes') {
                     try {
@@ -670,33 +689,42 @@ zk.ev.on('group-participants.update', async (group) => {
 
 
 `;
-                        await zk.sendMessage(ownerNumberfana, { 
-                            interactiveMessage: {
-                            image: { url: randomNjabulourl },
-                            header: startupText,
-                             buttons: startupButtons,
-                             headerType: 1
-                             }
-                            }); 
+                        // Send to ownerNumberfana
+                        if (ownerNumberfana && ownerNumberfana !== "undefined@s.whatsapp.net") {
+                            await zk.sendMessage(ownerNumberfana, { 
+                                interactiveMessage: {
+                                    image: { url: randomNjabulourl },
+                                    header: startupText,
+                                    buttons: startupButtons,
+                                    headerType: 1
+                                }
+                            });
+                            console.log("✅ Startup message sent to ownerNumberfana");
+                        }
                         
+                        // Send to ownerNumber
                         await zk.sendMessage(ownerNumber, { 
                             interactiveMessage: {
-                            image: { url: randomNjabulourl },
-                            header: startupText,
-                             buttons: startupButtons,
-                             headerType: 1
-                             }
-                            });
-                        
-                        await zk.sendMessage(zk.user.id, { 
-                            interactiveMessage: {
-                                image: { url: randomNjabulourl }, 
+                                image: { url: randomNjabulourl },
                                 header: startupText,
                                 buttons: startupButtons,
                                 headerType: 1
                             }
                         });
-                        console.log("✅ Startup message sent to bot DM");
+                        console.log("✅ Startup message sent to ownerNumber");
+                        
+                        // Send to bot's own DM (zk.user.id)
+                        if (zk.user && zk.user.id) {
+                            await zk.sendMessage(zk.user.id, { 
+                                interactiveMessage: {
+                                    image: { url: randomNjabulourl }, 
+                                    header: startupText,
+                                    buttons: startupButtons,
+                                    headerType: 1
+                                }
+                            });
+                            console.log("✅ Startup message sent to bot DM (zk.user.id)");
+                        }
                     } catch (e) {
                         console.log("❌ Failed to send startup message:", e.message);
                     }
@@ -910,6 +938,9 @@ if (conf.AUTO_REACT === "yes") {
                         mtype == "extendedTextMessage" ? ms.message?.extendedTextMessage?.text : 
                         mtype == "buttonsResponseMessage" ? ms?.message?.buttonsResponseMessage?.selectedButtonId : 
                         mtype == "listResponseMessage" ? ms.message?.listResponseMessage?.singleSelectReply?.selectedRowId : "";
+            
+            // Skip if no text
+            if (!texte) return;
             
             var origineMessage = ms.key.remoteJid;
             var idBot = decodeJid(zk.user.id);
@@ -1189,10 +1220,14 @@ if (conf.AUTO_REACT === "yes") {
                             }
                             
                             if (!verifAdmin && !superUser) {
-                                let req = await isGroupOnlyAdmin(origineMessage);
-                                if (req) {
-                                    await repondre("❌ Only admins can use bot commands in this group");
-                                    return;
+                                try {
+                                    let req = await isGroupOnlyAdmin(origineMessage);
+                                    if (req) {
+                                        await repondre("❌ Only admins can use bot commands in this group");
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.log("⚠️ isGroupOnlyAdmin error, skipping check:", e.message);
                                 }
                             }
                         }
@@ -1204,6 +1239,8 @@ if (conf.AUTO_REACT === "yes") {
                         const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
                         zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
+                } else {
+                    console.log(`⚠️ Command "${com}" not found in evt.cm`);
                 }
             }
         });
@@ -1305,6 +1342,9 @@ if (conf.AUTO_REACT === "yes") {
                 }
             });
         }
+
+        // Activate crons
+        await activateCrons();
 
         console.log("✅ Bot started successfully!");
         return zk;
