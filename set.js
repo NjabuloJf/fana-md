@@ -9,7 +9,11 @@ const path = require("path");
 const databasePath = path.join(__dirname, './database.db');
 
 // ========== FIXED DATABASE CONFIGURATION ==========
+// Use environment DATABASE_URL first, then fallback
 const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:bKlIqoOUWFIHOAhKxRWQtGfKfhGKgmRX@viaduct.proxy.rlwy.net:47738/railway";
+
+// Clean the URL - remove any trailing spaces
+const cleanDbUrl = DATABASE_URL.trim();
 
 module.exports = { 
     // ========== SESSION CONFIGURATION ==========
@@ -56,7 +60,8 @@ module.exports = {
     MODE: process.env.PUBLIC_MODE || "yes",
     
     // ========== HEROKU SETTINGS ==========
-    HEROKU_APP_NAME: process.env.HEROKU_APP_NAME,
+    HEROKU_APP_NAME: process.env.HEROKU_APP_NAME || 'njabulo-fff30a63bf82',
+    HEROKU_APP_URL: process.env.HEROKU_APP_URL || 'https://njabulo-fff30a63bf82.herokuapp.com',
     HEROKU_APY_KEY: process.env.HEROKU_APY_KEY,
     
     // ========== SECURITY SETTINGS ==========
@@ -66,6 +71,7 @@ module.exports = {
     ANTICALL: process.env.ANTICALL || "no",
     
     // ========== PRESENCE SETTINGS ==========
+    // 1 = online, 2 = typing, 3 = recording, empty = unavailable
     ETAT: process.env.PRESENCE || '',
     
     // ========== CHATBOT SETTINGS ==========
@@ -76,8 +82,17 @@ module.exports = {
     DP: process.env.STARTING_BOT_MESSAGE || "yes",
     
     // ========== DATABASE ==========
-    DATABASE_URL: DATABASE_URL,
-    DATABASE: DATABASE_URL,
+    DATABASE_URL: cleanDbUrl,
+    DATABASE: cleanDbUrl,
+    
+    // ========== DATABASE POOL SETTINGS ==========
+    DB_POOL_SIZE: parseInt(process.env.DB_POOL_SIZE) || 5,
+    DB_IDLE_TIMEOUT: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
+    DB_CONNECTION_TIMEOUT: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 5000,
+    
+    // ========== KEEP ALIVE SETTINGS ==========
+    KEEP_ALIVE_INTERVAL: parseInt(process.env.KEEP_ALIVE_INTERVAL) || 240000, // 4 minutes
+    AUTO_RESTART: process.env.AUTO_RESTART || "yes",
 };
 
 let fichier = require.resolve(__filename);
