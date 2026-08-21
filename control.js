@@ -43,37 +43,524 @@ const { atbverifierEtatJid , atbrecupererActionJid } = require("./bdd/antibot");
 let evt = require(__dirname + "/njabulo/fana");
 const {isUserBanned , addUserToBanList , removeUserFromBanList} = require("./bdd/banUser");
 const  {addGroupToBanList,isGroupBanned,removeGroupFromBanList} = require("./bdd/banGroup");
-const {isGroupOnlyAdmin,addGroupToOnlyAdminList,removeGroupFromOnlyAdminList} = require("./bdd/onlyAdmin");
+
+// ========== FIX: OnlyAdmin with fallback ==========
+let isGroupOnlyAdmin, addGroupToOnlyAdminList, removeGroupFromOnlyAdminList;
+try {
+    const onlyAdmin = require("./bdd/onlyAdmin");
+    isGroupOnlyAdmin = onlyAdmin.isGroupOnlyAdmin || (() => false);
+    addGroupToOnlyAdminList = onlyAdmin.addGroupToOnlyAdminList || (() => {});
+    removeGroupFromOnlyAdminList = onlyAdmin.removeGroupFromOnlyAdminList || (() => {});
+    console.log("✅ onlyAdmin module loaded successfully");
+} catch (e) {
+    console.log("⚠️ onlyAdmin module not available, using fallback");
+    isGroupOnlyAdmin = async () => false;
+    addGroupToOnlyAdminList = async () => {};
+    removeGroupFromOnlyAdminList = async () => {};
+}
+
 let { reagir } = require(__dirname + "/njabulo/app");
 const { generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
 
-// ========== WEB SERVER FOR KEEP-ALIVE ==========
+// ========== LOAD COMMANDS IMMEDIATELY ON STARTUP ==========
+console.log("🚀 Loading Commands...");
+
+try {
+    const commandFiles = fs.readdirSync(__dirname + "/commandes");
+    let loadedCommands = 0;
+    commandFiles.forEach((fichier) => {
+        if (path.extname(fichier).toLowerCase() == (".js")) {
+            try {
+                require(__dirname + "/commandes/" + fichier);
+                console.log("✅ " + fichier + " Installed Successfully✔️");
+                loadedCommands++;
+            } catch (e) {
+                console.log(`❌ ${fichier} could not be installed: ${e.message}`);
+            }
+        }
+    });
+    console.log(`\n📦 Total Commands Loaded: ${loadedCommands}`);
+} catch (e) {
+    console.log('⚠️ No command folder found');
+}
+
+// ========== RECONNECTION CONTROL ==========
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+let reconnectTimeout = null;
+let isReconnecting = false;
+let zkInstance = null;
+let isConnected = false;
+
+function resetReconnectAttempts() {
+    reconnectAttempts = 0;
+    isReconnecting = false;
+}
+
+function handleReconnect(reason) {
+    if (isReconnecting) {
+        console.log('⏳ Already reconnecting, skipping...');
+        return;
+    }
+    
+    reconnectAttempts++;
+    isReconnecting = true;
+    
+    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+        console.log(`❌ Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached.`);
+        console.log('💡 Please restart the bot manually: heroku dyno:restart web.1');
+        isReconnecting = false;
+        return;
+    }
+    
+    const delay = Math.min(5000 * reconnectAttempts, 60000);
+    console.log(`🔄 ${reason} - Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay/1000}s...`);
+    
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+    }
+    
+    reconnectTimeout = setTimeout(() => {
+        isReconnecting = false;
+        startBot();
+    }, delay);
+}
+
+// ========== WEB SERVER WITH EMBEDDED INDEX.HTML ==========
 const http = require('http');
 
-// Create a simple web server for Heroku
-const server = http.createServer((req, res) => {
-    if (req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            status: 'online',
-            time: new Date().toISOString(),
-            uptime: process.uptime(),
-            bot: 'NJABULO-JB'
-        }));
-    } else if (req.url === '/ping') {
-        res.writeHead(200);
-        res.end('Pong!');
-    } else {
-        res.writeHead(404);
-        res.end('Not Found');
-    }
-});
+let server = null;
+let isServerListening = false;
 
-// Get port from environment
+const INDEX_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NJABULO-JB - WhatsApp Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            font-size: 60px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #a0a0c0;
+            font-size: 14px;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #a0a0c0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-badge.online {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .status-badge.offline {
+            background: rgba(251, 113, 133, 0.2);
+            color: #fb7185;
+            border: 1px solid rgba(251, 113, 133, 0.3);
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 25px 0;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .feature-item .icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .feature-item .label {
+            font-size: 10px;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .commands-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 16px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .commands-section h3 {
+            font-size: 13px;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .command-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #c0c0e0;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .command-item:hover {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .footer {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+            color: #606080;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #34d399;
+            animation: spin 0.8s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 30px 20px; }
+            .features { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .feature-item .icon { font-size: 20px; }
+            .command-grid { grid-template-columns: 1fr 1fr; }
+            h1 { font-size: 22px; }
+            .logo { width: 90px; height: 90px; font-size: 45px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🤖</div>
+        <h1>NJABULO-JB</h1>
+        <p class="subtitle">⚡ WhatsApp Bot • Multi-Device</p>
+
+        <div class="status-card">
+            <div class="status-row">
+                <span class="status-label">📊 Status</span>
+                <span class="status-value">
+                    <span class="status-badge online" id="statusBadge">
+                        <span class="loader" id="statusLoader" style="display:none;"></span>
+                        <span id="statusText">Checking...</span>
+                    </span>
+                </span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">⏱️ Uptime</span>
+                <span class="status-value" id="uptime">--</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">📱 Connected</span>
+                <span class="status-value" id="connected">--</span>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-item"><span class="icon">🌍</span><span class="label">Multi-Language</span></div>
+            <div class="feature-item"><span class="icon">🛡️</span><span class="label">Anti-Link</span></div>
+            <div class="feature-item"><span class="icon">🤖</span><span class="label">AI Chatbot</span></div>
+            <div class="feature-item"><span class="icon">🎵</span><span class="label">Music Download</span></div>
+            <div class="feature-item"><span class="icon">📸</span><span class="label">Media Tools</span></div>
+            <div class="feature-item"><span class="icon">🔒</span><span class="label">Auto-Mod</span></div>
+        </div>
+
+        <div class="commands-section">
+            <h3>⚡ Quick Commands</h3>
+            <div class="command-grid">
+                <span class="command-item">.menu</span>
+                <span class="command-item">.ping</span>
+                <span class="command-item">.ai</span>
+                <span class="command-item">.sticker</span>
+                <span class="command-item">.play</span>
+                <span class="command-item">.song</span>
+                <span class="command-item">.setlang</span>
+                <span class="command-item">.owner</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Developed with ❤️ by <a href="#" target="_blank">Njabulo JB</a></p>
+            <p style="margin-top: 4px; font-size: 11px;">© 2026 • All rights reserved</p>
+        </div>
+    </div>
+
+    <script>
+        async function fetchStatus() {
+            var statusText = document.getElementById("statusText");
+            var statusBadge = document.getElementById("statusBadge");
+            var statusLoader = document.getElementById("statusLoader");
+            var uptimeEl = document.getElementById("uptime");
+            var connectedEl = document.getElementById("connected");
+
+            try {
+                statusLoader.style.display = "inline-block";
+                statusText.textContent = "Checking...";
+
+                var response = await fetch("/status");
+                var data = await response.json();
+
+                statusLoader.style.display = "none";
+
+                if (response.ok && data && data.connected) {
+                    statusBadge.className = "status-badge online";
+                    statusText.textContent = "🟢 Online";
+
+                    if (data.uptime) {
+                        var uptime = data.uptime;
+                        var hours = Math.floor(uptime / 3600);
+                        var minutes = Math.floor((uptime % 3600) / 60);
+                        var seconds = Math.floor(uptime % 60);
+                        uptimeEl.textContent = hours + "h " + minutes + "m " + seconds + "s";
+                    } else {
+                        uptimeEl.textContent = "Just started";
+                    }
+
+                    connectedEl.textContent = "✅ Connected";
+                } else {
+                    statusBadge.className = "status-badge offline";
+                    statusText.textContent = "🔴 Offline";
+                    uptimeEl.textContent = "--";
+                    connectedEl.textContent = "❌ Disconnected";
+                }
+            } catch (error) {
+                statusLoader.style.display = "none";
+                statusBadge.className = "status-badge offline";
+                statusText.textContent = "🔴 Offline";
+                uptimeEl.textContent = "--";
+                connectedEl.textContent = "❌ Disconnected";
+            }
+        }
+
+        fetchStatus();
+        setInterval(fetchStatus, 30000);
+    </script>
+</body>
+</html>`;
+
+function createWebServer() {
+    if (server) {
+        try { server.close(); } catch (e) {}
+    }
+    
+    server = http.createServer((req, res) => {
+        if (req.url === '/' || req.url === '/index.html') {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(INDEX_HTML);
+        } else if (req.url === '/ping') {
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('Pong!');
+        } else if (req.url === '/status') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: isConnected ? 'online' : 'offline',
+                time: new Date().toISOString(),
+                uptime: process.uptime(),
+                bot: 'NJABULO-JB',
+                connected: isConnected || false
+            }));
+        } else {
+            res.writeHead(404);
+            res.end('Not Found');
+        }
+    });
+
+    return server;
+}
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`✅ Web server running on port ${PORT}`);
-});
+
+function startServer() {
+    if (isServerListening) {
+        console.log('ℹ️ Server already running');
+        return;
+    }
+    
+    try {
+        const serverInstance = createWebServer();
+        serverInstance.listen(PORT, () => {
+            isServerListening = true;
+            console.log(`✅ Web server running on port ${PORT}`);
+        });
+        
+        serverInstance.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.log(`⚠️ Port ${PORT} already in use, retrying...`);
+                setTimeout(startServer, 2000);
+            } else {
+                console.error('❌ Server error:', err.message);
+            }
+        });
+    } catch (err) {
+        console.error('❌ Failed to start server:', err.message);
+    }
+}
+
+function stopServer() {
+    if (server && isServerListening) {
+        try {
+            server.close();
+            isServerListening = false;
+            console.log('🛑 Web server stopped');
+        } catch (err) {
+            console.error('Error stopping server:', err.message);
+        }
+    }
+}
+
+startServer();
+
+process.on('SIGINT', () => { stopServer(); process.exit(0); });
+process.on('SIGTERM', () => { stopServer(); process.exit(0); });
 
 // ========== GOOGLE TRANSLATE API ==========
 let translateText = async (text, targetLang) => {
@@ -112,7 +599,6 @@ let translateText = async (text, targetLang) => {
     }
 };
 
-// ========== TRANSLATION CACHE ==========
 const translationCache = new Map();
 
 let translateTextWithCache = async (text, targetLang) => {
@@ -138,27 +624,13 @@ let translateTextWithCache = async (text, targetLang) => {
 };
 
 const languageNames = {
-    en: "English",
-    sn: "Shona",
-    nd: "Ndebele",
-    af: "Afrikaans",
-    zu: "Zulu",
-    xh: "Xhosa",
-    pt: "Portuguese",
-    sw: "Swahili",
-    hi: "Hindi",
-    ar: "Arabic",
-    fr: "French",
-    es: "Spanish",
-    zh: "Chinese",
-    de: "German",
-    it: "Italian",
-    ja: "Japanese",
-    ko: "Korean",
-    ru: "Russian"
+    en: "English", sn: "Shona", nd: "Ndebele", af: "Afrikaans",
+    zu: "Zulu", xh: "Xhosa", pt: "Portuguese", sw: "Swahili",
+    hi: "Hindi", ar: "Arabic", fr: "French", es: "Spanish",
+    zh: "Chinese", de: "German", it: "Italian", ja: "Japanese",
+    ko: "Korean", ru: "Russian"
 };
 
-// ========== TRANSLATED WELCOME FUNCTION ==========
 async function getTranslatedWelcome(lang) {
     const welcomeTitle = await translateTextWithCache("🎉 WELCOME TO THE GROUP!", lang);
     const welcomeHey = await translateTextWithCache("Hey", lang);
@@ -174,7 +646,6 @@ async function getTranslatedGoodbye(lang) {
     return { goodbyeTitle, goodbyeLeft, goodbyeRemaining };
 }
 
-// ========== GET TRANSLATED BUTTONS ==========
 async function getTranslatedButtons(lang) {
     const buttonText = await translateTextWithCache("bot Channels", lang);
     return [
@@ -189,7 +660,6 @@ async function getTranslatedButtons(lang) {
     ];
 }
 
-// ========== GET NAME FROM JID ==========
 async function getName(jid) {
     try {
         if (!jid) return "Unknown";
@@ -207,9 +677,8 @@ async function getName(jid) {
     }
 }
 
-console.log("✅ Using Baileys from github:njabulo.v^1.0.0/Baileys");
+console.log("✅ Using Baileys");
 
-// ========== SESSION HANDLER ==========
 const sessionDir = __dirname + '/sessions';
 const credsPath = sessionDir + '/creds.json';
 
@@ -241,69 +710,13 @@ async function loadSession() {
                 return;
             } catch (err) {
                 console.log("❌ Error decoding Base64 session:", err.message);
-                try {
-                    const sessionJson = atob(base64Session);
-                    const sessionData = JSON.parse(sessionJson);
-                    fs.writeFileSync(credsPath, JSON.stringify(sessionData, null, 2));
-                    console.log("✅ Session loaded via atob successfully!");
-                    return;
-                } catch (err2) {
-                    console.log("❌ Alternative decode failed:", err2.message);
+                console.log("⚠️ Invalid session, will generate new QR code...");
+                if (fs.existsSync(credsPath)) {
+                    fs.unlinkSync(credsPath);
                 }
-            }
-        }
-        
-        if (sessionId.includes('mega') || sessionId.includes('#') || sessionId.length > 100) {
-            console.log("📁 Attempting to download session from Mega.nz...");
-            
-            try {
-                let megaFileId = sessionId;
-                
-                if (megaFileId.includes('njabulo-jb~')) {
-                    megaFileId = megaFileId.replace('njabulo-jb~', '');
-                }
-                if (megaFileId.includes('mega.nz')) {
-                    const megaMatch = megaFileId.match(/#!([a-zA-Z0-9_-]+)/);
-                    if (megaMatch) {
-                        megaFileId = megaMatch[1];
-                    }
-                }
-                
-                console.log("📁 Mega file ID:", megaFileId);
-                
-                const file = File.fromURL(`https://mega.nz/file/${megaFileId}`);
-                
-                file.download((err, data) => {
-                    if (err) {
-                        console.log("❌ Mega.nz download error:", err.message);
-                        return;
-                    }
-                    if (data) {
-                        fs.writeFileSync(credsPath, data);
-                        console.log("✅ Session downloaded from Mega.nz successfully!");
-                    }
-                });
-                
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 100) {
-                    console.log("✅ Mega.nz session file saved!");
-                    return;
-                }
-            } catch (err) {
-                console.log("❌ Mega.nz download error:", err.message);
-            }
-        }
-        
-        try {
-            const decoded = Buffer.from(sessionId, 'base64').toString('utf-8');
-            if (decoded.includes('creds') || decoded.includes('noiseKey')) {
-                const sessionData = JSON.parse(decoded);
-                fs.writeFileSync(credsPath, JSON.stringify(sessionData, null, 2));
-                console.log("✅ Session loaded from plain Base64!");
                 return;
             }
-        } catch (e) {}
+        }
         
         console.log("📱 No valid session format detected, will generate new QR code");
         
@@ -314,7 +727,6 @@ async function loadSession() {
 
 loadSession();
 
-// ========== FIX: Handle undefined session ==========
 var session = (conf.session || '').replace(/Zokou-MD-WHATSAPP-BOT;;;=>/g,"");
 const prefixe = conf.PREFIXE || ".";
 const more = String.fromCharCode(8206)
@@ -337,14 +749,11 @@ async function authentification() {
 }
 authentification();
 
-// ========== STORE POLYFILL ==========
 const store = {
     chats: new Map(),
     contacts: new Map(),
     messages: new Map(),
-    bind: function(ev) { 
-        console.log("Store bound");
-    },
+    bind: function(ev) { console.log("Store bound"); },
     writeToFile: function(filename) {
         try {
             const data = {
@@ -366,12 +775,10 @@ const store = {
     }
 };
 
-// ========== BUTTON HANDLER ==========
 const { handleButtons } = require("./commands/play0");
 
-// ========== RATE LIMITING & SPEED OPTIMIZATION ==========
 const userCooldowns = new Map();
-const RATE_LIMIT_MS = 1000; // 1 second cooldown
+const RATE_LIMIT_MS = 1000;
 
 function isRateLimited(jid) {
     const now = Date.now();
@@ -383,54 +790,50 @@ function isRateLimited(jid) {
     return false;
 }
 
-// Queue for processing messages
-const processingQueue = [];
-let isProcessingQueue = false;
-const userLastProcessed = new Map();
-
-async function processMessageQueue() {
-    if (isProcessingQueue || processingQueue.length === 0) return;
-    isProcessingQueue = true;
-
-    while (processingQueue.length > 0) {
-        const { from, message } = processingQueue.shift();
-        const now = Date.now();
-        const lastProcessed = userLastProcessed.get(from) || 0;
-
-        if (now - lastProcessed < 1000) {
-            const delay = 1000 - (now - lastProcessed);
-            await new Promise(resolve => setTimeout(resolve, delay));
+async function clearSession() {
+    try {
+        if (fs.existsSync(sessionDir)) {
+            fs.rmSync(sessionDir, { recursive: true, force: true });
+            console.log('✅ Session directory cleared');
         }
-
-        userLastProcessed.set(from, Date.now());
-
-        try {
-            await processSingleMessage(from, message);
-        } catch (error) {
-            console.error('Error processing message:', error);
+        if (fs.existsSync(__dirname + '/auth')) {
+            fs.rmSync(__dirname + '/auth', { recursive: true, force: true });
+            console.log('✅ Auth directory cleared');
         }
+        return true;
+    } catch (e) {
+        console.log('❌ Error clearing session:', e.message);
+        return false;
     }
-
-    isProcessingQueue = false;
 }
 
-async function processSingleMessage(from, message) {
-    console.log(`Processing message from ${from}`);
-}
-
-setTimeout(() => {
-    async function main() {
-        const { version, isLatest } = await (0, baileys_1.fetchLatestBaileysVersion)();
+// ========== MAIN BOT FUNCTION ==========
+async function startBot() {
+    try {
+        // Add uncaught exception handlers
+        process.on('uncaughtException', (err) => {
+            console.error('❌ Uncaught Exception:', err.message);
+        });
+        
+        process.on('unhandledRejection', (reason, promise) => {
+            console.error('❌ Unhandled Rejection:', reason);
+        });
+        
+        console.log("🚀 Starting bot connection...");
+        
+        const { version } = await (0, baileys_1.fetchLatestBaileysVersion)();
         const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(sessionDir);
         
         const sockOptions = {
             version,
             logger: pino({ level: "silent" }),
             browser: ['NJABULO-MD', "Chrome", "1.0.0"],
-            printQRInTerminal: true,
             fireInitQueries: false,
             markOnlineOnConnect: false,
-            keepAliveIntervalMs: 30_000,
+            keepAliveIntervalMs: 60_000,
+            syncFullHistory: false,
+            patchHistory: false,
+            generateHighQualityLinkPreview: false,
             auth: {
                 creds: state.creds,
                 keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
@@ -440,15 +843,13 @@ setTimeout(() => {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg?.message || undefined;
                 }
-                return {
-                    conversation: 'An Error Occurred, Repeat Command!'
-                };
+                return { conversation: 'An Error Occurred, Repeat Command!' };
             }
         };
         const zk = (0, baileys_1.default)(sockOptions);
+        zkInstance = zk;
         store.bind(zk.ev);
 
-// ========== IMAGE URLS (Reliable GitHub URLs) ==========
 const njabulox = [
     "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg.png",
     "https://raw.githubusercontent.com/NjabuloJf/njabulo-data/main/njabuloimg/njabuloimg2.png",
@@ -458,8 +859,8 @@ const njabulox = [
 ];
 const randomNjabulourl = njabulox[Math.floor(Math.random() * njabulox.length)];
 
-// ========== WELCOME & GOODBYE WITH IMAGE ==========
-const { recupevents } = require('./bdd/welcome');
+// ========== FIX: Welcome and Goodbye ==========
+const { recupevents, attribuerUnevaleur } = require('./bdd/welcome');
 
 async function getProfilePic(jid) {
     try {
@@ -470,12 +871,10 @@ async function getProfilePic(jid) {
     }
 }
 
+// ========== WELCOME & GOODBYE EVENT HANDLER ==========
 zk.ev.on('group-participants.update', async (group) => {
     console.log('Group update detected:', group);
-
     const lang = conf.LANGUAGE || "en";
-    
-    // Get translated buttons
     const buttons = await getTranslatedButtons(lang);
 
     try {
@@ -487,19 +886,23 @@ zk.ev.on('group-participants.update', async (group) => {
         const joinDate = currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
         // ========== WELCOME ==========
-        if (group.action === 'add' && (await recupevents(group.id, "welcome") === 'on')) {
-            const translated = await getTranslatedWelcome(lang);
-            let membres = group.participants;
+        if (group.action === 'add') {
+            const welcomeStatus = await recupevents(group.id, "welcome");
+            console.log(`Welcome status for ${group.id}: ${welcomeStatus}`);
             
-            for (let membre of membres) {
-                try {
-                    const memberJid = membre.phoneNumber || membre.id;
-                    if (!memberJid) continue;
-                    
-                    const memberName = await getName(memberJid);
-                    const memberPP = await getProfilePic(memberJid);
-                    
-                    const msg = `     ${translated.welcomeTitle}
+            if (welcomeStatus === 'on' || welcomeStatus === 'oui') {
+                const translated = await getTranslatedWelcome(lang);
+                let membres = group.participants;
+                
+                for (let membre of membres) {
+                    try {
+                        const memberJid = membre.phoneNumber || membre.id;
+                        if (!memberJid) continue;
+                        
+                        const memberName = await getName(memberJid);
+                        const memberPP = await getProfilePic(memberJid);
+                        
+                        const msg = `     ${translated.welcomeTitle}
 
  ${translated.welcomeHey} *${memberName}*!
 
@@ -515,37 +918,42 @@ zk.ev.on('group-participants.update', async (group) => {
  ${translated.welcomeEnjoy}
 `;
 
-                    await zk.sendMessage(group.id, {                        
-                        interactiveMessage: {
-                            image: { url: memberPP || randomNjabulourl }, 
-                            header: msg,
-                            mentions: [memberJid],
-                            buttons: buttons,
-                            headerType: 1
-                        }
-                    });
-                    
-                    console.log(`✅ Welcome message sent to ${memberName}`);
-                } catch (memberError) {
-                    console.error(`Welcome error for participant:`, memberError.message);
+                        await zk.sendMessage(group.id, {                        
+                            interactiveMessage: {
+                                image: { url: memberPP || randomNjabulourl }, 
+                                header: msg,
+                                mentions: [memberJid],
+                                buttons: buttons,
+                                headerType: 1
+                            }
+                        });
+                        
+                        console.log(`✅ Welcome message sent to ${memberName}`);
+                    } catch (memberError) {
+                        console.error(`Welcome error for participant:`, memberError.message);
+                    }
                 }
             }
         }
         
         // ========== GOODBYE ==========
-        if (group.action === 'remove' && (await recupevents(group.id, "goodbye") === 'on')) {
-            const translated = await getTranslatedGoodbye(lang);
-            let membres = group.participants;
+        if (group.action === 'remove') {
+            const goodbyeStatus = await recupevents(group.id, "goodbye");
+            console.log(`Goodbye status for ${group.id}: ${goodbyeStatus}`);
             
-            for (let membre of membres) {
-                try {
-                    const memberJid = membre.phoneNumber || membre.id;
-                    if (!memberJid) continue;
-                    
-                    const memberName = await getName(memberJid);
-                    const memberPP = await getProfilePic(memberJid);
-                    
-                    const msg = `        ${translated.goodbyeTitle}
+            if (goodbyeStatus === 'on' || goodbyeStatus === 'oui') {
+                const translated = await getTranslatedGoodbye(lang);
+                let membres = group.participants;
+                
+                for (let membre of membres) {
+                    try {
+                        const memberJid = membre.phoneNumber || membre.id;
+                        if (!memberJid) continue;
+                        
+                        const memberName = await getName(memberJid);
+                        const memberPP = await getProfilePic(memberJid);
+                        
+                        const msg = `        ${translated.goodbyeTitle}
 
  😢 *${memberName}* ${translated.goodbyeLeft}
 
@@ -559,19 +967,20 @@ zk.ev.on('group-participants.update', async (group) => {
  ${translated.goodbyeLeft}
 `;
 
-                    await zk.sendMessage(group.id, { 
-                        interactiveMessage: {
-                            image: { url: memberPP || randomNjabulourl }, 
-                            header: msg,
-                            mentions: [memberJid],
-                            buttons: buttons,
-                            headerType: 1
-                        }
-                    });
-                    
-                    console.log(`✅ Goodbye message sent for ${memberName}`);
-                } catch (memberError) {
-                    console.error(`Goodbye error for participant:`, memberError.message);
+                        await zk.sendMessage(group.id, { 
+                            interactiveMessage: {
+                                image: { url: memberPP || randomNjabulourl }, 
+                                header: msg,
+                                mentions: [memberJid],
+                                buttons: buttons,
+                                headerType: 1
+                            }
+                        });
+                        
+                        console.log(`✅ Goodbye message sent for ${memberName}`);
+                    } catch (memberError) {
+                        console.error(`Goodbye error for participant:`, memberError.message);
+                    }
                 }
             }
         }
@@ -581,7 +990,6 @@ zk.ev.on('group-participants.update', async (group) => {
     }
 });
 
-        // ========== BUTTONS RESPONSE HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
             const msg = m.messages[0];
             if (!msg.message) return;
@@ -595,97 +1003,6 @@ zk.ev.on('group-participants.update', async (group) => {
                 console.log("🎯 Button interaction detected!");
                 await handleButtons(zk, msg);
                 return;
-            }
-        });
-
-        // ========== ANTI-DELETE ==========
-        zk.ev.on("messages.upsert", async (m) => {
-            if (conf.ANTIDELETE1 === "yes") {
-                const { messages } = m;
-                const ms = messages[0];
-                if (!ms.message) return;
-
-                const messageKey = ms.key;
-                const remoteJid = messageKey.remoteJid;
-
-                if (!store.chats) store.chats = {};
-                if (!store.chats[remoteJid]) {
-                    store.chats[remoteJid] = [];
-                }
-
-                store.chats[remoteJid].push(ms);
-
-                if (ms.message.protocolMessage && ms.message.protocolMessage.type === 0) {
-                    const deletedKey = ms.message.protocolMessage.key;
-                    const chatMessages = store.chats[remoteJid];
-                    const deletedMessage = chatMessages.find(
-                        (msg) => msg.key.id === deletedKey.id
-                    );
-
-                    if (deletedMessage) {
-                        try {
-                            const participant = deletedMessage.key.participant || deletedMessage.key.remoteJid;
-                            const notification = `*🛑 This message was deleted by @${participant.split("@")[0]}*`;
-                            const botOwnerJid = `${conf.NUMERO_OWNER}@s.whatsapp.net`;
-
-                            if (deletedMessage.message.conversation) {
-                                await zk.sendMessage(botOwnerJid, {
-                                    interactiveMessage: {
-                                    header: `${notification}\nDeleted message: ${deletedMessage.message.conversation}`,
-                                    mentions: [participant],
-                                    buttons: buttons,
-                                    headerType: 1
-                                    }
-                                });
-                            }
-                            else if (deletedMessage.message.imageMessage) {
-                                const caption = deletedMessage.message.imageMessage.caption || '';
-                                const imagePath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.imageMessage);
-                                await zk.sendMessage(botOwnerJid, {
-                                    interactiveMessage: {
-                                    image: { url: imagePath },
-                                    header: `${notification}\n${caption}`,
-                                    mentions: [participant],
-                                    buttons: buttons,
-                                    headerType: 1
-                                    }
-                                });
-                            }
-                            else if (deletedMessage.message.videoMessage) {
-                                const caption = deletedMessage.message.videoMessage.caption || '';
-                                const videoPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.videoMessage);
-                                await zk.sendMessage(botOwnerJid, {
-                                    interactiveMessage: {
-                                    video: { url: videoPath },
-                                    header: `${notification}\n${caption}`,
-                                    mentions: [participant],
-                                        buttons: buttons,
-                                    headerType: 1
-                                    }
-                                });
-                            }
-                            else if (deletedMessage.message.audioMessage) {
-                                const audioPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.audioMessage);
-                                await zk.sendMessage(botOwnerJid, {
-                                    audio: { url: audioPath },
-                                    ptt: true,
-                                    caption: notification,
-                                    mentions: [participant],
-                                });
-                            }
-                            else if (deletedMessage.message.stickerMessage) {
-                                const stickerPath = await zk.downloadAndSaveMediaMessage(deletedMessage.message.stickerMessage);
-                                await zk.sendMessage(botOwnerJid, {
-                                    sticker: { url: stickerPath },
-                                    caption: notification,
-                                    mentions: [participant],
-                                });
-                            }
-                        } catch (error) {
-                            console.error('Error handling deleted message:', error);
-                        }
-                    }
-                }
             }
         });
 
@@ -712,8 +1029,8 @@ zk.ev.on('group-participants.update', async (group) => {
                             continue;
                         }
 
-                        const adams = zk.user && zk.user.id ? zk.user.id.split(":")[0] + "@s.whatsapp.net" : null;
-                        if (!adams) {
+                        const botJid = zk.user && zk.user.id ? zk.user.id.split(":")[0] + "@s.whatsapp.net" : null;
+                        if (!botJid) {
                             console.log("Bot's user ID not available. Skipping reaction.");
                             continue;
                         }
@@ -724,7 +1041,7 @@ zk.ev.on('group-participants.update', async (group) => {
                                 text: "💙",
                             },
                         }, {
-                            statusJidList: [message.key.participant, adams],
+                            statusJidList: [message.key.participant, botJid],
                         });
 
                         lastReactionTime = Date.now();
@@ -1065,73 +1382,143 @@ if (conf.AUTO_REACT === "yes") {
     });
 }
 
-// ========== GET CURRENT DATE AND TIME ==========
-function getCurrentDateTime() {
-    const options = {
-        timeZone: 'Africa/Nairobi',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    };
-    const dateTime = new Intl.DateTimeFormat('en-KE', options).format(new Date());
-    return dateTime;
-}
+        // ========== CONNECTION UPDATE ==========
+        zk.ev.on("connection.update", async (con) => {
+            const { lastDisconnect, connection, qr } = con;
+            
+            if (qr) {
+                console.log("\n📱 ========== SCAN THIS QR CODE WITH WHATSAPP ==========");
+                console.log(qr);
+                console.log("📱 ====================================================\n");
+            }
+            
+            if (connection === "connecting") {
+                console.log("ℹ️ Njabulo-Jb is connecting...");
+            }
+            else if (connection === 'open') {
+                isConnected = true;
+                resetReconnectAttempts();
+                console.log("✅ Njabulo-Jb Connected to WhatsApp! ☺️");
+                console.log("--");
+                await (0, baileys_1.delay)(200);
+                console.log("------");
+                await (0, baileys_1.delay)(300);
+                console.log("------------------/-----");
+                console.log("Njabulo-Jb is Online 🕸\n\n");
+                console.log("✅ Bot is ready to receive commands!\n");
 
-// ========== TRACK CONNECTION STATUS ==========
-let isConnected = false;
+                const currentLang = conf.LANGUAGE || "en";
+                const langName = languageNames[currentLang] || "English";
+                const startupButtons = await getTranslatedButtons(currentLang);
+                const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
+                const ownerNumberfana = conf.NUMERO_OWNERFANA + "@s.whatsapp.net";
+                var md;
+                if ((conf.MODE || "").toLocaleLowerCase() === "yes") {
+                    md = "public";
+                } else if ((conf.MODE || "").toLocaleLowerCase() === "no") {
+                    md = "private";
+                } else {
+                    md = "undefined";
+                }
+      
+                if((conf.DP || "").toLowerCase() === 'yes') {
+                    try {
+                        const startupText = `*╭───────────────*
+*-᳆ .📊 NJABULO-JB BOT ONLINE*
+*-᳆*
+*-᳆ .✅ Bot:* WhatsApp Bot Connected
+*-᳆ .📌 Prefix:* ${prefixe}
+*-᳆ .📅 Date:* ${new Date().toLocaleDateString()}
+*-᳆ .🕐 Time:* ${new Date().toLocaleTimeString()}
+*-᳆ .📊 Mode:* ${md}
+*-᳆ .🌍 Language:* ${langName}
+*-᳆ .👤 Owner:* Njabulo JB
+*-᳆*
+*-᳆ .💡 Commands:* Use .menu
+*-᳆ .⏳ lang to set bot language*
+*-᳆ .💌 use .setlang you owner country language*
+ *╰───────────────*
 
-// ========== AUTO BIO UPDATE WITH CONNECTION CHECK ==========
-zk.ev.on("connection.update", async (con) => {
-    const { connection } = con;
-    if (connection === 'open') {
-        isConnected = true;
-        console.log("✅ Bot is connected!");
-    } else if (connection === 'close') {
-        isConnected = false;
-        console.log("❌ Bot disconnected!");
-    }
-});
 
-setInterval(async () => {
-    if (conf.AUTO_BIO === "yes" && isConnected) {
-        try {
-            const currentDateTime = getCurrentDateTime();
-            const bioText = `NJABULO-JB is online! 🚀\n${currentDateTime}`;
-            await zk.updateProfileStatus(bioText);
-            console.log(`Updated Bio: ${bioText}`);
-        } catch (error) {
-            console.log('Bio update error:', error.message);
-        }
-    }
-}, 60000);
+`;
+                        // Send to ownerNumberfana
+                        if (ownerNumberfana && ownerNumberfana !== "undefined@s.whatsapp.net") {
+                            await zk.sendMessage(ownerNumberfana, { 
+                                interactiveMessage: {
+                                    image: { url: randomNjabulourl },
+                                    header: startupText,
+                                    buttons: startupButtons,
+                                    headerType: 1
+                                }
+                            });
+                            console.log("✅ Startup message sent to ownerNumberfana");
+                        }
+                        
+                        // Send to ownerNumber
+                        await zk.sendMessage(ownerNumber, { 
+                            interactiveMessage: {
+                                image: { url: randomNjabulourl },
+                                header: startupText,
+                                buttons: startupButtons,
+                                headerType: 1
+                            }
+                        });
+                        console.log("✅ Startup message sent to ownerNumber");
+                        
+                        // Send to bot's own DM (zk.user.id)
+                        if (zk.user && zk.user.id) {
+                            await zk.sendMessage(zk.user.id, { 
+                                interactiveMessage: {
+                                    image: { url: randomNjabulourl }, 
+                                    header: startupText,
+                                    buttons: startupButtons,
+                                    headerType: 1
+                                }
+                            });
+                            console.log("✅ Startup message sent to bot DM (zk.user.id)");
+                        }
+                    } catch (e) {
+                        console.log("❌ Failed to send startup message:", e.message);
+                    }
+                }
+            }
+            else if (connection == "close") {
+                let raisonDeconnexion = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
+                isConnected = false;
+                
+                if (raisonDeconnexion === baileys_1.DisconnectReason.badSession) {
+                    console.log('❌ Session id error! Please clear sessions and rescan QR.');
+                    try {
+                        await clearSession();
+                        console.log('✅ Session files cleared. Restart the bot to get new QR.');
+                    } catch (e) {
+                        console.log('Could not delete session files:', e.message);
+                    }
+                    return;
+                } else if (raisonDeconnexion === baileys_1.DisconnectReason.connectionClosed || 
+                           raisonDeconnexion === baileys_1.DisconnectReason.connectionLost) {
+                    handleReconnect('Connection lost');
+                    return;
+                } else if (raisonDeconnexion === baileys_1.DisconnectReason.restartRequired) {
+                    handleReconnect('Restart required');
+                    return;
+                } else if (raisonDeconnexion === baileys_1.DisconnectReason.loggedOut) {
+                    console.log('🚫 Logged out! Please clear sessions and rescan QR.');
+                    try {
+                        await clearSession();
+                        console.log('✅ Session files cleared. Restart the bot to get new QR.');
+                    } catch (e) {
+                        console.log('Could not delete session files:', e.message);
+                    }
+                    return;
+                } else {
+                    handleReconnect('Unknown error');
+                    return;
+                }
+            }
+        });
 
-// ========== ANTI-CALL ==========
-zk.ev.on("call", async (callData) => {
-  if (conf.ANTICALL === 'yes') {
-    const callId = callData[0].id;
-    const callerId = callData[0].from;
-
-    await zk.rejectCall(callId, callerId);
-
-    setTimeout(async () => {
-      await zk.sendMessage(callerId, {
-         interactiveMessage: {
-          header: `🚫 *Call Rejected!*  
-Hi there, I'm *NJABULO-JB* 🤖.  
-⚠️ My owner is unavailable at the moment.  
-Please try again later or leave a message. Cheers! 😊`,
-             buttons: buttons,
-        headerType: 1
-         }
-
-      });
-    }, 1000);
-  }
-});
+        zk.ev.on("creds.update", saveCreds);
 
         // ========== COMMAND HANDLER ==========
         zk.ev.on("messages.upsert", async (m) => {
@@ -1139,10 +1526,9 @@ Please try again later or leave a message. Cheers! 😊`,
             const ms = messages[0];
             if (!ms.message) return;
             
-            // ========== RATE LIMITING ==========
             const sender = ms.key.remoteJid;
             if (isRateLimited(sender)) {
-                return; // Skip if rate limited
+                return;
             }
             
             const decodeJid = (jid) => {
@@ -1161,6 +1547,9 @@ Please try again later or leave a message. Cheers! 😊`,
                         mtype == "extendedTextMessage" ? ms.message?.extendedTextMessage?.text : 
                         mtype == "buttonsResponseMessage" ? ms?.message?.buttonsResponseMessage?.selectedButtonId : 
                         mtype == "listResponseMessage" ? ms.message?.listResponseMessage?.singleSelectReply?.selectedRowId : "";
+            
+            // Skip if no text
+            if (!texte) return;
             
             var origineMessage = ms.key.remoteJid;
             var idBot = decodeJid(zk.user.id);
@@ -1193,7 +1582,6 @@ Please try again later or leave a message. Cheers! 😊`,
             var dev = [dj, dj2,dj3,luffy].map((t) => t.replace(/[^0-9]/g) + "@s.whatsapp.net").includes(auteurMessage);
             const lang = conf.LANGUAGE || "en";
             
-            // ========== FAST REPONDRE ==========
             async function repondre(mes) {
                 try {
                     const translated = await translateTextWithCache(mes, lang);
@@ -1252,7 +1640,6 @@ Please try again later or leave a message. Cheers! 😊`,
                 msgRepondu, auteurMsgRepondu, ms, mybotpic
             };
 
-            // Auto read messages
             if (conf.AUTO_READ === 'yes') {
                 zk.ev.on('messages.upsert', async (m) => {
                     const { messages } = m;
@@ -1264,28 +1651,7 @@ Please try again later or leave a message. Cheers! 😊`,
                 });
             }
 
-            // ========== AUTO-STATUS ==========
-            if (ms.key && ms.key.remoteJid === "status@broadcast" && conf.AUTO_READ_STATUS === "yes") {
-                await zk.readMessages([ms.key]);
-            }
-            if (ms.key && ms.key.remoteJid === 'status@broadcast' && conf.AUTO_DOWNLOAD_STATUS === "yes") {
-                if (ms.message.extendedTextMessage) {
-                    var stTxt = ms.message.extendedTextMessage.text;
-                    await zk.sendMessage(idBot, { text: stTxt }, { quoted: ms });
-                }
-                else if (ms.message.imageMessage) {
-                    var stMsg = ms.message.imageMessage.caption;
-                    var stImg = await zk.downloadAndSaveMediaMessage(ms.message.imageMessage);
-                    await zk.sendMessage(idBot, { image: { url: stImg }, caption: stMsg }, { quoted: ms });
-                }
-                else if (ms.message.videoMessage) {
-                    var stMsg = ms.message.videoMessage.caption;
-                    var stVideo = await zk.downloadAndSaveMediaMessage(ms.message.videoMessage);
-                    await zk.sendMessage(idBot, { video: { url: stVideo }, caption: stMsg }, { quoted: ms });
-                }
-            }
-
-            // ========== FAST ANTI-LINK ==========
+            // ========== ANTI-LINK ==========
             try {
                 const yes = await verifierEtatJid(origineMessage);
                 const containsLink = texte && (
@@ -1429,7 +1795,6 @@ Please try again later or leave a message. Cheers! 😊`,
 
             // ========== FAST COMMAND EXECUTION ==========
             if (verifCom) {
-                // ========== FAST PING ==========
                 if (com === 'active') {
                     const startTime = Date.now();
                     const responseTime = Date.now() - startTime;
@@ -1464,10 +1829,14 @@ Please try again later or leave a message. Cheers! 😊`,
                             }
                             
                             if (!verifAdmin && !superUser) {
-                                let req = await isGroupOnlyAdmin(origineMessage);
-                                if (req) {
-                                    await repondre("❌ Only admins can use bot commands in this group");
-                                    return;
+                                try {
+                                    let req = await isGroupOnlyAdmin(origineMessage);
+                                    if (req) {
+                                        await repondre("❌ Only admins can use bot commands in this group");
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.log("⚠️ isGroupOnlyAdmin error, skipping check:", e.message);
                                 }
                             }
                         }
@@ -1479,6 +1848,8 @@ Please try again later or leave a message. Cheers! 😊`,
                         const translatedError = await translateTextWithCache("❌ Error: " + e.message, lang);
                         zk.sendMessage(origineMessage, { text: translatedError }, { quoted: ms });
                     }
+                } else {
+                    console.log(`⚠️ Command "${com}" not found in evt.cm`);
                 }
             }
         });
@@ -1523,136 +1894,6 @@ Please try again later or leave a message. Cheers! 😊`,
             }
             return;
         }
-
-        // ========== CONNECTION UPDATE ==========
-        zk.ev.on("connection.update", async (con) => {
-            const { lastDisconnect, connection } = con;
-            if (connection === "connecting") {
-                console.log("ℹ️ Njabulo-Jb is connecting...");
-            }
-            else if (connection === 'open') {
-                console.log("✅ Njabulo-Jb Connected to WhatsApp! ☺️");
-                console.log("--");
-                await (0, baileys_1.delay)(200);
-                console.log("------");
-                await (0, baileys_1.delay)(300);
-                console.log("------------------/-----");
-                console.log("Njabulo-Jb is Online 🕸\n\n");
-                console.log("Loading Commands ...\n");
-                
-                try {
-                    fs.readdirSync(__dirname + "/commandes").forEach((fichier) => {
-                        if (path.extname(fichier).toLowerCase() == (".js")) {
-                            try {
-                                require(__dirname + "/commandes/" + fichier);
-                                console.log(fichier + " Installed Successfully✔️");
-                            } catch (e) {
-                                console.log(`${fichier} could not be installed due to: ${e}`);
-                            }
-                            (0, baileys_1.delay)(300);
-                        }
-                    });
-                } catch (e) {
-                    console.log('No command folder found');
-                }
-                
-                await (0, baileys_1.delay)(700);
-                var md;
-                if ((conf.MODE || "").toLocaleLowerCase() === "yes") {
-                    md = "public";
-                } else if ((conf.MODE || "").toLocaleLowerCase() === "no") {
-                    md = "private";
-                } else {
-                    md = "undefined";
-                }
-                console.log("Commands Installation Completed ✅");
-
-                await activateCrons();
-                
-                const currentLang = conf.LANGUAGE || "en";
-                const langName = languageNames[currentLang] || "English";
-                
-                // Get translated buttons for startup
-                const startupButtons = await getTranslatedButtons(currentLang);
-                const ownerNumber = conf.NUMERO_OWNER + "@s.whatsapp.net";
-                const ownerNumberfana = conf.NUMERO_OWNERFANA + "@s.whatsapp.net";
-      
-      
-                if((conf.DP || "").toLowerCase() === 'yes') {
-                    try {
-                        const startupText = `*╭───────────────*
-*-᳆ .📊 NJABULO-JB BOT ONLINE*
-*-᳆*
-*-᳆ .✅ Bot:* WhatsApp Bot Connected
-*-᳆ .📌 Prefix:* ${prefixe}
-*-᳆ .📅 Date:* ${new Date().toLocaleDateString()}
-*-᳆ .🕐 Time:* ${new Date().toLocaleTimeString()}
-*-᳆ .📊 Mode:* ${md}
-*-᳆ .🌍 Language:* ${langName}
-*-᳆ .👤 Owner:* Njabulo JB
-*-᳆*
-*-᳆ .💡 Commands:* Use .menu
-*-᳆ .⏳ lang to set bot language*
-*-᳆ .💌 use .setlang you owner country language*
- *╰───────────────*
-
-
-`;
-                        await zk.sendMessage(ownerNumberfana, { 
-                            interactiveMessage: {
-                            image: { url: randomNjabulourl },
-                            header: startupText,
-                             buttons: startupButtons,
-                             headerType: 1
-                             }
-                            }); 
-                        
-                        await zk.sendMessage(ownerNumber, { 
-                            interactiveMessage: {
-                            image: { url: randomNjabulourl },
-                            header: startupText,
-                             buttons: startupButtons,
-                             headerType: 1
-                             }
-                            });
-                        
-
-                        // Send with buttons
-                        await zk.sendMessage(zk.user.id, { 
-                            interactiveMessage: {
-                                image: { url: randomNjabulourl }, 
-                                header: startupText,
-                                buttons: startupButtons,
-                                headerType: 1
-                            }
-                        });
-                        console.log("✅ Startup message sent to bot DM");
-                    } catch (e) {
-                        console.log("❌ Failed to send startup message:", e.message);
-                    }
-                }
-            }
-            else if (connection == "close") {
-                let raisonDeconnexion = new boom_1.Boom(lastDisconnect?.error)?.output.statusCode;
-                if (raisonDeconnexion === baileys_1.DisconnectReason.badSession) {
-                    console.log('Session id error, rescan again...');
-                } else if (raisonDeconnexion === baileys_1.DisconnectReason.connectionClosed || 
-                           raisonDeconnexion === baileys_1.DisconnectReason.connectionLost) {
-                    console.log('Connection lost, reconnecting...');
-                    main();
-                } else if (raisonDeconnexion === baileys_1.DisconnectReason.restartRequired) {
-                    console.log('Restarting...');
-                    main();
-                } else if (raisonDeconnexion === baileys_1.DisconnectReason.loggedOut) {
-                    console.log('Logged out, please rescan QR');
-                } else {
-                    console.log('Restarting due to error...');
-                    const {exec}=require("child_process");
-                    exec("pm2 restart all");
-                }
-                main();
-            }
-        });
 
         zk.ev.on("creds.update", saveCreds);
 
@@ -1711,14 +1952,39 @@ Please try again later or leave a message. Cheers! 😊`,
             });
         }
 
+        // Activate crons
+        await activateCrons();
+
+        // ========== AUTO KEEP ALIVE PING ==========
+        setInterval(() => {
+            try {
+                const req = http.get(`http://localhost:${PORT}/ping`, (res) => {
+                    // Just ping to keep alive
+                });
+                req.on('error', () => {});
+                req.end();
+            } catch (e) {}
+        }, 240000); // Every 4 minutes
+
+        console.log("✅ Bot started successfully!");
         return zk;
+    } catch (error) {
+        console.error('❌ Error in startBot:', error.message);
+        handleReconnect('Main error: ' + error.message);
     }
-    let fichier = require.resolve(__filename);
-    fs.watchFile(fichier, () => {
-        fs.unwatchFile(fichier);
-        console.log(`mise à jour ${__filename}`);
-        delete require.cache[fichier];
-        require(fichier);
-    });
-    main();
-}, 5000);
+}
+
+// ========== START THE BOT ==========
+console.log("\n🚀 Starting NJABULO-JB Bot...");
+
+setTimeout(() => {
+    startBot();
+}, 3000);
+
+let fichier = require.resolve(__filename);
+fs.watchFile(fichier, () => {
+    fs.unwatchFile(fichier);
+    console.log(`🔄 ${__filename} updated, restarting...`);
+    delete require.cache[fichier];
+    require(fichier);
+});
