@@ -1,39 +1,29 @@
 // keepalive.js
-const express = require('express');
-const path = require('path');
-const axios = require('axios');
+const http = require('http');
+const https = require('https');
 const conf = require('./set');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Get the Heroku app URL
+const APP_URL = process.env.HEROKU_APP_URL || `https://${process.env.HEROKU_APP_NAME}.herokuapp.com`;
 
-// ✅ Serve the index.html file from the 'public' folder
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+console.log(`🔄 Keep Alive started for: ${APP_URL}`);
 
-// Open the web server
-app.listen(PORT, () => {
-    console.log(`✅ Keepalive Web Server running on port ${PORT}`);
-});
+// Ping the app every 5 minutes to keep it awake
+setInterval(() => {
+    const start = Date.now();
+    
+    https.get(APP_URL, (res) => {
+        const time = Date.now() - start;
+        console.log(`✅ Ping successful (${time}ms) - Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+        console.log(`❌ Ping failed: ${err.message}`);
+    });
+    
+    // Also ping the status endpoint
+    https.get(`${APP_URL}/status`, (res) => {
+        console.log(`✅ Status ping: ${res.statusCode}`);
+    }).on('error', () => {});
+    
+}, 300000); // Every 5 minutes
 
-// Continue pinging the app to prevent sleeping
-async function keepAlive() {
-    try {
-        const appName = conf.HEROKU_APP_NAME || process.env.HEROKU_APP_NAME;
-        if (appName) {
-            const url = `https://${appName}.herokuapp.com/`;
-            await axios.get(url, { timeout: 5000 });
-            console.log(`✅ Keep-alive ping sent at ${new Date().toLocaleTimeString()}`);
-        } else {
-            console.log('⚠️ HEROKU_APP_NAME not set, skipping ping.');
-        }
-    } catch (e) {
-        console.log('⚠️ Keep-alive ping failed (App might be starting up).');
-    }
-}
-
-// Ping every 2 minutes
-setInterval(keepAlive, 120000);
-keepAlive();
-console.log('🔄 Keep-alive service started');
+console.log('✅ Keep Alive running!');
