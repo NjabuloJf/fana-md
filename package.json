@@ -5,12 +5,13 @@
   "main": "control.js",
   "scripts": {
     "start": "node control.js",
-    "postinstall": "mkdir -p session commands logs",
+    "postinstall": "mkdir -p session commands logs || true",
     "test": "echo \"Error: no test specified\" && exit 1",
     "s": "node control.js",
     "c": "tsc",
     "dev": "nodemon control.js",
-    "keepalive": "node keepalive.js"
+    "keepalive": "node keepalive.js",
+    "restart": "heroku restart"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
@@ -74,6 +75,6 @@
     "translation",
     "multi-language"
   ],
-  "author": "Hans Tech",
+  "author": "Njabulo Tech",
   "license": "MIT"
 }
